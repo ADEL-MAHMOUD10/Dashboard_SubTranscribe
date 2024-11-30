@@ -371,9 +371,6 @@ def register():
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
-    if 'user_id' in session:
-        return redirect(url_for('upload_or_link', user_id=session['user_id']))
-    flash('User ID is missing. Please log in.', 'danger')
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -385,8 +382,11 @@ def login():
             return redirect(url_for('upload_or_link', user_id=user['user_id']))
         else:
             flash('Incorrect username or password', 'danger')
-
+    if 'user_id' in session:
+        return redirect(url_for('upload_or_link', user_id=session['user_id']))
+    
     return render_template('login.html')
+
 
 @app.route('/Login', methods=['GET', 'POST'])
 def Logout():
