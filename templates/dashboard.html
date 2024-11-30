@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="shortcut icon" href="/static/image/subtitle.ico">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+          <div class="d-flex align-items-center">
+            <a href="/v1/{{ user_id }}"><img src="/static/image/subtitle.ico" style="max-width: 30px;" alt="SubTranscribe Logo"></a>
+            <a class="navbar-brand ms-1" href="/v1/{{ user_id }}">SubTranscribe</a>
+          </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+              <li class="nav-item">
+                <a class="nav-link active ms-2" aria-current="page" href="/">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link ms-2" href="/about">About</a>
+              </li>
+              <li class="nav-item">
+                <a class="btn btn-danger ms-2" href="/Login">Logout</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+          <div class="alert alert-info">
+              {{ messages[0] }}
+          </div>
+      {% endif %}
+      {% endwith %}
+      <div class="container">
+        <div class="mt-4 text-center d-flex align-items-center ">
+            <h4 class="font-weight-bold">Welcome, <span class="text-success">{{ username }}</span></h4>
+        </div>
+        <!-- Cards for total files and total size and chart -->
+        <div class="row mb-4">
+            <div class="col-md-6 mt-1 ">
+                <div class="card bg-dark">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-white">Total Files</h5>
+                        <p class="card-text text-success" id="total-files">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mt-1">
+                <div class="card bg-dark">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-white">Total Size</h5>
+                        <p class="card-text text-success" id="total-size">0 MB</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-dark mt-1">
+            <div class="card-body">
+                <h5 class="card-title text-white text-center">User Activity Chart (Last 12 Months)</h5>
+                <canvas id="userActivityChart" width="500" height="100"></canvas>
+            </div>
+        </div>
+
+
+        <!-- If there are no files, show a message -->
+        {% if files|length == 0 %}
+            <div class="no-files-alert">
+                <p>No files uploaded yet.</p>
+            </div>
+        {% else %}
+            <div class="table-responsive mt-3">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>File Size</th>
+                            <th>Uploaded On</th>
+                            <th>Download Subtitle</th>
+                        </tr>
+                    </thead>
+                    <tbody id="file-list">
+                        {% for file in files %}
+                        <tr>
+                            <td>{{ file.file_name }}</td>
+                            <td>{{ (file.file_size / (1024 * 1024))|round(2) }} MB</td>
+                            <td>{{ file.upload_time }}</td>
+                            <td>
+                                <a href="{{ url_for('redirect_to_transcript', file_id=file._id) }}" class="btn btn-success">
+                                    Download
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+
+    <footer class="text-center mt-5">
+        <div class="container">
+          <p>SubTranscribe &copy; 2024 All Rights Reserved. Designed by <br><span> A D E L M A H M O U D </span> </p>
+          <div class="toogle">
+            <a class="email" href="mailto: adelam578568@gmail.com"><i class="fa-solid fa-envelope"></i></a>
+            <a class="insta" href="http://instagram.com/adel_mahmoud10/"><i class="fa-brands fa-instagram"></i></a>
+            <a class="x" href="https://twitter.com/Adel_MAhmoud100?s=09"><i class="fa-brands fa-x-twitter"></i></a>
+            <a class="face" href="https://www.facebook.com/profile.php?id=100013266852973"><i class="fa-brands fa-facebook"></i></a>
+          </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // JavaScript to calculate total files and size
+        const fileList = document.querySelectorAll('#file-list tr');
+        const totalFilesElement = document.getElementById('total-files');
+        const totalSizeElement = document.getElementById('total-size');
+        let totalSize = 0;
+
+        fileList.forEach(row => {
+            const fileSizeCell = row.cells[1]; // The second cell contains the file size
+            const fileSizeText = fileSizeCell.textContent.trim();
+            const fileSize = parseFloat(fileSizeText.replace('MB', '').trim());
+            totalSize += fileSize;
+        });
+
+        totalFilesElement.textContent = fileList.length;
+        totalSizeElement.textContent = totalSize.toFixed(2) + ' MB';
+
+        const months = {{ months|tojson|default('[]') }};
+        const uploads = {{ uploads|tojson|default('[]') }};
+
+        
+        if (months.length > 0 && uploads.length > 0) {
+            const ctx = document.getElementById('userActivityChart').getContext('2d');
+            const userActivityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Uploads Per Month',
+                        data: uploads,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Files'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>

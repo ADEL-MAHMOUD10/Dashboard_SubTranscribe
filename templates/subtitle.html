@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Subtitles</title>
+    <link rel="stylesheet" href="/static/css/download.css">
+    <link rel="shortcut icon" href="/static/image/download-arrow.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Antimoon&display=swap" rel="stylesheet"> <!-- Import Antimoon -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: 'Antimoon', sans-serif; /* Set Antimoon as the font */
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <!-- Logo and Brand -->
+            <div class="d-flex align-items-center">
+                <a href="/v1/{{ user_id }}">
+                    <img src="/static/image/subtitle.ico" style="max-width: 35px;" alt="SubTranscribe Logo">
+                </a>
+                <a class="navbar-brand ms-2" href="/v1/{{ user_id }}">SubTranscribe</a>
+            </div>
+
+            <!-- Navbar Toggle Button for Small Screens -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navbar Links -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-danger ms-2" href="/Login">Logout</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-2" href="{{ url_for('user_dashboard') }}">Dashboard</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Section -->
+    <div class="container mt-5 fade-in">
+        <div class="main-text justify-content-center d-flex align-items-center mb-4">
+            <img src="/static/image/download-arrow.ico" style="max-width: 45px;" alt="">
+            <h2 class="text-center ms-1">Download Your Subtitle</h2>
+        </div>
+        <form id="download-form" action="" method="POST">
+            <div class="mb-3">
+                <label for="format" class="form-label">Choose Format</label>
+                <select class="form-select" id="format" name="format" required>
+                    <option value="srt">SRT</option>
+                    <option value="vtt">VTT</option>
+                </select>
+                <br>
+
+                <div class="mb-3 text-center">
+                    <p id="waitMessage" style="color: #007bff; font-size: 1.3rem; font-weight: 700;">Please wait for a few seconds...</p>
+                    <button id="downloadBtn" type="submit" class="btn btn-primary" style="display: none;">Download</button>
+                </div>
+            </div>
+            <!-- Success Message -->
+            <div class="download-success">
+                <img src="/static/image/undraw_download_re_li50.svg" alt="Downloaded">
+                <span>Download Completed</span>
+            </div>
+            <div class="text-center">
+                <img src="/static/image/subtitles.jpg" style="max-width: 70%;" alt="">
+            </div>
+        </form>
+
+    </div>
+
+    <!-- Usage Instructions Section -->
+    <div class="container mt-5 fade-in">
+        <h2 class="text-center">How to Use SRT and VTT Files</h2>
+        <div class="row">
+            <div class="col-md-6">
+                <h4 class="text-center">On PC</h4>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <p>To use SRT or VTT files on your PC:</p>
+                        <ol>
+                            <li>Download the SRT or VTT file from the website.</li>
+                            <li>Open your media player (like VLC or Windows Media Player).</li>
+                            <li>Load your video file.</li>
+                            <li>Go to the subtitle settings and choose "Add Subtitle File".</li>
+                            <li>Select the downloaded subtitle file.</li>
+                        </ol>
+                        <p>Enjoy your video with subtitles!</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h4 class="text-center">On Mobile</h4>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <p>To use SRT or VTT files on your mobile device:</p>
+                        <ol>
+                            <li>Download the SRT or VTT file from the website.</li>
+                            <li>Open your video player app (like MX Player or VLC for Mobile).</li>
+                            <li>Load your video file within the app.</li>
+                            <li>Tap on the subtitle icon or settings.</li>
+                            <li>Select "Load Subtitle" and choose the downloaded file.</li>
+                        </ol>
+                        <p>Now you can watch your video with subtitles on the go!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center mt-5">
+        <div class="container">
+            <p>SubTranscribe &copy; 2024 All Rights Reserved. Designed by <span> A D E L M A H M O U D </span> </p>
+            <div class="toogle">
+                <a class="email" href="mailto: adelam578568@gmail.com"><i class="fa-solid fa-envelope"></i></a>
+                <a class="insta" href="http://instagram.com/adel_mahmoud10/"><i class="fa-brands fa-instagram"></i></a>
+                <a class="x" href="https://twitter.com/Adel_MAhmoud100?s=09"><i class="fa-brands fa-x-twitter"></i></a>
+                <a class="face" href="https://www.facebook.com/profile.php?id=100013266852973"><i class="fa-brands fa-facebook"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+
+        window.onload = function() {
+            const downloadBtn = document.getElementById("downloadBtn");
+            const waitMessage = document.getElementById("waitMessage");
+            
+
+            setTimeout(function() {
+                downloadBtn.style.display = "block";
+                waitMessage.style.display = "none";
+            }, 1500); 
+        };
+
+        $(document).ready(function() {
+            $('#download-form').on('submit', function(e) {
+                e.preventDefault(); // Prevent the default form submission
+                
+                // Show success message after form submission
+                $('.download-success').fadeIn().delay(2500).queue(function(next) {
+                    $(this).addClass('show'); // Add show class for animation
+                    next();
+                });
+                
+                // Submit the form after showing the message
+                this.submit(); // Now submit the form
+            });
+        });
+    </script>
+</body>
+</html>

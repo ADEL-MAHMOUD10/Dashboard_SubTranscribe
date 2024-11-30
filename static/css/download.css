@@ -1,0 +1,115 @@
+body{
+    scroll-behavior: smooth;
+    font-family: 'Antimoon', sans-serif; /* Set Antimoon as the font */
+}
+
+#filePreview {
+    display: none;
+}
+.container h2 {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-weight: bold;
+}
+
+.container h4 {
+    color: #1877F2;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-weight: bold;
+}
+
+.card {
+    border-radius: 15px; /* Rounded corners for cards */
+    transition: transform 0.2s, box-shadow 0.2s; /* Animation on hover */
+}
+.card:hover {
+    transform: scale(1.05); /* Scale effect on hover */
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2); /* Add shadow on hover */
+}
+.download-success {
+    display: none; /* Hide by default */
+    margin-top: 20px;
+    text-align: center;
+    opacity: 0; /* Initial opacity for fade effect */
+    transition: opacity 1s ease; /* Smooth transition for opacity */
+}
+.download-success img {
+    max-width: 50px; /* Adjust image size */
+    margin-right: 10px;
+}
+.download-success.show {
+    opacity: 1; /* Fully visible when shown */
+}
+.download-success span {
+    pointer-events: none; /* Disable pointer events for the text */
+    color: #1877F2;
+}
+footer {
+    background-color: #212529;
+    padding: 15px 0;
+}
+
+footer p {
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+span {
+    font-family: 'Verdana', sans-serif;
+    color: #ffffff37;
+    font-weight: bold;
+}
+
+span:hover {
+    color: #fff;
+}
+
+.toogle a {
+    margin: 5px;
+    color: #ffffff37;
+    font-size: 1.7rem;
+    transition: color 0.3s;
+}
+
+.toogle .email:hover {
+    color: #fff;
+}
+
+.toogle .insta:hover {
+    color: #e11b61;
+}
+
+.toogle .x:hover {
+    color: #000;
+}
+
+.toogle .face:hover {
+    color: var(--primary-color);
+}
+
+.fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.5s forwards; 
+}
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@media (max-width: 410px) {
+    .container .main-text img{
+        display: none;
+    }
+    
+}
+@media (max-width: 988px) {
+    .nav-item .btn {
+        margin: 5px 0; 
+        display: block; 
+    }
+    
+    .navbar-nav {
+        text-align: center; 
+    }
+}

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About SubTranscribe</title>
+    <link rel="shortcut icon" href="/static/image/about.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/about.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script defer src="/static/js/about.js"></script>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+          <div class="d-flex align-items-center">
+            <a href="/"><img src="/static/image/subtitle.ico" style="max-width: 30px;" alt="..."></a>
+            <a class="navbar-brand ms-1" href="/">SubTranscribe</a>
+          </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+        
+        <section class="about-section">
+            <h1 class="text-center mb-4">About Transcription & Subtitles</h1>
+            <p id="description" class="lead text-center animated-section"></p>
+
+            <div class="text-center">
+                <img src="/static/image/subtitles.jpg" style="max-width: 90%;" alt="">
+            </div>
+            
+            <h2 class="mt-5 text-center">Supported Files</h2>
+            <div id="supported-files" class="row mt-4 justify-content-center animated-section"></div>
+            
+            <h2 class="mt-5 text-center">Subtitle File Formats: SRT and VTT</h2>
+            <div id="file-formats" class="row mt-4 justify-content-center animated-section"></div>
+
+
+            <h2 class="mt-5 text-center">How to Use SRT and VTT Files</h2>
+            <div id="usage-info" class="row mt-4 justify-content-center animated-section"></div>            
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center mt-5">
+        <div class="container">
+            <p>SubTranscribe &copy; 2024 All Rights Reserved. Designed by <br><span> A D E L M A H M O U D </span> </p>
+            <div class="toogle">
+                <a class="email" href="mailto: adelam578568@gmail.com"><i class="fa-solid fa-envelope"></i></a>
+                <a class="insta" href="http://instagram.com/adel_mahmoud10/"><i class="fa-brands fa-instagram"></i></a>
+                <a class="x" href="https://twitter.com/Adel_MAhmoud100?s=09"><i class="fa-brands fa-x-twitter"></i></a>
+                <a class="face" href="https://www.facebook.com/profile.php?id=100013266852973"><i class="fa-brands fa-facebook"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Simulated data for demo purposes
+            const description = "SubTranscribe provides an easy way to transcribe and download subtitles for your audio and video files.";
+
+            const usageInfo = [
+                "On PC: Most media players like VLC and Windows Media Player support SRT and VTT files. Simply load the video and choose the subtitle file.",
+                "On Mobile: Use apps like MX Player or VLC for mobile to load your subtitle files while playing videos."
+            ];
+
+            // Populate the description
+            $("#description").text(description).addClass("visible");
+            
+
+            // Populate usage info
+            usageInfo.forEach(info => {
+                $("#usage-info").append(`
+                    <div class="col-md-6 mb-3">
+                        <div class="alert alert-info">
+                            ${info}
+                        </div>
+                    </div>
+                `);
+            });
+
+            // Fade-in animation
+            setTimeout(() => {
+                $('.animated-section').addClass('visible');
+            }, 500);
+        });
+    </script>
+
+</body>
+</html>

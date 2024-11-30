@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+:root {
+    --primary-color: #1877F2;
+    --secondary-color: #333;
+    --error-color: #dc2727;
+    --background-color: #f8d7da;
+}
+
+* {
+    scroll-behavior: smooth;
+    box-sizing: border-box;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+body {
+    background: #f8f9fa;
+    font-family: 'Poppins', sans-serif;
+}
+
+.register-container {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 1s ease-out;
+}
+
+.register-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #343a40;
+}
+
+.form-control {
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    margin-bottom: 15px;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.alert {
+    animation: fadeIn 0.5s ease-out;
+}
+
+
+footer {
+    background-color: #212529;
+    padding: 15px 0;
+}
+
+footer p {
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+span {
+    font-family: 'Verdana', sans-serif;
+    color: #ffffff37;
+    font-weight: bold;
+}
+
+span:hover {
+    color: #fff;
+}
+
+.toogle a {
+    margin: 5px;
+    color: #ffffff37;
+    font-size: 1.7rem;
+    transition: color 0.3s;
+}
+
+.toogle .email:hover {
+    color: #fff;
+}
+
+.toogle .insta:hover {
+    color: #e11b61;
+}
+
+.toogle .x:hover {
+    color: #000;
+}
+
+.toogle .face:hover {
+    color: var(--primary-color);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Adding a smooth hover effect on the input fields */
+.form-group input:focus {
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    border-color: #007bff;
+}

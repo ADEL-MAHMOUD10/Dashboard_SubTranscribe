@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
+
+:root {
+    --primary-color: #1877F2;
+    --secondary-color: #333;
+    --error-color: #dc2727;
+    --background-color: #f8d7da;
+}
+
+body {
+    background-color: #f8f9fa;
+}
+* {
+    scroll-behavior: smooth;
+    box-sizing: border-box;
+    font-family: "Roboto", sans-serif;
+    font-weight: 300;
+}
+.container {
+    margin-top: 10px;
+}
+.center-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    font-weight: normal;
+}
+.table th {
+    background-color: rgba(33, 37, 41) !important;
+    color: white;
+}
+.table td, .table th {
+    text-align: center;
+    vertical-align: middle;
+    padding: 15px;
+    align-content: center;
+}
+.table-responsive {
+    margin-bottom: 10px;
+}
+.no-files-alert {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 1.2rem;
+    color: #6c757d;
+}
+
+canvas {
+    max-width: 100%;
+    height: auto;
+    max-height: 200px; 
+}
+
+.table {
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+.table th, .table td {
+    border: 1px solid rgba(33, 37, 41, 0.201);
+}
+.table thead th {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+}
+.table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+footer {
+    background-color: #212529;
+    padding: 15px 0;
+}
+
+footer p {
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+span {
+    font-family: 'Verdana', sans-serif;
+    color: #ffffff37;
+    font-weight: bold;
+}
+
+span:hover {
+    color: #fff;
+}
+
+.toogle a {
+    margin: 5px;
+    color: #ffffff37;
+    font-size: 1.7rem;
+    transition: color 0.3s;
+}
+
+.toogle .email:hover {
+    color: #fff;
+}
+
+.toogle .insta:hover {
+    color: #e11b61;
+}
+
+.toogle .x:hover {
+    color: #000;
+}
+
+.toogle .face:hover {
+    color: var(--primary-color);
+}
+@media (max-width: 576px) {
+    .container {
+        margin-top: 10px;
+    }
+    .center-text h1 {
+        font-size: 1.5rem;
+    }
+    .table td, .table th {
+        padding: 10px;
+    }
+}
