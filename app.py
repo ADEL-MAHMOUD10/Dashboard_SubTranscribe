@@ -82,7 +82,7 @@ def reset_progress():
     return jsonify(upload_id)
 
 def update_progress_bar(B_status,message):
-    """Update the progress bar in the MongoDB database."""
+    """Update the progress bar in the Firebase database."""
     upload_id = session.get('upload_id')
     ref = db.reference(f'/UID/{upload_id}')
     ref.update({
@@ -147,7 +147,7 @@ def allowed_file(filename):
 @app.route('/v1/', methods=['GET', 'POST'])
 def upload_or_link_no_user():
     if 'user_id' in session:
-        return redirect(url_for('upload_or_link', user_id=session['user_id']))
+        return redirect(url_for('main_user', user_id=session['user_id']))
     return redirect(url_for('login'))
 
 
@@ -349,7 +349,6 @@ def transcribe_from_link(link):
         else:
             return render_template("error.html")  # Render error page if status request failed
 
-
 # def upload_audio_to_gridfs(file_path):
 #     """Upload audio file to MongoDB using GridFS."""
 #     with open(file_path, "rb") as f:
@@ -442,8 +441,6 @@ def reset_password():
 
     return render_template('reset.html')
 
-
-
 @app.route('/dashboard/<user_id>')
 def dashboard(user_id):
     # Retrieve the user from the database by user_id
@@ -492,6 +489,35 @@ def user_dashboard():
 
     # Redirect to the dashboard route
     return redirect(url_for('dashboard', user_id=user_id))
+
+@app.route('/delete_file', methods=['POST'])
+def delete_file():
+    user_id = session.get('user_id')
+    
+    user_file = files_collection.find_one({'user_id': user_id})
+    if user_file:
+        data = request.get_json()
+        delete_file_id = data.get('file_id')
+        try:
+            object_id = ObjectId(delete_file_id)
+            files = list(files_collection.find({'_id': object_id}))
+
+            for file in files:
+                file['transcript_id'] = str(file['transcript_id'])
+            if file:
+                file_id = file['transcript_id']
+                delete_result = files_collection.delete_one({'transcript_id': file_id})
+                
+                if delete_result.deleted_count > 0:
+                    return jsonify({"success": True, "message": "File deleted successfully"})
+                else:
+                    return jsonify({"success": False, "message": "Error deleting file"})
+            else:
+                return jsonify({"success": False, "message": "File not found"})
+        except Exception as e:
+            return jsonify({"success": False, "message": "Invalid file ID format"})
+    else:
+        return jsonify({"success": False, "message": "User not found"})
 
 @app.route('/redirect/<file_id>')
 def redirect_to_transcript(file_id):
@@ -549,4 +575,5 @@ def serve_file(filename):
 # Main entry point
 if __name__ == "__main__":
     app.run(host="0.0.0.0",port=8000,debug=True)
+    
     
