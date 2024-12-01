@@ -345,6 +345,12 @@ def transcribe_from_link(link):
 
 #     return audio_id
 
+@app.route('/v1/<user_id>')
+def main_user(user_id):
+    if 'user_id' in session:
+        return render_template('index.html')
+    return redirect(url_for('login'))
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -371,21 +377,21 @@ def register():
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
+    if 'user_id' in session:
+        return redirect(url_for('main_user', user_id=session['user_id']))
     if request.method == 'POST':
+    
         username = request.form['username']
         password = request.form['password']
 
         user = users_collection.find_one({'username': username})
         if user and check_password_hash(user['password'], password):
-            flash('Successfully logged in!', 'success')
             session['user_id'] = user['user_id']  # Store user_id in session
-            return redirect(url_for('upload_or_link', user_id=user['user_id']))
+            flash('Successfully logged in!', 'success')
+            return redirect(url_for('main_user', user_id=user['user_id']))
         else:
             flash('Incorrect username or password', 'danger')
             return render_template('login.html')
-    if 'user_id' in session:
-        return redirect(url_for('upload_or_link', user_id=session['user_id']))
-    
     return render_template('login.html')
 
 @app.route('/logout', methods=['GET', 'POST'])
