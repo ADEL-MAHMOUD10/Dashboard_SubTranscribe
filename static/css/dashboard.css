@@ -79,6 +79,17 @@ canvas {
 .table tbody tr:hover {
     background-color: #f1f1f1;
 }
+
+#notification {
+    position: fixed;
+    top: 10px;
+    left: 20px;
+    z-index: 1;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: opacity 0.5s ease;
+}
+
 footer {
     background-color: #212529;
     padding: 15px 0;
