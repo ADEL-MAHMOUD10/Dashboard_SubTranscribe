@@ -91,8 +91,22 @@
                     <tbody id="file-list">
                         {% for file in files %}
                         <tr>
-                            <td>{{ file.file_name }}</td>
-                            <td>{{ (file.file_size / (1024 * 1024))|round(2) }} MB</td>
+                            <td>
+                                {% if file.file_name and (file.file_name.startswith('http://') or file.file_name.startswith('https://')) %}
+                                    <a href="{{ file.file_name }}" target="_blank">{{ file.file_name }}</a>
+                                {% elif file.file_name %}
+                                    {{ file.file_name }}
+                                {% else %}
+                                    Unknown
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if file.file_size %}
+                                    {{ (file.file_size / (1024 * 1024))|round(2) }} MB
+                                {% else %}
+                                    Unknown Size
+                                {% endif %}
+                            </td>
                             <td>{{ file.upload_time }}</td>
                             <td>
                                 <a href="{{ url_for('redirect_to_transcript', file_id=file._id) }}" class="btn btn-success">
@@ -128,16 +142,25 @@
         const totalFilesElement = document.getElementById('total-files');
         const totalSizeElement = document.getElementById('total-size');
         let totalSize = 0;
+        let totalFiles = 0;
 
         fileList.forEach(row => {
             const fileSizeCell = row.cells[1]; // The second cell contains the file size
             const fileSizeText = fileSizeCell.textContent.trim();
+
+            // Parse the file size, remove 'MB' and trim the result
             const fileSize = parseFloat(fileSizeText.replace('MB', '').trim());
-            totalSize += fileSize;
+
+            // Only add to total if the file size is a valid number and greater than 0
+            if (!isNaN(fileSize) && fileSize > 0) {
+                totalSize += fileSize;
+                totalFiles += 1;
+            }
         });
 
-        totalFilesElement.textContent = fileList.length;
+        totalFilesElement.textContent = totalFiles;
         totalSizeElement.textContent = totalSize.toFixed(2) + ' MB';
+
 
         const months = {{ months|tojson|default('[]') }};
         const uploads = {{ uploads|tojson|default('[]') }};
@@ -183,12 +206,14 @@
                 }
             });
         }
+        
         const flashMessage = document.getElementById('flashMessage');
         if (flashMessage) {
             setTimeout(() => {
                 flashMessage.style.display = 'none';
-            }, 2000);
+            }, 3000);
         }
+
     </script>
 
 </body>
