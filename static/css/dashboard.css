@@ -83,7 +83,7 @@ canvas {
 #notification {
     position: fixed;
     top: 10px;
-    left: 20px;
+    left: 25px;
     z-index: 1;
     padding: 10px 15px;
     border-radius: 5px;
