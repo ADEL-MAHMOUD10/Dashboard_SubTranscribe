@@ -175,8 +175,8 @@ def upload_or_link():
             file_size = request.content_length  # Get file size in bytes
             try:
                 transcript_id = upload_audio_to_assemblyai(audio_stream, file_size)  # Upload directly using stream
-                                # إضافة الملف إلى الـ Dashboard
-                username = user.get('username')  # يجب أن تكون قد خزنت اسم المستخدم في الـ session
+                
+                username = user.get('username')
                 if username:
                     files_collection.insert_one({
                         "username": username,
@@ -382,27 +382,36 @@ def login():
             return redirect(url_for('upload_or_link', user_id=user['user_id']))
         else:
             flash('Incorrect username or password', 'danger')
-    if 'user_id' in session:
-        return redirect(url_for('upload_or_link', user_id=session['user_id']))
-    
-    return render_template('login.html')
 
+    return render_template('login.html')
 
 @app.route('/Login', methods=['GET', 'POST'])
 def Logout():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        c_username = request.form['c_username']
+        user = users_collection.find_one({'username': c_username})
 
-        user = users_collection.find_one({'username': username})
-        if user and check_password_hash(user['password'], password):
-            flash('Successfully logged in!', 'success')
-            session['user_id'] = user['user_id']  # Store user_id in session
-            return redirect(url_for('upload_or_link', user_id=user['user_id']))
+        if user:
+            new_password = request.form['c_password']
+            hashed_password = generate_password_hash(new_password)
+            
+            # Update the password in the database
+            update_result = users_collection.update_one(
+                {"username": c_username},  # Search for the user
+                {"$set": {"password": hashed_password}}   # Update the password
+            )
+
+            if update_result.matched_count > 0:
+                flash('Password updated successfully.', 'success')
+                return redirect(url_for('login'))  # Redirect back to the login page
+            else:
+                flash('Password not changed.', 'danger')
         else:
-            flash('Incorrect username or password', 'danger')
+            flash('User not found.', 'danger')
 
-    return render_template('login.html')
+    return render_template('reset.html')
+
+
 
 @app.route('/dashboard/<user_id>')
 def dashboard(user_id):
@@ -456,13 +465,12 @@ def user_dashboard():
 @app.route('/redirect/<file_id>')
 def redirect_to_transcript(file_id):
     try:
-        # البحث عن الملف باستخدام _id
         file = files_collection.find_one({'_id': ObjectId(file_id)})
         
         if file:
             transcript_id = file.get('transcript_id')
             if transcript_id:
-                # إعادة التوجيه إلى صفحة التحميل باستخدام transcript_id
+            
                 return redirect(url_for('download_subtitle', transcript_id=transcript_id))
             else:
                 flash("Transcript ID not found for this file.")
@@ -471,7 +479,6 @@ def redirect_to_transcript(file_id):
     except Exception as e:
         flash(f"An error occurred: {str(e)}")
     
-    # في حالة حدوث خطأ، الرجوع إلى لوحة التحكم
     return redirect(url_for('dashboard'))
 
 
@@ -496,6 +503,7 @@ def download_subtitle(transcript_id):
         else:
             return render_template("error.html")  # Render error page if request fails
     return render_template('subtitle.html')  # Render the subtitle download page
+
 
 @app.route('/serve/<filename>')
 def serve_file(filename):

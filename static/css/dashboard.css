@@ -38,7 +38,7 @@ h2 {
     font-weight: normal;
 }
 .table th {
-    background-color: rgba(33, 37, 41) !important;
+    background-color: #212529 !important;
     color: white;
 }
 .table td, .table th {
