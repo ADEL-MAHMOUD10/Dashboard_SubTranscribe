@@ -175,8 +175,8 @@ def upload_or_link():
             file_size = request.content_length  # Get file size in bytes
             try:
                 transcript_id = upload_audio_to_assemblyai(audio_stream, file_size)  # Upload directly using stream
-                                # إضافة الملف إلى الـ Dashboard
-                username = user.get('username')  # يجب أن تكون قد خزنت اسم المستخدم في الـ session
+                                
+                username = user.get('username')  
                 if username:
                     files_collection.insert_one({
                         "username": username,
@@ -187,7 +187,7 @@ def upload_or_link():
                         "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     })
 
-                return redirect(url_for('download_subtitle', transcript_id=transcript_id))  # Redirect to download page
+                return redirect(url_for('download_subtitle',user_id=user_id,transcript_id=transcript_id))  # Redirect to download page
             except Exception as e:
                 return render_template("error.html")  # Display error page
         else:
@@ -483,14 +483,14 @@ def user_dashboard():
 @app.route('/redirect/<file_id>')
 def redirect_to_transcript(file_id):
     try:
-        # البحث عن الملف باستخدام _id
+       
         file = files_collection.find_one({'_id': ObjectId(file_id)})
-        
+        user_id = session.get('user_id')
         if file:
             transcript_id = file.get('transcript_id')
             if transcript_id:
-                # إعادة التوجيه إلى صفحة التحميل باستخدام transcript_id
-                return redirect(url_for('download_subtitle', transcript_id=transcript_id))
+                
+                return redirect(url_for('download_subtitle',user_id=user_id, transcript_id=transcript_id))
             else:
                 flash("Transcript ID not found for this file.")
         else:
@@ -498,12 +498,11 @@ def redirect_to_transcript(file_id):
     except Exception as e:
         flash(f"An error occurred: {str(e)}")
     
-    # في حالة حدوث خطأ، الرجوع إلى لوحة التحكم
     return redirect(url_for('dashboard'))
 
 
-@app.route('/download/<transcript_id>', methods=['GET', 'POST'])
-def download_subtitle(transcript_id):
+@app.route('/v1/<user_id>/download/<transcript_id>', methods=['GET', 'POST'])
+def download_subtitle(user_id,transcript_id):
     """Handle subtitle download based on the transcript ID."""
 
     if request.method == 'POST':
