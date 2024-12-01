@@ -175,8 +175,8 @@ def upload_or_link():
             file_size = request.content_length  # Get file size in bytes
             try:
                 transcript_id = upload_audio_to_assemblyai(audio_stream, file_size)  # Upload directly using stream
-                
-                username = user.get('username')
+                                # إضافة الملف إلى الـ Dashboard
+                username = user.get('username')  # يجب أن تكون قد خزنت اسم المستخدم في الـ session
                 if username:
                     files_collection.insert_one({
                         "username": username,
@@ -382,11 +382,23 @@ def login():
             return redirect(url_for('upload_or_link', user_id=user['user_id']))
         else:
             flash('Incorrect username or password', 'danger')
-
+            return render_template('login.html')
+    if 'user_id' in session:
+        return redirect(url_for('upload_or_link', user_id=session['user_id']))
+    
     return render_template('login.html')
 
-@app.route('/Login', methods=['GET', 'POST'])
-def Logout():
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    if request.method == 'GET':
+        session.pop('user_id',None)
+        session.pop('username',None)
+        session.pop('password',None)
+        flash('Successfully logged out!', 'success')
+    return redirect(url_for('login'))
+
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
     if request.method == 'POST':
         c_username = request.form['c_username']
         user = users_collection.find_one({'username': c_username})
@@ -465,12 +477,13 @@ def user_dashboard():
 @app.route('/redirect/<file_id>')
 def redirect_to_transcript(file_id):
     try:
+        # البحث عن الملف باستخدام _id
         file = files_collection.find_one({'_id': ObjectId(file_id)})
         
         if file:
             transcript_id = file.get('transcript_id')
             if transcript_id:
-            
+                # إعادة التوجيه إلى صفحة التحميل باستخدام transcript_id
                 return redirect(url_for('download_subtitle', transcript_id=transcript_id))
             else:
                 flash("Transcript ID not found for this file.")
@@ -479,6 +492,7 @@ def redirect_to_transcript(file_id):
     except Exception as e:
         flash(f"An error occurred: {str(e)}")
     
+    # في حالة حدوث خطأ، الرجوع إلى لوحة التحكم
     return redirect(url_for('dashboard'))
 
 
@@ -504,7 +518,6 @@ def download_subtitle(transcript_id):
             return render_template("error.html")  # Render error page if request fails
     return render_template('subtitle.html')  # Render the subtitle download page
 
-
 @app.route('/serve/<filename>')
 def serve_file(filename):
     """Serve the subtitle file for download."""
@@ -517,5 +530,5 @@ def serve_file(filename):
 
 # Main entry point
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",debug=True,port=8000)
-
+    app.run(host="0.0.0.0",port=8000,debug=True)
+    
