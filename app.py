@@ -382,22 +382,11 @@ def login():
             return redirect(url_for('upload_or_link', user_id=user['user_id']))
         else:
             flash('Incorrect username or password', 'danger')
-            return render_template('login.html')
-    if 'user_id' in session:
-        return redirect(url_for('upload_or_link', user_id=session['user_id']))
-    
+
     return render_template('login.html')
 
-@app.route('/logout', methods=['GET', 'POST'])
-def logout():
-    if request.method == 'GET':
-        session.pop('user_id',None)
-        flash('Successfully logged out!', 'success')
-        return redirect(url_for('login'))
-    return redirect(url_for('login'))
-
-@app.route('/reset_password', methods=['GET', 'POST'])
-def reset_password():
+@app.route('/Login', methods=['GET', 'POST'])
+def Logout():
     if request.method == 'POST':
         c_username = request.form['c_username']
         user = users_collection.find_one({'username': c_username})
@@ -528,5 +517,5 @@ def serve_file(filename):
 
 # Main entry point
 if __name__ == "__main__":
-    app.run(host="0.0.0.0")
+    app.run(host="0.0.0.0",debug=True,port=8000)
 
