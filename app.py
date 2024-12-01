@@ -284,7 +284,7 @@ def transcribe_from_link(link):
 
                 previous_status = -1  # Track the last updated progress
                 with requests.get(audio_url, stream=True) as f:
-                    for chunk in f.iter_content(chunk_size=600000):  # Read 600KB chunks
+                    for chunk in f.iter_content(chunk_size=1800000):  # Read 1.8MB chunks
                         if not chunk:
                             break
                         yield chunk
@@ -329,13 +329,26 @@ def transcribe_from_link(link):
         if transcript_response.status_code == 200:  # Check if the request was successful
             transcript_data = transcript_response.json()  # Parse the JSON response
             if transcript_data['status'] == 'completed':  # If the transcription is completed
+                user_id = session.get('user_id')
+                user = users_collection.find_one({'user_id':user_id})
+                username = user.get('username')  
+                if username:
+                    files_collection.insert_one({
+                        "username": username,
+                        "user_id": user_id,
+                        "file_name": f'From Link: {link}',
+                        "file_size": total_size,
+                        "transcript_id": transcript_id,
+                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    })
                 Update_progress_db(transcript_id, status=prog_status, message="Completed", Section="Download page", link=audio_url)  # Update progress in the database
-                return redirect(url_for('download_subtitle', transcript_id=transcript_id))  # Redirect to download page
+                return redirect(url_for('download_subtitle',user_id=user_id, transcript_id=transcript_id))  # Redirect to download page
             elif transcript_data['status'] == 'error':  # If there was an error during transcription
                 Update_progress_db(transcript_id, status=0, message="Invalid Link", Section="Link", link=audio_url)  # Update database with error
                 return render_template("error.html")  # Render error page
         else:
             return render_template("error.html")  # Render error page if status request failed
+
 
 # def upload_audio_to_gridfs(file_path):
 #     """Upload audio file to MongoDB using GridFS."""
