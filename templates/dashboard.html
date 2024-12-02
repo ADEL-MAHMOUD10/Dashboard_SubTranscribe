@@ -13,8 +13,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
           <div class="d-flex align-items-center">
-            <a href="/v1/{{ user_id }}"><img src="/static/image/subtitle.ico" style="max-width: 30px;" alt="SubTranscribe Logo"></a>
-            <a class="navbar-brand ms-1" href="/v1/{{ user_id }}">SubTranscribe</a>
+            <a href="/"><img src="/static/image/subtitle.ico" style="max-width: 30px;" alt="SubTranscribe Logo"></a>
+            <a class="navbar-brand ms-1" href="/">SubTranscribe</a>
           </div>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -36,7 +36,7 @@
       </nav>
       {% with messages = get_flashed_messages() %}
       {% if messages %}
-          <div class="alert alert-info">
+          <div class="alert alert-info" id="flashMessage">
               {{ messages[0] }}
           </div>
       {% endif %}
@@ -71,8 +71,7 @@
             </div>
         </div>
 
-
-        <!-- If there are no files, show a message -->
+        <!-- Display files table -->
         {% if files|length == 0 %}
             <div class="no-files-alert">
                 <p>No files uploaded yet.</p>
@@ -86,18 +85,78 @@
                             <th>File Size</th>
                             <th>Uploaded On</th>
                             <th>Download Subtitle</th>
+                            <th>Delete</th> <!-- New column for delete -->
                         </tr>
                     </thead>
                     <tbody id="file-list">
                         {% for file in files %}
                         <tr>
-                            <td>{{ file.file_name }}</td>
-                            <td>{{ (file.file_size / (1024 * 1024))|round(2) }} MB</td>
+                            <td>
+                                {% if file.file_name and (file.file_name.startswith('http://') or file.file_name.startswith('https://')) %}
+                                    <a href="{{ file.file_name }}" target="_blank">{{ file.file_name }}</a>
+                                {% elif file.file_name %}
+                                    {{ file.file_name }}
+                                {% else %}
+                                    Unknown
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if file.file_size %}
+                                    {{ (file.file_size / (1024 * 1024))|round(2) }} MB
+                                {% else %}
+                                    Unknown Size
+                                {% endif %}
+                            </td>
                             <td>{{ file.upload_time }}</td>
                             <td>
                                 <a href="{{ url_for('redirect_to_transcript', file_id=file._id) }}" class="btn btn-success">
                                     Download
                                 </a>
+                            </td>
+                            <td>
+                                <!-- Delete button -->
+                                <form method="POST" action="{{ url_for('delete_file') }}" class="d-flex align-items-center justify-content-center">
+                                    <button type="button" class="bin-button"
+                                    data-file-id="{{ file._id }}"
+                                    onclick="deleteFile(this)">
+                                        <svg
+                                          class="bin-top"
+                                          viewBox="0 0 39 7"
+                                          fill="none"
+                                          xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                          <line y1="5" x2="39" y2="5" stroke="white" stroke-width="4"></line>
+                                          <line
+                                            x1="12"
+                                            y1="1.5"
+                                            x2="26.0357"
+                                            y2="1.5"
+                                            stroke="white"
+                                            stroke-width="4"
+                                          ></line>
+                                        </svg>
+                                        <svg
+                                          class="bin-bottom"
+                                          viewBox="0 0 33 39"
+                                          fill="none"
+                                          xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                          <mask id="path-1-inside-1_8_19" fill="white">
+                                            <path
+                                              d="M0 0H33V35C33 37.2091 31.2091 39 29 39H4C1.79086 39 0 37.2091 0 35V0Z"
+                                            ></path>
+                                          </mask>
+                                          <path
+                                            d="M0 0H33H0ZM37 35C37 39.4183 33.4183 43 29 43H4C-0.418278 43 -4 39.4183 -4 35H4H29H37ZM4 43C-0.418278 43 -4 39.4183 -4 35V0H4V35V43ZM37 0V35C37 39.4183 33.4183 43 29 43V35V0H37Z"
+                                            fill="white"
+                                            mask="url(#path-1-inside-1_8_19)"
+                                          ></path>
+                                          <path d="M12 6L12 29" stroke="white" stroke-width="6"></path>
+                                          <path d="M21 6V29" stroke="white" stroke-width="6"></path>
+                                        </svg>
+                                    </button>                                    
+                                </form>
+                                <div id="notification" style="display: none;" class="alert" role="alert"></div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -123,21 +182,30 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // JavaScript to calculate total files and size
-        const fileList = document.querySelectorAll('#file-list tr');
-        const totalFilesElement = document.getElementById('total-files');
-        const totalSizeElement = document.getElementById('total-size');
-        let totalSize = 0;
+    // JavaScript to calculate total files and size
+    const fileList = document.querySelectorAll('#file-list tr');
+    const totalFilesElement = document.getElementById('total-files');
+    const totalSizeElement = document.getElementById('total-size');
+    let totalSize = 0;
+    let totalFiles = 0;
 
-        fileList.forEach(row => {
-            const fileSizeCell = row.cells[1]; // The second cell contains the file size
-            const fileSizeText = fileSizeCell.textContent.trim();
-            const fileSize = parseFloat(fileSizeText.replace('MB', '').trim());
+    fileList.forEach(row => {
+        const fileSizeCell = row.cells[1]; // The second cell contains the file size
+        const fileSizeText = fileSizeCell.textContent.trim();
+
+        // Parse the file size, remove 'MB' and trim the result
+        const fileSize = parseFloat(fileSizeText.replace('MB', '').trim());
+
+        // Only add to total if the file size is a valid number and greater than 0
+        if (!isNaN(fileSize) && fileSize > 0) {
             totalSize += fileSize;
-        });
+            totalFiles += 1;
+        }
+    });
 
-        totalFilesElement.textContent = fileList.length;
-        totalSizeElement.textContent = totalSize.toFixed(2) + ' MB';
+    totalFilesElement.textContent = totalFiles;
+    totalSizeElement.textContent = totalSize.toFixed(2) + ' MB';
+
 
         const months = {{ months|tojson|default('[]') }};
         const uploads = {{ uploads|tojson|default('[]') }};
@@ -183,6 +251,56 @@
                 }
             });
         }
+        
+        document.addEventListener("DOMContentLoaded", function() {
+        const flashMessage = document.getElementById('flashMessage');
+        if (flashMessage) {
+            setTimeout(() => {
+                flashMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        const deleteMessage = document.getElementById('deleteMessage');
+        if (deleteMessage) {
+            setTimeout(() => {
+                deleteMessage.style.display = 'none';
+            }, 3000);
+        }
+    });
+    function deleteFile(button) {
+        const fileId = button.getAttribute('data-file-id'); 
+
+        fetch('/delete_file', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ file_id: fileId }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            const notification = document.getElementById('notification');
+            if (data.success) {
+                notification.textContent = data.message;
+                notification.className = 'alert alert-success'; 
+                notification.style.display = 'block'; 
+                setTimeout(() => {
+                    notification.style.display = 'none'; 
+                    location.reload();
+                }, 3000);
+            } else {
+                notification.textContent = data.message;
+                notification.className = 'alert alert-danger'; 
+                notification.style.display = 'block';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+        });
+    }
     </script>
 
 </body>

@@ -48,5 +48,5 @@ const flashMessage = document.getElementById('flashMessage');
 if (flashMessage) {
     setTimeout(() => {
         flashMessage.style.display = 'none';
-    }, 1000);
+    }, 2000);
 }

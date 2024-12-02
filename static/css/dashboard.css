@@ -79,6 +79,46 @@ canvas {
 .table tbody tr:hover {
     background-color: #f1f1f1;
 }
+.bin-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #ff0000;
+    cursor: pointer;
+    border: none;
+    transition-duration: 0.3s;
+}
+.bin-bottom {
+    width: 9px;
+}
+.bin-top {
+    width: 11px;
+    transform-origin: right;
+    transition-duration: 0.3s;
+}
+.bin-button:hover .bin-top {
+    transform: rotate(150deg);
+}
+.bin-button:hover {
+    background-color: #38383838;
+}
+.bin-button:active {
+    transform: scale(0.9);
+}
+#notification {
+    position: fixed;
+    top: 10px;
+    left: 20px;
+    z-index: 1;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: opacity 0.5s ease;
+}
+
 footer {
     background-color: #212529;
     padding: 15px 0;
