@@ -32,15 +32,23 @@
             </div>
             <a href="{{ url_for('reset_password') }}" class="text-decoration-none">Forgot your password?</a> 
             <div id="passwordError" class="error"></div>
+            
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                    <div class="alert alert-danger mt-3" id="flashMessage">
-                        {% for category, message in messages %}
-                            <p>{{ message }}</p>
-                        {% endfor %}
-                    </div>
+                    {% for category, message in messages %}
+                        {% if category == 'danger' %}
+                            <div class="alert alert-danger" id="flashMessage">
+                                <p>{{ message }}</p>
+                            </div>
+                        {% elif category == 'success' %}
+                            <div class="alert alert-success" id="flashMessage">
+                                <p>{{ message }}</p>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
                 {% endif %}
             {% endwith %}
+        
             <button type="submit" class="btn btn-primary mt-1 w-100">Login</button>
         </form>
 

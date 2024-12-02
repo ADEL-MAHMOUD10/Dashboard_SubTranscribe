@@ -74,7 +74,7 @@
         <!-- Display files table -->
         {% if files|length == 0 %}
             <div class="no-files-alert">
-                <p>No files uploaded yet.</p>
+                <p>No files uploaded yet. <a href="/">Get subtitle now for your video</a></p>
             </div>
         {% else %}
             <div class="table-responsive mt-3">
@@ -85,7 +85,7 @@
                             <th>File Size</th>
                             <th>Uploaded On</th>
                             <th>Download Subtitle</th>
-                            <th>Delete</th> <!-- New column for delete -->
+                            <th>Delete</th>
                         </tr>
                     </thead>
                     <tbody id="file-list">

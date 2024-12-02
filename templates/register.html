@@ -59,14 +59,21 @@
             </div>
             
             {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="alert alert-danger">
-                            {% for category, message in messages %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% if category == 'danger' %}
+                            <div class="alert alert-danger">
                                 <p>{{ message }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                            </div>
+                        {% elif category == 'success' %}
+                            <div class="alert alert-success">
+                                <p>{{ message }}</p>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
             {% endwith %}
+        
             
             <!-- Submit Button -->
             <button type="submit" class="btn btn-primary w-100">Submit</button>
