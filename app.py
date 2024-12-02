@@ -405,7 +405,7 @@ def login():
             return redirect(url_for('main_user', user_id=user['user_id']))
         else:
             flash('Incorrect username or password', 'danger')
-            return redirect(url_for('logout'))
+            return render_template('login.html')
     return render_template('login.html')
 
 @app.route('/logout', methods=['GET', 'POST'])
