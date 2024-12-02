@@ -30,27 +30,27 @@ function resetProgressStatus() {
 }
 
 // Continue with your interval function
-const intervalId = setInterval(function () {
-    fetch('https://subtranscribe.koyeb.app/progress', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
-    })
-    
-    .then(response => {
+const intervalId = setInterval(async function () {
+    try {
+        const response = await fetch('https://subtranscribe.koyeb.app/progress', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
         if (!response.ok) {
             throw new Error('Network response was not ok.');
         }
-        return response.json();
-    })
-    .then(data => {
+        
+        const data = await response.json();
         console.log("Progress Data:", data);
+        
         if (data && typeof data.status !== 'undefined') {
             const progressPercentage = parseFloat(data.status) || 0;
-            // Update the progress bar.
+            
             const progressBar = document.getElementById('progressBar');
             progressBar.style.width = `${progressPercentage}%`;
             progressBar.style.transition = 'width 0.5s ease';
@@ -64,7 +64,7 @@ const intervalId = setInterval(function () {
             if (progressPercentage === 100) {
                 progressBar.style.backgroundColor = 'green'; // Success color
                 messageElement.textContent = "Upload completed. Please wait for a few seconds...";
-                clearInterval(intervalId);
+                clearInterval(intervalId);  // Stop polling
                 // Optionally trigger additional completion logic here
             } else if (progressPercentage >= 50) {
                 progressBar.style.backgroundColor = 'orange'; // Warning color
@@ -72,12 +72,11 @@ const intervalId = setInterval(function () {
                 progressBar.style.backgroundColor = 'blue'; // Default color
             }
         }
-        })
-        .catch(error => {
-            console.error('Error fetching progress:', error);
-            document.getElementById('progressMessage').innerText = "Error fetching progress. Please try again.";
-        });
-    }, 2000); // Poll every 5 seconds
+    } catch (error) {
+        console.error('Error fetching progress:', error);
+        document.getElementById('progressMessage').innerText = "Error fetching progress. Please try again.";
+    }
+}, 2000);  // Poll every 2 seconds
 
 // Display selected file name dynamically
 function showFileName() {
