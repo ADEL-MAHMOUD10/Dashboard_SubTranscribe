@@ -30,17 +30,17 @@ function resetProgressStatus() {
 }
 
 // Continue with your interval function
-const intervalId = setInterval(function () {
-    fetch('/progress', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
-    })
-    
-    .then(response => {
+const intervalId = setInterval(async function () {
+    try {
+        const response = await fetch('https://subtranscribe.koyeb.app/progress', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
         if (!response.ok) {
             throw new Error('Network response was not ok.');
         }
@@ -76,7 +76,8 @@ const intervalId = setInterval(function () {
         console.error('Error fetching progress:', error);
         document.getElementById('progressMessage').innerText = "Error fetching progress. Please try again.";
     }
-}, 2000);  // Poll every 2 seconds
+}, 4000);  // Poll every 4 seconds
+
 
 // Display selected file name dynamically
 function showFileName() {
