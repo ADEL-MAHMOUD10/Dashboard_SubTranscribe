@@ -82,7 +82,7 @@ def reset_progress():
     return jsonify(upload_id)
 
 def update_progress_bar(B_status,message):
-    """Update the progress bar in the MongoDB database."""
+    """Update the progress bar in the Firebase database."""
     upload_id = session.get('upload_id')
     ref = db.reference(f'/UID/{upload_id}')
     ref.update({
@@ -147,7 +147,7 @@ def allowed_file(filename):
 @app.route('/v1/', methods=['GET', 'POST'])
 def upload_or_link_no_user():
     if 'user_id' in session:
-        return redirect(url_for('upload_or_link', user_id=session['user_id']))
+        return redirect(url_for('main_user', user_id=session['user_id']))
     return redirect(url_for('login'))
 
 
@@ -175,8 +175,8 @@ def upload_or_link():
             file_size = request.content_length  # Get file size in bytes
             try:
                 transcript_id = upload_audio_to_assemblyai(audio_stream, file_size)  # Upload directly using stream
-                
-                username = user.get('username')
+                                
+                username = user.get('username')  
                 if username:
                     files_collection.insert_one({
                         "username": username,
@@ -187,7 +187,7 @@ def upload_or_link():
                         "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     })
 
-                return redirect(url_for('download_subtitle', transcript_id=transcript_id))  # Redirect to download page
+                return redirect(url_for('download_subtitle',user_id=user_id,transcript_id=transcript_id))  # Redirect to download page
             except Exception as e:
                 return render_template("error.html")  # Display error page
         else:
@@ -284,7 +284,7 @@ def transcribe_from_link(link):
 
                 previous_status = -1  # Track the last updated progress
                 with requests.get(audio_url, stream=True) as f:
-                    for chunk in f.iter_content(chunk_size=600000):  # Read 600KB chunks
+                    for chunk in f.iter_content(chunk_size=1800000):  # Read 1.8MB chunks
                         if not chunk:
                             break
                         yield chunk
@@ -329,8 +329,20 @@ def transcribe_from_link(link):
         if transcript_response.status_code == 200:  # Check if the request was successful
             transcript_data = transcript_response.json()  # Parse the JSON response
             if transcript_data['status'] == 'completed':  # If the transcription is completed
+                user_id = session.get('user_id')
+                user = users_collection.find_one({'user_id':user_id})
+                username = user.get('username')  
+                if username:
+                    files_collection.insert_one({
+                        "username": username,
+                        "user_id": user_id,
+                        "file_name": f'From Link: {link}',
+                        "file_size": total_size,
+                        "transcript_id": transcript_id,
+                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    })
                 Update_progress_db(transcript_id, status=prog_status, message="Completed", Section="Download page", link=audio_url)  # Update progress in the database
-                return redirect(url_for('download_subtitle', transcript_id=transcript_id))  # Redirect to download page
+                return redirect(url_for('download_subtitle',user_id=user_id, transcript_id=transcript_id))  # Redirect to download page
             elif transcript_data['status'] == 'error':  # If there was an error during transcription
                 Update_progress_db(transcript_id, status=0, message="Invalid Link", Section="Link", link=audio_url)  # Update database with error
                 return render_template("error.html")  # Render error page
@@ -345,11 +357,18 @@ def transcribe_from_link(link):
 
 #     return audio_id
 
+@app.route('/v1/<user_id>')
+def main_user(user_id):
+    if 'user_id' in session:
+        return render_template('index.html')
+    return redirect(url_for('login'))
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        Email = request.form['email']
         confirm_password = request.form['confirm_password']
         user_id = str(uuid.uuid4())
         if password != confirm_password:
@@ -362,7 +381,7 @@ def register():
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(password)
-        users_collection.insert_one({'username': username, 'password': hashed_password ,"user_id":user_id})
+        users_collection.insert_one({'Email': Email,'username': username, 'password': hashed_password ,"user_id":user_id})
         session['user_id'] = user_id
         flash('Successfully log in! You can now download all your subtitles files', 'success')
         return redirect(url_for('login'))
@@ -371,33 +390,46 @@ def register():
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
+    if 'user_id' in session:
+        return redirect(url_for('main_user', user_id=session['user_id']))
     if request.method == 'POST':
-        username = request.form['username']
+    
+        identifier = request.form['email_username']
         password = request.form['password']
 
-        user = users_collection.find_one({'username': username})
+        user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
         if user and check_password_hash(user['password'], password):
-            flash('Successfully logged in!', 'success')
+            if 'user_id' in session:
+                flash('Successfully logged in!', 'success')
             session['user_id'] = user['user_id']  # Store user_id in session
-            return redirect(url_for('upload_or_link', user_id=user['user_id']))
+            return redirect(url_for('main_user', user_id=user['user_id']))
         else:
             flash('Incorrect username or password', 'danger')
-
+            return render_template('login.html')
     return render_template('login.html')
 
-@app.route('/Login', methods=['GET', 'POST'])
-def Logout():
-    if request.method == 'POST':
-        c_username = request.form['c_username']
-        user = users_collection.find_one({'username': c_username})
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    if request.method == 'GET':
+        session.pop('user_id',None)
+        session.pop('username',None)
+        session.pop('password',None)
+        flash('Successfully logged out!', 'success')
+    return redirect(url_for('login'))
 
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+    if request.method == 'POST':
+        identifier = request.form['email_username']
+        new_password = request.form['c_password']
+
+        user = users_collection.find_one({'$or': [{'username': identifier}, {'Email': identifier}]})
         if user:
-            new_password = request.form['c_password']
             hashed_password = generate_password_hash(new_password)
             
             # Update the password in the database
             update_result = users_collection.update_one(
-                {"username": c_username},  # Search for the user
+                {"_id": user["_id"]},  # Search for the user
                 {"$set": {"password": hashed_password}}   # Update the password
             )
 
@@ -410,8 +442,6 @@ def Logout():
             flash('User not found.', 'danger')
 
     return render_template('reset.html')
-
-
 
 @app.route('/dashboard/<user_id>')
 def dashboard(user_id):
@@ -462,16 +492,46 @@ def user_dashboard():
     # Redirect to the dashboard route
     return redirect(url_for('dashboard', user_id=user_id))
 
+@app.route('/delete_file', methods=['POST'])
+def delete_file():
+    user_id = session.get('user_id')
+    
+    user_file = files_collection.find_one({'user_id': user_id})
+    if user_file:
+        data = request.get_json()
+        delete_file_id = data.get('file_id')
+        try:
+            object_id = ObjectId(delete_file_id)
+            files = list(files_collection.find({'_id': object_id}))
+
+            for file in files:
+                file['transcript_id'] = str(file['transcript_id'])
+            if file:
+                file_id = file['transcript_id']
+                delete_result = files_collection.delete_one({'transcript_id': file_id})
+                
+                if delete_result.deleted_count > 0:
+                    return jsonify({"success": True, "message": "File deleted successfully"})
+                else:
+                    return jsonify({"success": False, "message": "Error deleting file"})
+            else:
+                return jsonify({"success": False, "message": "File not found"})
+        except Exception as e:
+            return jsonify({"success": False, "message": "Invalid file ID format"})
+    else:
+        return jsonify({"success": False, "message": "User not found"})
+
 @app.route('/redirect/<file_id>')
 def redirect_to_transcript(file_id):
     try:
+       
         file = files_collection.find_one({'_id': ObjectId(file_id)})
-        
+        user_id = session.get('user_id')
         if file:
             transcript_id = file.get('transcript_id')
             if transcript_id:
-            
-                return redirect(url_for('download_subtitle', transcript_id=transcript_id))
+                
+                return redirect(url_for('download_subtitle',user_id=user_id, transcript_id=transcript_id))
             else:
                 flash("Transcript ID not found for this file.")
         else:
@@ -482,8 +542,8 @@ def redirect_to_transcript(file_id):
     return redirect(url_for('dashboard'))
 
 
-@app.route('/download/<transcript_id>', methods=['GET', 'POST'])
-def download_subtitle(transcript_id):
+@app.route('/v1/<user_id>/download/<transcript_id>', methods=['GET', 'POST'])
+def download_subtitle(user_id,transcript_id):
     """Handle subtitle download based on the transcript ID."""
 
     if request.method == 'POST':
@@ -504,7 +564,6 @@ def download_subtitle(transcript_id):
             return render_template("error.html")  # Render error page if request fails
     return render_template('subtitle.html')  # Render the subtitle download page
 
-
 @app.route('/serve/<filename>')
 def serve_file(filename):
     """Serve the subtitle file for download."""
@@ -517,5 +576,6 @@ def serve_file(filename):
 
 # Main entry point
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",debug=True,port=8000)
-
+    app.run(host="0.0.0.0",port=8000,debug=True)
+    
+    
