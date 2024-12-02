@@ -3,7 +3,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    height: 120vh;
     margin: 0;
     font-family: Arial, sans-serif;
 }
@@ -46,4 +46,11 @@ a:hover {
 .input-group .input-group-text {
     background: none;
     border-left: 0;
+}
+.alert{
+    display: flex !important;
+    align-items: center !important;
+    text-align: center !important;
+    font-size: 0.8rem !important;
+    padding: 0px !important;
 }

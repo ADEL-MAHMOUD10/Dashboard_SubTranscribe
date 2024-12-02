@@ -368,6 +368,7 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        Email = request.form['email']
         confirm_password = request.form['confirm_password']
         user_id = str(uuid.uuid4())
         if password != confirm_password:
@@ -380,7 +381,7 @@ def register():
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(password)
-        users_collection.insert_one({'username': username, 'password': hashed_password ,"user_id":user_id})
+        users_collection.insert_one({'Email': Email,'username': username, 'password': hashed_password ,"user_id":user_id})
         session['user_id'] = user_id
         flash('Successfully log in! You can now download all your subtitles files', 'success')
         return redirect(url_for('login'))
@@ -393,13 +394,14 @@ def login():
         return redirect(url_for('main_user', user_id=session['user_id']))
     if request.method == 'POST':
     
-        username = request.form['username']
+        identifier = request.form['email_username']
         password = request.form['password']
 
-        user = users_collection.find_one({'username': username})
+        user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
         if user and check_password_hash(user['password'], password):
+            if 'user_id' in session:
+                flash('Successfully logged in!', 'success')
             session['user_id'] = user['user_id']  # Store user_id in session
-            flash('Successfully logged in!', 'success')
             return redirect(url_for('main_user', user_id=user['user_id']))
         else:
             flash('Incorrect username or password', 'danger')
@@ -418,16 +420,16 @@ def logout():
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
     if request.method == 'POST':
-        c_username = request.form['c_username']
-        user = users_collection.find_one({'username': c_username})
+        identifier = request.form['email_username']
+        new_password = request.form['c_password']
 
+        user = users_collection.find_one({'$or': [{'username': identifier}, {'Email': identifier}]})
         if user:
-            new_password = request.form['c_password']
             hashed_password = generate_password_hash(new_password)
             
             # Update the password in the database
             update_result = users_collection.update_one(
-                {"username": c_username},  # Search for the user
+                {"_id": user["_id"]},  # Search for the user
                 {"$set": {"password": hashed_password}}   # Update the password
             )
 

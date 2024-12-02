@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+
 body {
     background: linear-gradient(to right, #6a11cb, #2575fc);
     display: flex;
@@ -7,11 +9,14 @@ body {
     margin: 0;
     font-family: Arial, sans-serif;
 }
-
+label{
+    font-family: "Roboto", sans-serif;
+    font-weight: 500;
+}
 .login-container {
     background: #fff;
     border-radius: 10px;
-    padding: 30px;
+    padding: 20px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     max-width: 400px;
     width: 95%;
@@ -23,16 +28,14 @@ body {
     margin-bottom: 20px;
     color: #333;
 }
-.btn-primary {
-    background-color: #212529;
-    border: none;
-}
+
 .btn-primary:hover {
     background-color: #4e0fba;
 }
 a {
     text-decoration: none;
     color: #6a11cb;
+    transition: 0.5s;
 }
 a:hover {
     text-decoration: underline;
