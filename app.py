@@ -149,7 +149,7 @@ def allowed_file(filename):
 @app.route('/v1/', methods=['GET', 'POST'])
 def upload_or_link_no_user():
     if 'user_id' in session:
-        return redirect(url_for('main_user', user_id=session['user_id']))
+        return redirect(url_for('login', user_id=session['user_id']))
     return redirect(url_for('login'))
 
 
@@ -157,8 +157,7 @@ def upload_or_link_no_user():
 def upload_or_link():
     """Handle file uploads or links for transcription."""
     user_id = session.get('user_id')
-    if not user_id:
-        flash('Please log in first.', 'danger')
+    if 'user_id' not in session:
         return redirect(url_for('login'))
 
     user = users_collection.find_one({'user_id': user_id})
@@ -457,13 +456,13 @@ def reset_password():
 
     return render_template('reset.html')
 
-@app.route('/dashboard/<user_id>')
+@app.route('/v1/dashboard/<user_id>')
 def dashboard(user_id):
     # Retrieve the user from the database by user_id
     user = users_collection.find_one({'user_id': user_id})
-    if user is None:
-        flash('User not found', 'danger')
-        return redirect(url_for('login'))
+    if 'user_id' not in session:
+        flash('Please log in first.', 'danger')
+        return redirect(url_for('user_dashboard'))
 
     # Retrieve files for the user using the user_id
     files = list(files_collection.find({'user_id': user_id}))
@@ -498,12 +497,11 @@ def calculate_monthly_activity(files):
 @app.route('/user_dashboard')
 def user_dashboard():
     # Retrieve the user_id from the session
-    user_id = session.get('user_id')
-    if not user_id:
-        flash('Please log in first.', 'danger')
+    if 'user_id' not in session:
         return redirect(url_for('login'))
 
     # Redirect to the dashboard route
+    user_id = session.get('user_id')
     return redirect(url_for('dashboard', user_id=user_id))
 
 @app.route('/delete_file', methods=['POST'])
