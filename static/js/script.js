@@ -30,17 +30,17 @@ function resetProgressStatus() {
 }
 
 // Continue with your interval function
-const intervalId = setInterval(async function () {
-    try {
-        const response = await fetch('https://subtranscribe.koyeb.app/progress', {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        });
-
+const intervalId = setInterval(function () {
+    fetch('/progress', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+    })
+    
+    .then(response => {
         if (!response.ok) {
             throw new Error('Network response was not ok.');
         }
