@@ -463,10 +463,8 @@ def reset_password():
 
 @app.route('/dashboard/<user_id>')
 def dashboard(user_id):
-    if 'user_id' in session:
-        return redirect(url_for('main_user', user_id=session['user_id']))
-    else:
-        return redirect(url_for('user_dashboard'))
+    if 'user_id' not in session:
+        return redirect(url_for('login', user_id=session['user_id']))
     # Retrieve the user from the database by user_id
     user = users_collection.find_one({'user_id': user_id})
     #if user is None:
