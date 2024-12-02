@@ -8,6 +8,7 @@ import gridfs
 import yt_dlp
 import json
 import uuid
+import secrets
 import firebase_admin 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, Response, session,flash
@@ -30,6 +31,7 @@ load_dotenv()
 
 TOKEN_ONE = os.getenv("M_api_key")
 TOKEN_THREE = os.getenv("A_api_key")
+SESSION_USERS = os.getenv('SESSION_ID')
 
 firebase_credentials = {
     "type": os.getenv("FIREBASE_TYPE"),
@@ -48,7 +50,7 @@ firebase_credentials = {
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": ["http://localhost:5000", "https://subtranscribe.koyeb.app"]}})
 
-app.secret_key = "2F0838fd60"  
+app.secret_key = SESSION_USERS
 
 # Set up MongoDB connection
 cluster = MongoClient(TOKEN_ONE)
@@ -365,21 +367,31 @@ def main_user(user_id):
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    """register new user in db"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         Email = request.form['email']
         confirm_password = request.form['confirm_password']
         user_id = str(uuid.uuid4())
+
         if password != confirm_password:
             flash('Passwords do not match', 'danger')
             return redirect(url_for('register'))
 
         existing_user = users_collection.find_one({'username': username})
+        existing_email = users_collection.find_one({'Email': Email})
+        
+        if existing_user and existing_email:
+            flash('Username and Email already exists', 'danger')
+            return redirect(url_for('login'))
+        
         if existing_user:
-            flash('User already exists', 'danger')
+            flash('Username already exists', 'danger')
             return redirect(url_for('register'))
-
+        if existing_email:
+            flash('Email already exists', 'danger')
+            return redirect(url_for('register'))
         hashed_password = generate_password_hash(password)
         users_collection.insert_one({'Email': Email,'username': username, 'password': hashed_password ,"user_id":user_id})
         session['user_id'] = user_id
@@ -390,6 +402,7 @@ def register():
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
+    session.permanent = True
     if 'user_id' in session:
         return redirect(url_for('main_user', user_id=session['user_id']))
     if request.method == 'POST':
@@ -405,7 +418,8 @@ def login():
             return redirect(url_for('main_user', user_id=user['user_id']))
         else:
             flash('Incorrect username or password', 'danger')
-            return render_template('login.html')
+            return redirect(url_for('login'))
+        
     return render_template('login.html')
 
 @app.route('/logout', methods=['GET', 'POST'])
