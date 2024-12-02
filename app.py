@@ -46,7 +46,7 @@ firebase_credentials = {
 
 # Create a Flask application instance
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://localhost:5000", "https://subtranscribe.koyeb.app"]}})
+CORS(app)
 
 app.secret_key = "2F0838fd60"  
 
