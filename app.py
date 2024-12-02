@@ -157,9 +157,11 @@ def upload_or_link_no_user():
 def upload_or_link():
     """Handle file uploads or links for transcription."""
     user_id = session.get('user_id')
-    if not user_id:
-        flash('Please log in first.', 'danger')
-        return redirect(url_for('login'))
+    
+    if 'user_id' in session:
+        return redirect(url_for('main_user', user_id=session['user_id']))
+    else:
+        return redirect(url_for('user_dashboard'))
 
     user = users_collection.find_one({'user_id': user_id})
     if request.method == 'GET':
@@ -405,6 +407,8 @@ def login():
     session.permanent = True
     if 'user_id' in session:
         return redirect(url_for('main_user', user_id=session['user_id']))
+    else:
+        return redirect(url_for('user_dashboard'))
     if request.method == 'POST':
     
         identifier = request.form['email_username']
@@ -459,11 +463,15 @@ def reset_password():
 
 @app.route('/dashboard/<user_id>')
 def dashboard(user_id):
+    if 'user_id' in session:
+        return redirect(url_for('main_user', user_id=session['user_id']))
+    else:
+        return redirect(url_for('user_dashboard'))
     # Retrieve the user from the database by user_id
     user = users_collection.find_one({'user_id': user_id})
-    if user is None:
-        flash('User not found', 'danger')
-        return redirect(url_for('login'))
+    #if user is None:
+       # flash('User not found', 'danger')
+       # return redirect(url_for('login')) 
 
     # Retrieve files for the user using the user_id
     files = list(files_collection.find({'user_id': user_id}))
@@ -500,7 +508,7 @@ def user_dashboard():
     # Retrieve the user_id from the session
     user_id = session.get('user_id')
     if not user_id:
-        flash('Please log in first.', 'danger')
+        flash('Please login first.', 'danger')
         return redirect(url_for('login'))
 
     # Redirect to the dashboard route
