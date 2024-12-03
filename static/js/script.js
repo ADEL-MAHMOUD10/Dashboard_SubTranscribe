@@ -76,7 +76,7 @@ const intervalId = setInterval(async function () {
         console.error('Error fetching progress:', error);
         document.getElementById('progressMessage').innerText = "Error fetching progress. Please try again.";
     }
-}, 4000);  // Poll every 4 seconds
+}, 1000);  // Poll every 1 seconds
 
 
 // Display selected file name dynamically
