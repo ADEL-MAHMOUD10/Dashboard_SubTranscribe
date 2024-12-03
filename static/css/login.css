@@ -1,7 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
 
 body {
-    background: linear-gradient(to right, #6a11cb, #2575fc);
+    background-image: url(/static/image/filler.png),linear-gradient(to right, #253b96, #5c55b1); 
+    background-position: center;
+    background-size: cover;
     display: flex;
     justify-content: center;
     align-items: center;
