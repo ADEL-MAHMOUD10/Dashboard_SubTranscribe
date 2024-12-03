@@ -161,8 +161,6 @@ def upload_or_link():
         return redirect(url_for('login'))
 
     user = users_collection.find_one({'user_id': user_id})
-    if request.method == 'GET':
-        return render_template("index.html")
     
     if request.method == 'POST':
         link = request.form.get('link')  # Get the link from the form
@@ -194,7 +192,7 @@ def upload_or_link():
         else:
             return render_template("error.html")  # Render error page if file type is not allowed
     else:
-        return render_template('index.html')
+        return redirect(url_for('login', user_id=session['user_id']))
 
 def upload_audio_to_assemblyai(audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
