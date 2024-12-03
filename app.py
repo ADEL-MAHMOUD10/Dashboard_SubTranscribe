@@ -10,6 +10,7 @@ import json
 import uuid
 import secrets
 import firebase_admin 
+import threading
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, Response, session,flash
 from firebase_admin import db , credentials
@@ -83,9 +84,8 @@ def reset_progress():
     })
     return jsonify(upload_id)
 
-def update_progress_bar(B_status,message):
+def update_progress_bar(upload_id,B_status,message):
     """Update the progress bar in the Firebase database."""
-    upload_id = session.get('upload_id')
     ref = db.reference(f'/UID/{upload_id}')
     ref.update({
         'status': round(B_status, 2),
@@ -100,7 +100,7 @@ def progress_status():
     ref = db.reference(f'/UID/{upload_id}')
     progress = ref.get()
     if progress:
-        progress.pop("id", None)  
+        progress.pop("id", None)
         return jsonify(progress)
     return jsonify({"status": 0, "message": "Ready to upload"})
 
@@ -161,6 +161,7 @@ def upload_or_link():
         return redirect(url_for('login'))
 
     user = users_collection.find_one({'user_id': user_id})
+
     
     if request.method == 'POST':
         link = request.form.get('link')  # Get the link from the form
@@ -202,6 +203,7 @@ def upload_audio_to_assemblyai(audio_file, file_size):
     def upload_chunks():
         """Generator function to upload file in chunks and track progress."""
         uploaded_size = 0
+        upload_id = session.get('upload_id')
         while True:
             chunk = audio_file.read(800000)  # Read a 300 KB chunk
             if not chunk:
@@ -214,7 +216,7 @@ def upload_audio_to_assemblyai(audio_file, file_size):
             print(f"Progress: {progress_percentage:.2f}%, Message: {prog_message}")
         
             # Update the progress bar
-            update_progress_bar(B_status=progress_percentage, message=prog_message)
+            threading.Thread(target=update_progress_bar, args=(upload_id, progress_percentage, prog_message)).start()
     
     # Upload the file to AssemblyAI and get the URL
     try:
