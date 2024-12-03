@@ -9,7 +9,9 @@
 }
 
 body {
-    background-color: #f8f9fa;
+    background-image: url(/static/image/filler.png),linear-gradient(to right, #253b96, #5c55b1);
+    background-position: center;
+    background-size: cover;
 }
 * {
     scroll-behavior: smooth;

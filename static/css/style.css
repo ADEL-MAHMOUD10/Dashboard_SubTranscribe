@@ -17,7 +17,7 @@
 body, html {
     box-sizing: border-box;
     margin: 0;
-    padding: 0; 
+    padding: 0;
 }
 
 .navbar-brand {
@@ -154,7 +154,16 @@ body, html {
     padding: 20px;
     border-radius: 0 0 10px 10px;
 }
-
+.powered{
+    color: #cac6c6 !important;
+    padding: 50px;
+    background-image: url(/static/image/filler.png),linear-gradient(to right, #253b96, #5c55b1);
+    background-position: center;
+    background-size: cover;
+}
+.powered h3{
+    color: #fff !important;
+}
 .tab-content.active {
     display: block;
 }

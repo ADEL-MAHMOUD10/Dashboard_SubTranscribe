@@ -1,10 +1,19 @@
 body{
     scroll-behavior: smooth;
+    color: #fff !important;
     font-family: 'Antimoon', sans-serif; /* Set Antimoon as the font */
+    background-image: url(/static/image/filler.png),linear-gradient(to right, #253b96, #5c55b1);
+    background-position: center;
+    background-size: cover;
 }
 
 #filePreview {
     display: none;
+}
+select{
+    border: none !important;
+    color: #000 !important;
+    background-color: #ffffff7b !important;
 }
 .container h2 {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
@@ -12,12 +21,22 @@ body{
 }
 
 .container h4 {
-    color: #1877F2;
+    color: #fff;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-weight: bold;
 }
-
+.container p{
+    color: #fff;
+    font-weight: 800;
+    text-align: center;
+}
+.container ol{
+    color: #ffffff9d;
+    font-size: small;
+}
 .card {
+    background-color: #00000021 !important;
+    border-width: 0 !important;
     border-radius: 15px; /* Rounded corners for cards */
     transition: transform 0.2s, box-shadow 0.2s; /* Animation on hover */
 }
@@ -41,7 +60,7 @@ body{
 }
 .download-success span {
     pointer-events: none; /* Disable pointer events for the text */
-    color: #1877F2;
+    color: #fff;
 }
 footer {
     background-color: #212529;
