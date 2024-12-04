@@ -69,27 +69,28 @@ firebase_admin.initialize_app(cred,{
     "databaseURL":"https://subtranscribe-default-rtdb.europe-west1.firebasedatabase.app/"
     })
 
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current time
 @app.route('/reset-progress', methods=['GET', 'POST'])
 @cross_origin()  # Allow CORS for this route
 def reset_progress():
     """Reset the current progress status."""
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current time
     upload_id = str(uuid.uuid4())
     session['upload_id'] = upload_id
     ref = db.reference(f'/UID/{upload_id}')
     ref.update({
         "Date": current_time,
-        'Status': 0,
-        'Message': "Ready to upload"
+        'status': 0,
+        'message': "Ready to upload"
     })
     return jsonify(upload_id)
 
-def update_progress_bar(upload_id,B_status,message):
+def update_progress_bar(upload_id,B_status=None,U_message=None):
     """Update the progress bar in the Firebase database."""
     ref = db.reference(f'/UID/{upload_id}')
     ref.update({
+        "Date": current_time,
         'status': round(B_status, 2),
-        'message': message
+        'message': U_message
     })
     
 @app.route('/progress', methods=['GET', 'POST'])
@@ -199,24 +200,23 @@ def upload_audio_to_assemblyai(audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
-    
+    upload_id = session.get('upload_id')
     def upload_chunks():
         """Generator function to upload file in chunks and track progress."""
         uploaded_size = 0
-        upload_id = session.get('upload_id')
         while True:
-            chunk = audio_file.read(800000)  # Read a 300 KB chunk
+            chunk = audio_file.read(800000)  # Read a 800 KB chunk
             if not chunk:
                 break
             yield chunk
             uploaded_size += len(chunk)
             progress_percentage = (uploaded_size / file_size) * 100  # Calculate progress percentage
-            prog_message = f"Processing... {progress_percentage:.2f}%"
+            prog_mes = f"Processing... {progress_percentage:.2f}%"
             
-            print(f"Progress: {progress_percentage:.2f}%, Message: {prog_message}")
+            print(f"Progress: {progress_percentage:.2f}%, Message: {prog_mes}")
         
             # Update the progress bar
-            threading.Thread(target=update_progress_bar, args=(upload_id, progress_percentage, prog_message)).start()
+            threading.Thread(target=update_progress_bar, args=(upload_id, progress_percentage, prog_mes)).start()
     
     # Upload the file to AssemblyAI and get the URL
     try:
@@ -226,7 +226,8 @@ def upload_audio_to_assemblyai(audio_file, file_size):
             raise RuntimeError("File upload failed.")
         #...
     except Exception as e:
-        update_progress_bar(0, f"Error uploading audio: {e}")
+        prog_mes = f'An error occurred: {str(e)}'
+        threading.Thread(target=update_progress_bar, args=(upload_id, 0, prog_mes)).start()
         return None
     
     upload_url = response.json()["upload_url"]
@@ -269,7 +270,7 @@ def transcribe_from_link(link):
         'extract_audio': True,        # Extract audio from the video
         'skip_download': True,        # Skip downloading the actual file
     }
-
+    upload_id = session.get('upload_id')
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(link)  # Extract information from the provided link
         audio_url = info.get('url', None)  # Get the audio URL
@@ -280,7 +281,6 @@ def transcribe_from_link(link):
         # Initialize progress bar
         with tqdm(total=total_size, unit='B', unit_scale=True, desc='Uploading', ncols=100) as bar:
             def upload_chunks():
-                global prog_status, prog_message
                 # Stream the audio file in chunks
 
                 previous_status = -1  # Track the last updated progress
@@ -298,12 +298,12 @@ def transcribe_from_link(link):
                         # Update every 10% increment
                         if int(prog_status) % 10 == 0 and int(prog_status) != previous_status:
                             prog_message = f"Processing... {prog_status:.2f}%"
-                            update_progress_bar(B_status=prog_status, message=prog_message)
+                            threading.Thread(target=update_progress_bar, args=(upload_id, prog_status, prog_message)).start()
                             previous_status = int(prog_status)
                             continue
                         if prog_status == 100:
                             prog_message = "Please wait for a few seconds..."
-                            update_progress_bar(B_status=prog_status,message=prog_message)
+                            threading.Thread(target=update_progress_bar, args=(upload_id, prog_status, prog_message)).start()
                             break
 
             # Upload the audio file to AssemblyAI in chunks
@@ -342,7 +342,7 @@ def transcribe_from_link(link):
                         "transcript_id": transcript_id,
                         "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     })
-                Update_progress_db(transcript_id, status=prog_status, message="Completed", Section="Download page", link=audio_url)  # Update progress in the database
+                Update_progress_db(transcript_id, status=100, message="Completed", Section="Download page", link=audio_url)  # Update progress in the database
                 return redirect(url_for('download_subtitle',user_id=user_id, transcript_id=transcript_id))  # Redirect to download page
             elif transcript_data['status'] == 'error':  # If there was an error during transcription
                 Update_progress_db(transcript_id, status=0, message="Invalid Link", Section="Link", link=audio_url)  # Update database with error
