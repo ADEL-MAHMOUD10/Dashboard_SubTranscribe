@@ -93,7 +93,7 @@ def update_progress_bar(upload_id,B_status=None,U_message=None):
         'message': U_message
     })
     
-@app.route('/progress', methods=['GET', 'POST'])
+@app.route('/progress', methods=['GET'])
 @cross_origin()  # Allow CORS for this route
 def progress_status():
     """Return the current progress status as JSON."""
@@ -154,7 +154,7 @@ def upload_or_link_no_user():
     return redirect(url_for('login'))
 
 
-@app.route('/v1', methods=['GET', 'POST'])
+@app.route('/v1', methods=['POST'])
 def upload_or_link():
     """Handle file uploads or links for transcription."""
     user_id = session.get('user_id')
@@ -170,7 +170,7 @@ def upload_or_link():
             transcript_id = transcribe_from_link(link)  # Transcribe from the provided link
             return transcript_id  
         
-        file = request.files.get('file')  # Get the uploaded file
+        file = request.files['file']  # Get the uploaded file
         if file and allowed_file(file.filename):
             audio_stream = file
             file_size = request.content_length  # Get file size in bytes
