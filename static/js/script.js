@@ -32,7 +32,7 @@ function resetProgressStatus() {
 // Continue with your interval function
 const intervalId = setInterval(async function () {
     try {
-        const response = await fetch('/progress', {
+        const response = await fetch('/v1/{{ upload_id }}/progress', {
             method: 'GET',
             credentials: 'include',
             headers: {
