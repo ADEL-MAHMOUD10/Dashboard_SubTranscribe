@@ -439,6 +439,7 @@ def logout():
         flash('Successfully logged out!', 'success')
     return redirect(url_for('login'))
 
+
 @app.route('/check_user', methods=['GET', 'POST'])
 def check_user():
     if request.method == 'POST':
@@ -446,12 +447,12 @@ def check_user():
         user = users_collection.find_one({'$or': [{'username': Email}, {'Email': Email}]})
         if user:
             otp = random.randint(100000, 999999)
-            otp_collection.insert_one({'User': Email, 'OTP': otp})
+            otp_collection.insert_one({'User': Email, 'OTP': otp,'created_at': datetime.now()})
             
             
             send_email(Email, otp)
             
-            flash(f'OTP has been sent to {Email}', 'warning')
+            flash(f'OTP has been sent to {Email}', 'success')
             return render_template('reset.html', email=Email)
         else:
             flash('User not found.', 'danger')
@@ -466,6 +467,11 @@ def reset_password():
     
     saved_otp = otp_collection.find_one({'User': email, 'OTP': int(user_otp)})
     if saved_otp:
+        created_at = saved_otp['created_at']
+        if datetime.now() - created_at > timedelta(seconds=60):
+            otp_collection.delete_one({'User': email, 'OTP': int(user_otp)})
+            flash('OTP has expired.', 'danger')
+            return render_template('check_user.html')
         hashed_password = generate_password_hash(new_password)
         users_collection.update_one({'Email': email}, {'$set': {'password': hashed_password}})
         flash('Password updated successfully.', 'success')
@@ -530,7 +536,6 @@ def send_email(to_address, otp):
                 print(f"Failed to send email: {e}")
     finally:
         smtpObj.quit()
-
 
 @app.route('/v1/dashboard/<user_id>')
 def dashboard(user_id):
