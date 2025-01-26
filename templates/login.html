@@ -32,24 +32,16 @@
             </div>
             <a href="{{ url_for('check_user') }}" class="text-decoration-none">Forgot your password?</a> 
             <div id="passwordError" class="error"></div>
-            
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        {% if category == 'danger' %}
-                            <div class="alert alert-danger" id="flashMessage">
-                                <p>{{ message }}</p>
-                            </div>
-                        {% elif category == 'success' %}
-                            <div class="alert alert-success" id="flashMessage">
-                                <p>{{ message }}</p>
-                            </div>
-                        {% endif %}
+                        <div class="alert alert-{{ category }} mt-3" role="alert" id="flashMessage">
+                            {{ message }}
+                        </div>
                     {% endfor %}
                 {% endif %}
             {% endwith %}
-        
-            <button type="submit" class="btn btn-primary mt-1 w-100">Login</button>
+                <div class="alert alert-{{ category }} mt-3" role="alert" >
         </form>
 
         <div class="mt-4 text d-flex">
