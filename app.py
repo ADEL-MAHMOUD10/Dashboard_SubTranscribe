@@ -11,7 +11,6 @@ import uuid
 import secrets
 import firebase_admin 
 import threading
-import jwt
 import random
 import smtplib
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -452,7 +451,7 @@ def check_user():
             
             send_email(Email, otp)
             
-            flash(f'OTP has been sent to {Email}.', 'warning')
+            flash(f'OTP has been sent to {Email}', 'warning')
             return render_template('reset.html', email=Email)
         else:
             flash('User not found.', 'danger')
