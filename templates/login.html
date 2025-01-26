@@ -30,7 +30,7 @@
                     <button type="button" class="btn btn-outline-secondary" id="togglePassword"><i class="fas fa-eye"></i></button>
                 </div>
             </div>
-            <a href="{{ url_for('reset_password') }}" class="text-decoration-none">Forgot your password?</a> 
+            <a href="{{ url_for('check_user') }}" class="text-decoration-none">Forgot your password?</a> 
             <div id="passwordError" class="error"></div>
             
             {% with messages = get_flashed_messages(with_categories=true) %}
