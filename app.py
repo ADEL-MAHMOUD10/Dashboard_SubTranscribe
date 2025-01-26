@@ -478,7 +478,7 @@ def reset_password():
         return redirect(url_for('login'))
     else:
         flash('Invalid OTP.', 'danger')
-        return render_template('reset.html', email=email)
+        return redirect(url_for('check_user'))
     
 def send_email(to_address, otp):
     smtp_server = 'smtp.gmail.com'
