@@ -11,6 +11,9 @@ import uuid
 import secrets
 import firebase_admin 
 import threading
+import jwt
+import random
+import smtplib
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, Response, session,flash
 from firebase_admin import db , credentials
@@ -23,6 +26,10 @@ from tqdm import tqdm
 from bson import ObjectId
 from datetime import datetime
 from collections import defaultdict
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+
 
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
@@ -33,6 +40,8 @@ load_dotenv()
 TOKEN_ONE = os.getenv("M_api_key")
 TOKEN_THREE = os.getenv("A_api_key")
 SESSION_USERS = os.getenv('SESSION_ID')
+EMAIL_USER = os.getenv("STMP_USER")
+EMAIL_PASSWORD = os.getenv("STMP_PASSWORD")
 
 firebase_credentials = {
     "type": os.getenv("FIREBASE_TYPE"),
@@ -62,6 +71,7 @@ progress_collection = dbase['progress']  #(Collection)
 dbs = cluster["User_DB"]  # Database name
 users_collection = dbs["users"]  # Users collection
 files_collection = dbs["files"]  # Files collection
+otp_collection = dbs["otp"] # OTP collection
 
 # Set up Firebase connection
 cred = credentials.Certificate(firebase_credentials)
@@ -430,31 +440,98 @@ def logout():
         flash('Successfully logged out!', 'success')
     return redirect(url_for('login'))
 
-@app.route('/reset_password', methods=['GET', 'POST'])
-def reset_password():
+@app.route('/check_user', methods=['GET', 'POST'])
+def check_user():
     if request.method == 'POST':
-        identifier = request.form['email_username']
-        new_password = request.form['c_password']
-
-        user = users_collection.find_one({'$or': [{'username': identifier}, {'Email': identifier}]})
+        Email = request.form['email']
+        user = users_collection.find_one({'$or': [{'username': Email}, {'Email': Email}]})
         if user:
-            hashed_password = generate_password_hash(new_password)
+            otp = random.randint(100000, 999999)
+            otp_collection.insert_one({'User': Email, 'OTP': otp})
             
-            # Update the password in the database
-            update_result = users_collection.update_one(
-                {"_id": user["_id"]},  # Search for the user
-                {"$set": {"password": hashed_password}}   # Update the password
-            )
-
-            if update_result.matched_count > 0:
-                flash('Password updated successfully.', 'success')
-                return redirect(url_for('login'))  # Redirect back to the login page
-            else:
-                flash('Password not changed.', 'danger')
+            
+            send_email(Email, otp)
+            
+            flash(f'OTP has been sent to {Email}.', 'warning')
+            return render_template('reset.html', email=Email)
         else:
             flash('User not found.', 'danger')
+            return redirect(url_for('check_user'))
+    return render_template('check_user.html')
+        
+@app.route('/reset_password', methods=['POST'])
+def reset_password():
+    email = request.form['email']
+    user_otp = request.form['OTP']
+    new_password = request.form['c_password']
+    
+    saved_otp = otp_collection.find_one({'User': email, 'OTP': int(user_otp)})
+    if saved_otp:
+        hashed_password = generate_password_hash(new_password)
+        users_collection.update_one({'Email': email}, {'$set': {'password': hashed_password}})
+        flash('Password updated successfully.', 'success')
+        return redirect(url_for('login'))
+    else:
+        flash('Invalid OTP.', 'danger')
+        return render_template('reset.html', email=email)
+    
+def send_email(to_address, otp):
+    smtp_server = 'smtp.gmail.com'
+    port = 587
+    from_address = EMAIL_USER
+    password = EMAIL_PASSWORD
 
-    return render_template('reset.html')
+    message = MIMEMultipart()
+    message['From'] = from_address
+    message['To'] = to_address
+    message['Subject'] = 'Reset Your Password'
+    
+    html_content = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <img src="cid:logo_image" alt="Logo" style="max-width: 80px;">
+                            </div>
+                            <h2 style="text-align: center; color: #555;">Reset Your Password</h2>
+                            <p>Hi {to_address},</p>
+                            <p>You requested to reset your password. Please use the code below to complete the process:</p>
+                            <div style="text-align: center; font-size: 18px; font-weight: bold; color: #000; background: #f7f7f7; padding: 10px; border-radius: 8px;">
+                                <span style="color: #FF6F61;">{otp}</span>
+                            </div>
+                            <p>If you did not request this action, please ignore this email. Your account is safe.</p>
+                            <p>Best Regards,<br>Team subtranscribe</p>
+                            <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #999;">
+                                <p>© 2024 subtranscribe. All rights reserved.</p>
+                            </div>
+                        </div>
+                    </body>
+                </html>
+            """
+    message.attach(MIMEText(html_content, 'html'))
+    image_path = "subtitle.png"
+
+    try:
+        with open(image_path, 'rb') as img:
+            mime_image = MIMEImage(img.read())
+            mime_image.add_header('Content-ID', '<logo_image>') 
+            mime_image.add_header('Content-Disposition', 'inline', filename=image_path)
+            message.attach(mime_image)
+    except FileNotFoundError:
+        print("Image file not found. Email will be sent without the image.")
+            
+    try:
+        smtpObj = smtplib.SMTP(smtp_server, port)
+        smtpObj.ehlo()
+        smtpObj.starttls()
+        smtpObj.login(from_address, password)
+        smtpObj.sendmail(from_address, to_address, message.as_string())
+        print("Email sent successfully.")
+    except Exception as e:
+                print(f"Failed to send email: {e}")
+    finally:
+        smtpObj.quit()
+
 
 @app.route('/v1/dashboard/<user_id>')
 def dashboard(user_id):
