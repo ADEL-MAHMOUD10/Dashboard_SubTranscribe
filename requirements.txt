@@ -18,3 +18,4 @@ dnspython
 Python-IO
 gunicorn
 uuid
+requests-toolbelt
