@@ -72,6 +72,8 @@ users_collection = dbs["users"]  # Users collection
 files_collection = dbs["files"]  # Files collection
 otp_collection = dbs["otp"] # OTP collection
 
+upload_progress = {}
+
 # Set up Firebase connection
 cred = credentials.Certificate(firebase_credentials)
 firebase_admin.initialize_app(cred,{
@@ -93,26 +95,18 @@ def reset_progress():
     })
     return jsonify(upload_id)
 
-def update_progress_bar(upload_id,B_status=None,U_message=None):
+def update_progress_bar(upload_id, progress_percentage, message):
     """Update the progress bar in the Firebase database."""
-    ref = db.reference(f'/UID/{upload_id}')
-    ref.update({
-        "Date": current_time,
-        'status': round(B_status, 2),
-        'message': U_message
-    })
+    upload_progress[upload_id] = {"status": progress_percentage, "message": message}
+
     
 @app.route('/progress', methods=['GET'])
 @cross_origin()  # Allow CORS for this route
 def progress_status():
     """Return the current progress status as JSON."""
     upload_id = session.get('upload_id')
-    ref = db.reference(f'/UID/{upload_id}')
-    progress = ref.get()
-    if progress:
-        progress.pop("id", None)
-        return jsonify(progress)
-    return jsonify({"status": 0, "message": "Ready to upload"})
+    progress = upload_progress.get(upload_id, {"status": 0, "message": "Ready to upload"})
+    return jsonify(progress)
 
 
 def Update_progress_db(transcript_id, status, message, Section, file_name=None, link=None):
@@ -222,11 +216,12 @@ def upload_audio_to_assemblyai(audio_file, file_size):
             progress_percentage = (uploaded_size / file_size) * 100  # Calculate progress percentage
             prog_mes = f"Processing... {progress_percentage:.2f}%"
             
-            print(f"Progress: {progress_percentage:.2f}%, Message: {prog_mes}")
+            update_progress_bar(upload_id, progress_percentage, prog_mes)
         
-            # Update the progress bar
-            threading.Thread(target=update_progress_bar, args=(upload_id, progress_percentage, prog_mes)).start()
-    
+            print(f"Progress: {progress_percentage:.2f}%, Message: {prog_mes}")
+
+        update_progress_bar(upload_id, 100, "Upload complete")
+        
     # Upload the file to AssemblyAI and get the URL
     try:
         # Upload the audio file to AssemblyAI
@@ -236,7 +231,7 @@ def upload_audio_to_assemblyai(audio_file, file_size):
         #...
     except Exception as e:
         prog_mes = f'An error occurred: {str(e)}'
-        threading.Thread(target=update_progress_bar, args=(upload_id, 0, prog_mes)).start()
+        # threading.Thread(target=update_progress_bar, args=(upload_id, 0, prog_mes)).start()
         return None
     
     upload_url = response.json()["upload_url"]
