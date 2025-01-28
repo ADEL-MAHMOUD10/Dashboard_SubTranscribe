@@ -201,7 +201,10 @@ def upload_or_link():
 
 def upload_audio_to_assemblyai(audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
-    headers = {"authorization": TOKEN_THREE}
+    headers = {
+        "authorization": TOKEN_THREE,
+        "Transfer-Encoding": "chunked"
+    }
     base_url = "https://api.assemblyai.com/v2"
     upload_id = session.get('upload_id')
     def upload_chunks():
