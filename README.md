@@ -17,7 +17,7 @@ This project is a web application built with Flask that allows users to upload a
 
 1. **Homepage**: The main page provides a file upload form where users can select and upload audio or video files.
 2. **Transcription Process**: Once the file is uploaded, it will be processed, and a Subtitle file will be generated.
-3. **File Handling**: The uploaded files are saved in the server's `uploads/` directory, and the Subtitle file is provided to the user for download.
+3. **File Handling**: The subtitles for uploaded files are saved in the server's, and the Subtitle file is provided to the user for download.
 
 ## Technologies Used
 
