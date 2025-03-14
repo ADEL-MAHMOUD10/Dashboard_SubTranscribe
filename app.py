@@ -1,3 +1,18 @@
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, Response, session,flash
+from firebase_admin import db , credentials
+from werkzeug.utils import secure_filename
+from flask_cors import CORS, cross_origin
+from pymongo import MongoClient
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
+from tqdm import tqdm
+from bson import ObjectId
+from datetime import datetime
+from collections import defaultdict
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 import os
 import requests
 import time
@@ -14,21 +29,6 @@ import threading
 import random
 import smtplib
 import threading
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, Response, session,flash
-from firebase_admin import db , credentials
-from werkzeug.utils import secure_filename
-from flask_cors import CORS, cross_origin
-from pymongo import MongoClient
-from dotenv import load_dotenv
-from datetime import datetime, timedelta
-from tqdm import tqdm
-from bson import ObjectId
-from datetime import datetime
-from collections import defaultdict
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
 
 
 # Suppress specific warnings
@@ -73,7 +73,15 @@ users_collection = dbs["users"]  # Users collection
 files_collection = dbs["files"]  # Files collection
 otp_collection = dbs["otp"] # OTP collection
 
+# Set up Flask session
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+
 upload_progress = {}
+
+upload_progress_lock = threading.Lock()
 
 # Set up Firebase connection
 cred = credentials.Certificate(firebase_credentials)
@@ -82,28 +90,21 @@ firebase_admin.initialize_app(cred,{
     })
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current time
-@app.route('/reset-progress', methods=['GET', 'POST'])
-@cross_origin()  # Allow CORS for this route
-def reset_progress():
-    """Reset the current progress status."""
-    upload_id = str(uuid.uuid4())
-    session['upload_id'] = upload_id
-    ref = db.reference(f'/UID/{upload_id}')
-    ref.update({
-        "Date": current_time,
-        'status': 0,
-        'message': "Ready to upload"
-    })
-    return jsonify(upload_id)
 
 def update_progress_bar(upload_id, progress_percentage, message):
     """Update the progress bar in the Firebase database."""
-    upload_progress[upload_id] = {"status": progress_percentage, "message": message}
-
+    with upload_progress_lock:
+        upload_progress[upload_id] = {"status": progress_percentage, "message": message}
+    # Update Firebase database
+    ref = db.reference(f'/UID/{upload_id}')
+    ref.update({
+        "status": progress_percentage,
+        "message": message
+    })
     
-@app.route('/progress', methods=['GET'])
+@app.route('/progress/<upload_id>', methods=['GET'])
 @cross_origin()  # Allow CORS for this route
-def progress_status():
+def progress_status(upload_id):
     """Return the current progress status as JSON."""
     upload_id = session.get('upload_id')
     progress = upload_progress.get(upload_id, {"status": 0, "message": "Ready to upload"})
@@ -167,11 +168,13 @@ def upload_or_link():
 
     user = users_collection.find_one({'user_id': user_id})
 
-    
+    # upload_id = str(uuid.uuid4())
+    # session['upload_id'] = upload_id
+    upload_id = session.get('upload_id')
     if request.method == 'POST':
         link = request.form.get('link')  # Get the link from the form
         if link:
-            transcript_id = transcribe_from_link(link)  # Transcribe from the provided link
+            transcript_id = transcribe_from_link(upload_id,link)  # Transcribe from the provided link
             return transcript_id  
         
         file = request.files['file']  # Get the uploaded file
@@ -179,7 +182,7 @@ def upload_or_link():
             audio_stream = file
             file_size = request.content_length  # Get file size in bytes
             try:
-                transcript_id = upload_audio_to_assemblyai(audio_stream, file_size)  # Upload directly using stream
+                transcript_id = upload_audio_to_assemblyai(upload_id,audio_stream, file_size)  # Upload directly using stream
                                 
                 username = user.get('username')  
                 if username:
@@ -192,15 +195,17 @@ def upload_or_link():
                         "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     })
 
-                return redirect(url_for('download_subtitle',user_id=user_id,transcript_id=transcript_id))  # Redirect to download page
-            except Exception as e:
+                response = make_response(redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id)))
+                return response
+            except Exception:
                 return render_template("error.html")  # Display error page
         else:
             return render_template("error.html")  # Render error page if file type is not allowed
     else:
         return redirect(url_for('login', user_id=session['user_id']))
 
-def upload_audio_to_assemblyai(audio_file, file_size):
+
+def upload_audio_to_assemblyai(upload_id,audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
     headers = {
         "authorization": TOKEN_THREE,
@@ -208,7 +213,7 @@ def upload_audio_to_assemblyai(audio_file, file_size):
     }
 
     base_url = "https://api.assemblyai.com/v2"
-    upload_id = session.get('upload_id')
+    # upload_id = session.get('upload_id')
 
     def upload_chunks():
         """Generator function to upload file in chunks and track progress."""
@@ -221,7 +226,6 @@ def upload_audio_to_assemblyai(audio_file, file_size):
             uploaded_size += len(chunk)
             progress_percentage = (uploaded_size / file_size) * 100  # Calculate progress percentage
             prog_mes = f"Processing... {progress_percentage:.2f}%"
-            
             update_progress_bar(upload_id, progress_percentage, prog_mes)
         
             print(f"Progress: {progress_percentage:.2f}%, Message: {prog_mes}")
@@ -232,30 +236,32 @@ def upload_audio_to_assemblyai(audio_file, file_size):
     try:
         # Upload the audio file to AssemblyAI
         response = requests.post(f"{base_url}/upload", headers=headers, data=upload_chunks(), stream=True)
-        if response.status_code != 200:
+        if response.status_code!= 200:
             raise RuntimeError("File upload failed.")
-        upload_url = response.json()["upload_url"]
-
-        # Request transcription from AssemblyAI using the uploaded file URL
-        data = {"audio_url": upload_url}
-        response = requests.post(f"{base_url}/transcript", json=data, headers=headers)
-
-        transcript_id = response.json()["id"]
-        polling_endpoint = f"{base_url}/transcript/{transcript_id}"
-
-        # Poll for the transcription result until completion
-        while True:
-            transcription_result = requests.get(polling_endpoint, headers=headers).json()
-            if transcription_result['status'] == 'completed':
-                # Update progress in the database and clean up
-                # update_progress_bar(transcript_id, 100, "Transcription completed", "Download page")
-                return transcript_id
-            if transcription_result['status'] == 'error':
-                raise RuntimeError(f"Transcription failed: {transcription_result['error']}")
+        #...
     except Exception as e:
         prog_mes = f'An error occurred: {str(e)}'
-        update_progress_bar(upload_id, 0, prog_mes)
+        # threading.Thread(target=update_progress_bar, args=(upload_id, 0, prog_mes)).start()
         return None
+    
+    upload_url = response.json()["upload_url"]
+
+    # Request transcription from AssemblyAI using the uploaded file URL
+    data = {"audio_url": upload_url}
+    response = requests.post(f"{base_url}/transcript", json=data, headers=headers)
+
+    transcript_id = response.json()["id"]
+    polling_endpoint = f"{base_url}/transcript/{transcript_id}"
+
+    # Poll for the transcription result until completion
+    while True:
+        transcription_result = requests.get(polling_endpoint, headers=headers).json()
+        if transcription_result['status'] == 'completed':
+            # Update progress in the database and clean up
+            Update_progress(transcript_id, 100, "Transcription completed", "Download page")
+            return transcript_id
+        if transcription_result['status'] == 'error':
+            raise RuntimeError(f"Transcription failed: {transcription_result['error']}")
         
 def convert_video_to_audio(video_path):
     """Convert video file to audio using ffmpeg."""
@@ -269,7 +275,7 @@ def convert_video_to_audio(video_path):
         print(f"Error converting video to audio: {e}")
         return None
 
-def transcribe_from_link(link):
+def transcribe_from_link(upload_id,link):
     """Transcribe audio from a provided link."""
     ydl_opts = {
         'format': 'bestaudio/best',  # Select the best audio format
