@@ -422,6 +422,8 @@ def register():
 def login():
     session.permanent = True
     if 'user_id' in session:
+        upload_id = str(uuid.uuid4())
+        session['upload_id'] = upload_id
         return redirect(url_for('main_user', user_id=session['user_id']))
     if request.method == 'POST':
     
