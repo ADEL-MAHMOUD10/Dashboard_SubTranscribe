@@ -13,6 +13,7 @@ import firebase_admin
 import threading
 import random
 import smtplib
+import threading
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, Response, session,flash
 from firebase_admin import db , credentials
@@ -202,10 +203,13 @@ def upload_or_link():
 def upload_audio_to_assemblyai(audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
     headers = {
-        "authorization": TOKEN_THREE
+        "authorization": TOKEN_THREE,
+        "Transfer-Encoding": "chunked"
     }
+
     base_url = "https://api.assemblyai.com/v2"
     upload_id = session.get('upload_id')
+
     def upload_chunks():
         """Generator function to upload file in chunks and track progress."""
         uploaded_size = 0
@@ -222,39 +226,37 @@ def upload_audio_to_assemblyai(audio_file, file_size):
         
             print(f"Progress: {progress_percentage:.2f}%, Message: {prog_mes}")
 
-        update_progress_bar(upload_id, 100, "Upload complete")
-        
+        update_progress_bar(upload_id, 100, "Upload complete")   
+
     # Upload the file to AssemblyAI and get the URL
     try:
         # Upload the audio file to AssemblyAI
         response = requests.post(f"{base_url}/upload", headers=headers, data=upload_chunks(), stream=True)
-        if response.status_code!= 200:
+        if response.status_code != 200:
             raise RuntimeError("File upload failed.")
-        #...
+        upload_url = response.json()["upload_url"]
+
+        # Request transcription from AssemblyAI using the uploaded file URL
+        data = {"audio_url": upload_url}
+        response = requests.post(f"{base_url}/transcript", json=data, headers=headers)
+
+        transcript_id = response.json()["id"]
+        polling_endpoint = f"{base_url}/transcript/{transcript_id}"
+
+        # Poll for the transcription result until completion
+        while True:
+            transcription_result = requests.get(polling_endpoint, headers=headers).json()
+            if transcription_result['status'] == 'completed':
+                # Update progress in the database and clean up
+                # update_progress_bar(transcript_id, 100, "Transcription completed", "Download page")
+                return transcript_id
+            if transcription_result['status'] == 'error':
+                raise RuntimeError(f"Transcription failed: {transcription_result['error']}")
     except Exception as e:
         prog_mes = f'An error occurred: {str(e)}'
-        # threading.Thread(target=update_progress_bar, args=(upload_id, 0, prog_mes)).start()
+        update_progress_bar(upload_id, 0, prog_mes)
         return None
-    
-    upload_url = response.json()["upload_url"]
-
-    # Request transcription from AssemblyAI using the uploaded file URL
-    data = {"audio_url": upload_url}
-    response = requests.post(f"{base_url}/transcript", json=data, headers=headers)
-
-    transcript_id = response.json()["id"]
-    polling_endpoint = f"{base_url}/transcript/{transcript_id}"
-
-    # Poll for the transcription result until completion
-    while True:
-        transcription_result = requests.get(polling_endpoint, headers=headers).json()
-        if transcription_result['status'] == 'completed':
-            # Update progress in the database and clean up
-            Update_progress_db(transcript_id, 100, "Transcription completed", "Download page")
-            return transcript_id
-        elif transcription_result['status'] == 'error':
-            raise RuntimeError(f"Transcription failed: {transcription_result['error']}")
-
+        
 def convert_video_to_audio(video_path):
     """Convert video file to audio using ffmpeg."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
