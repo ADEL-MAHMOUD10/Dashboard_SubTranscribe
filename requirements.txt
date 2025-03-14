@@ -18,4 +18,5 @@ dnspython
 Python-IO
 gunicorn
 uuid
+threading
 requests-toolbelt
