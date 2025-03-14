@@ -110,6 +110,11 @@ def progress_status(upload_id):
     progress = upload_progress.get(upload_id, {"status": 0, "message": "Ready to upload"})
     return jsonify(progress)
 
+@app.route('/upload_id', methods=['GET'])
+def progress_id():
+    """Create a new upload ID."""
+    upload_id = session.get('upload_id')
+    return jsonify(upload_id)
 
 def Update_progress_db(transcript_id, status, message, Section, file_name=None, link=None):
     """Update the progress status in the MongoDB database."""
