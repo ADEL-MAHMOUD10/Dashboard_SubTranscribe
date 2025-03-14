@@ -13,70 +13,75 @@ window.addEventListener('DOMContentLoaded', (event) => {
     resetProgressStatus();
 });
 
-function resetProgressStatus() {
-    fetch('/reset-progress', { method: 'GET' })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok.');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Progress reset:', data);
-        })
-        .catch(error => {
-            console.error('Error resetting progress:', error);
-        });
-}
-
-// Continue with your interval function
-const intervalId = setInterval(async function () {
+const getUploadId = async () => {
     try {
-        const response = await fetch('/progress', {
+        const response = await fetch('/upload_id', {
             method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         });
 
         if (!response.ok) {
-            throw new Error('Network response was not ok.');
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        
-        const data = await response.json();
-        console.log("Progress Data:", data);
-        
-        if (data && typeof data.status !== 'undefined') {
-            const progressPercentage = parseFloat(data.status) || 0;
-            
-            const progressBar = document.getElementById('progressBar');
-            progressBar.style.width = `${progressPercentage}%`;
-            progressBar.style.transition = 'width 0.5s ease';
-            progressBar.setAttribute('aria-valuenow', progressPercentage);
-            progressBar.textContent = `${progressPercentage.toFixed(2)}%`;
-            
-            const messageElement = document.getElementById('progressMessage');
-            messageElement.innerText = data.message;
-            
-            // Change color based on progress.
-            if (progressPercentage === 100) {
-                progressBar.style.backgroundColor = 'green'; // Success color
-                messageElement.textContent = "Upload completed. Please wait for a few seconds...";
-                clearInterval(intervalId);  // Stop polling
-                // Optionally trigger additional completion logic here
-            } else if (progressPercentage >= 50) {
-                progressBar.style.backgroundColor = 'orange'; // Warning color
-            } else {
-                progressBar.style.backgroundColor = 'blue'; // Default color
-            }
-        }
+
+        const uploadId = await response.json();
+        return uploadId;
     } catch (error) {
-        console.error('Error fetching progress:', error);
-        document.getElementById('progressMessage').innerText = "Error fetching progress. Please try again.";
+        console.error('Error fetching upload_id:', error);
+        return null;
     }
-}, 1000);  // Poll every 1 seconds
+};
+
+const startProgressTracking = async () => {
+    const UPLOAD_ID = await getUploadId();  
+    
+    if (!UPLOAD_ID) {
+        console.error("Failed to retrieve upload ID");
+        document.getElementById('progressMessage').innerText = "Failed to retrieve upload ID.";
+        return;
+    }
+
+    console.log("Upload ID:", UPLOAD_ID);  
+    
+    const intervalId = setInterval(async function () {
+        try {
+            const url = `/progress/${UPLOAD_ID}`;
+            console.log("Fetching progress from:", url);  
+            
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Progress Data:", data);
+
+            if (data && typeof data.status !== 'undefined') {
+                const progressPercentage = parseFloat(data.status) || 0;
+                const progressBar = document.getElementById('progressBar');
+                progressBar.style.width = `${progressPercentage}%`;
+                progressBar.setAttribute('aria-valuenow', progressPercentage);
+                progressBar.textContent = `${progressPercentage.toFixed(2)}%`;
+
+                if (progressPercentage === 100) {
+                    clearInterval(intervalId);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching progress:', error);
+        }
+    }, 2500);
+};
+
+startProgressTracking();
 
 
 // Display selected file name dynamically
