@@ -107,7 +107,7 @@ def update_progress_bar(upload_id, progress_percentage, message):
 def progress_status(upload_id):
     """Return the current progress status as JSON."""
     upload_id = session.get('upload_id')
-    progress = upload_progress.get(upload_id, {"status": 0, "message": "Ready to upload"})
+    progress = upload_progress.get(upload_id, {"status": 0, "message": "start uploading"})
     return jsonify(progress)
 
 @app.route('/upload_id', methods=['GET'])
