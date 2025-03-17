@@ -1,5 +1,5 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, Response, session,flash
+from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, Response, session,flash,make_response
 from firebase_admin import db , credentials
 from werkzeug.utils import secure_filename
 from flask_cors import CORS, cross_origin
@@ -263,7 +263,7 @@ def upload_audio_to_assemblyai(upload_id,audio_file, file_size):
         transcription_result = requests.get(polling_endpoint, headers=headers).json()
         if transcription_result['status'] == 'completed':
             # Update progress in the database and clean up
-            Update_progress(transcript_id, 100, "Transcription completed", "Download page")
+            # Update_progress(transcript_id, 100, "Transcription completed", "Download page")
             return transcript_id
         if transcription_result['status'] == 'error':
             raise RuntimeError(f"Transcription failed: {transcription_result['error']}")
