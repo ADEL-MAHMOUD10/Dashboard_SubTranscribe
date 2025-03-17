@@ -212,31 +212,26 @@ def upload_or_link():
 
 def upload_audio_to_assemblyai(upload_id,audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
-    headers = {
-        "authorization": TOKEN_THREE,
-        "Transfer-Encoding": "chunked"
-    }
-
+    headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
-    # upload_id = session.get('upload_id')
-
+    
     def upload_chunks():
         """Generator function to upload file in chunks and track progress."""
         uploaded_size = 0
         while True:
-            chunk = audio_file.read(800000)  # Read a 800 KB chunk
+            chunk = audio_file.read(800000)  # Read a 300 KB chunk
             if not chunk:
                 break
             yield chunk
             uploaded_size += len(chunk)
             progress_percentage = (uploaded_size / file_size) * 100  # Calculate progress percentage
-            prog_mes = f"Processing... {progress_percentage:.2f}%"
-            update_progress_bar(upload_id, progress_percentage, prog_mes)
+            prog_message = f"Processing... {progress_percentage:.2f}%"
+            
+            print(f"Progress: {progress_percentage:.2f}%, Message: {prog_message}")
         
-            print(f"Progress: {progress_percentage:.2f}%, Message: {prog_mes}")
-
-        update_progress_bar(upload_id, 100, "Upload complete")   
-
+            # Update the progress bar
+            update_progress_bar(upload_id,progress_percentage,prog_message)
+    
     # Upload the file to AssemblyAI and get the URL
     try:
         # Upload the audio file to AssemblyAI
@@ -245,8 +240,7 @@ def upload_audio_to_assemblyai(upload_id,audio_file, file_size):
             raise RuntimeError("File upload failed.")
         #...
     except Exception as e:
-        prog_mes = f'An error occurred: {str(e)}'
-        # threading.Thread(target=update_progress_bar, args=(upload_id, 0, prog_mes)).start()
+        update_progress_bar(upload_id,0, f"Error uploading audio: {e}")
         return None
     
     upload_url = response.json()["upload_url"]
@@ -263,10 +257,11 @@ def upload_audio_to_assemblyai(upload_id,audio_file, file_size):
         transcription_result = requests.get(polling_endpoint, headers=headers).json()
         if transcription_result['status'] == 'completed':
             # Update progress in the database and clean up
-            # Update_progress(transcript_id, 100, "Transcription completed", "Download page")
+            # Update_progress_db(transcript_id, 100, "Transcription completed", "Download page")
             return transcript_id
-        if transcription_result['status'] == 'error':
+        elif transcription_result['status'] == 'error':
             raise RuntimeError(f"Transcription failed: {transcription_result['error']}")
+
         
 def convert_video_to_audio(video_path):
     """Convert video file to audio using ffmpeg."""
