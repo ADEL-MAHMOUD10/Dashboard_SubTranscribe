@@ -1,4 +1,4 @@
- /**
+/**
  * SubTranscribe - Frontend JavaScript
  * 
  * This script handles all frontend functionality for the SubTranscribe application:
@@ -44,24 +44,48 @@ async function initProgressTracking() {
             return;
         }
 
-        // Start polling for progress updates
-        const pollingInterval = 2000; // 2 seconds
-        const progressPoll = setInterval(async () => {
-            try {
-                const progress = await fetchProgress(uploadId);
-                updateProgressUI(progress);
-                
-                // Clear interval when complete
-                if (progress.status >= 100) {
-                    clearInterval(progressPoll);
-                }
-            } catch (error) {
-                console.error('Error fetching progress:', error);
+        // Use Server-Sent Events for real-time updates
+        const eventSource = new EventSource(`/progress_stream/${uploadId}`);
+        
+        eventSource.onmessage = (event) => {
+            const progress = JSON.parse(event.data);
+            updateProgressUI(progress);
+            
+            // Close connection when complete
+            if (progress.status >= 100) {
+                eventSource.close();
             }
-        }, pollingInterval);
+        };
+        
+        eventSource.onerror = () => {
+            console.error('EventSource connection error');
+            eventSource.close();
+            
+            // Fall back to polling if SSE fails
+            fallbackToPolling(uploadId);
+        };
     } catch (error) {
         console.error('Failed to initialize progress tracking:', error);
+        fallbackToPolling(uploadId);
     }
+}
+
+function fallbackToPolling(uploadId) {
+    // Original polling code as backup
+    const pollingInterval = 2000; // 2 seconds
+    const progressPoll = setInterval(async () => {
+        try {
+            const progress = await fetchProgress(uploadId);
+            updateProgressUI(progress);
+            
+            // Clear interval when complete
+            if (progress.status >= 100) {
+                clearInterval(progressPoll);
+            }
+        } catch (error) {
+            console.error('Error fetching progress:', error);
+        }
+    }, pollingInterval);
 }
 
 /**
@@ -122,8 +146,12 @@ function updateProgressUI(progressData) {
     progressBar.style.width = `${percentage}%`;
     progressBar.setAttribute('aria-valuenow', percentage);
     
-    // Update message
-    updateProgressMessage(progressData.message || `Processing ${percentage.toFixed(1)}%`);
+    // Update message based on progress
+    if (percentage >= 100) {
+        updateProgressMessage('Transcription complete! Preparing your download...');
+    } else {
+        updateProgressMessage(progressData.message || `Processing ${percentage.toFixed(1)}%`);
+    }
 }
 
 /**
@@ -136,7 +164,7 @@ function updateProgressMessage(message, isError = false) {
     progressMessage.textContent = message;
     progressMessage.style.color = isError 
         ? 'var(--error-color)' 
-        : 'var(--text-secondary)';
+        : null; // Use default text color from Tailwind
 }
 
 /**
@@ -159,23 +187,54 @@ function initThemeToggle() {
 
     // Toggle theme on click
     themeToggle.addEventListener('click', () => {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        setTheme(newTheme);
+        const isDark = document.documentElement.classList.contains('dark');
+        setTheme(isDark ? 'light' : 'dark');
     });
 }
 
 /**
- * Set theme and update icon
+ * Set theme and update icon and label
  */
 function setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
+    }
+    
     localStorage.setItem('theme', theme);
     
-    // Update icon
+    // Update icon and label
     const icon = document.querySelector('.theme-toggle i');
+    const label = document.querySelector('.theme-label');
+    
     if (icon) {
-        icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        if (theme === 'dark') {
+            icon.className = 'fas fa-moon text-purple-400';
+        } else {
+            icon.className = 'fas fa-sun text-amber-500';
+        }
+    }
+    
+
+    
+    // Force browser to recalculate styles
+    document.body.offsetHeight;
+    
+    // Update tab button colors if they exist
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab) {
+        // First remove any existing color classes
+        activeTab.classList.remove('bg-primary', 'bg-darkPrimary', 'text-white');
+        
+        // Then add the appropriate ones based on theme
+        if (theme === 'dark') {
+            activeTab.classList.add('bg-darkPrimary', 'text-white');
+        } else {
+            activeTab.classList.add('bg-primary', 'text-white');
+        }
     }
 }
 
@@ -191,9 +250,32 @@ function initMobileNavigation() {
     // Toggle menu on button click
     navToggle.addEventListener('click', () => {
         navMenu.classList.toggle('active');
-        navToggle.setAttribute('aria-expanded', 
-            navToggle.getAttribute('aria-expanded') === 'true' ? 'false' : 'true'
-        );
+        
+        // Toggle aria-expanded attribute for accessibility
+        const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
+        navToggle.setAttribute('aria-expanded', !isExpanded);
+        
+        // Toggle background and visual state for the toggle button
+        if (!isExpanded) {
+            navToggle.classList.add('bg-gray-100', 'dark:bg-gray-800');
+            navToggle.querySelector('i').classList.replace('fa-bars', 'fa-times');
+            
+            // Add animation class for menu items
+            const navItems = navMenu.querySelectorAll('.nav-item');
+            navItems.forEach((item, index) => {
+                item.style.transitionDelay = `${index * 50}ms`;
+                item.classList.add('fade-in-down');
+            });
+        } else {
+            navToggle.classList.remove('bg-gray-100', 'dark:bg-gray-800');
+            navToggle.querySelector('i').classList.replace('fa-times', 'fa-bars');
+            
+            // Remove animation classes
+            navMenu.querySelectorAll('.nav-item').forEach(item => {
+                item.style.transitionDelay = '0ms';
+                item.classList.remove('fade-in-down');
+            });
+        }
     });
     
     // Close menu when clicking outside
@@ -204,7 +286,38 @@ function initMobileNavigation() {
             
             navMenu.classList.remove('active');
             navToggle.setAttribute('aria-expanded', 'false');
+            navToggle.classList.remove('bg-gray-100', 'dark:bg-gray-800');
+            
+            // Reset icon
+            const icon = navToggle.querySelector('i');
+            if (icon && icon.classList.contains('fa-times')) {
+                icon.classList.replace('fa-times', 'fa-bars');
+            }
+            
+            // Remove animation classes
+            navMenu.querySelectorAll('.nav-item').forEach(item => {
+                item.style.transitionDelay = '0ms';
+                item.classList.remove('fade-in-down');
+            });
         }
+    });
+    
+    // Add click handling for nav links on mobile
+    const navLinks = navMenu.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth < 768) {
+                navMenu.classList.remove('active');
+                navToggle.setAttribute('aria-expanded', 'false');
+                
+                const icon = navToggle.querySelector('i');
+                if (icon && icon.classList.contains('fa-times')) {
+                    icon.classList.replace('fa-times', 'fa-bars');
+                }
+                
+                navToggle.classList.remove('bg-gray-100', 'dark:bg-gray-800');
+            }
+        });
     });
 }
 
@@ -215,28 +328,138 @@ function initTabSwitching() {
     const tabs = document.querySelectorAll('.tab-btn');
     if (!tabs.length) return;
     
+    // Create slider element for the active tab indicator
+    const tabContainer = document.querySelector('.tabs');
+    if (tabContainer && !document.querySelector('.tab-slider')) {
+        const slider = document.createElement('div');
+        slider.className = 'tab-slider';
+        tabContainer.appendChild(slider);
+    }
+    
+    const updateSliderPosition = (activeTab) => {
+        const slider = document.querySelector('.tab-slider');
+        if (!slider) return;
+        
+        // Position and size the slider to match the active tab
+        slider.style.width = `${activeTab.offsetWidth}px`;
+        slider.style.left = `${activeTab.offsetLeft}px`;
+        
+        // Apply theme-appropriate colors
+        const isDarkMode = document.documentElement.classList.contains('dark') || 
+                          document.documentElement.getAttribute('data-theme') === 'dark';
+        
+        if (isDarkMode) {
+            slider.style.backgroundColor = 'var(--darkPrimary, #8b5cf6)';
+        } else {
+            slider.style.backgroundColor = 'var(--primary, #4f46e5)';
+        }
+    };
+    
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const target = tab.getAttribute('data-tab');
             if (!target) return;
             
-            // Remove active class from all tabs and contents
-            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            // Get the currently active tab content
+            const activeContent = document.querySelector('.tab-content.active');
+            const newContent = document.getElementById(`${target}-tab`);
             
-            // Add active class to current tab and content
+            if (!activeContent || !newContent || activeContent === newContent) return;
+            
+            // Determine animation direction
+            const goingRight = Array.from(tabs).indexOf(tab) > 
+                              Array.from(tabs).indexOf(document.querySelector('.tab-btn.active'));
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(t => {
+                t.classList.remove('active');
+                t.classList.remove('bg-primary', 'dark:bg-darkPrimary', 'bg-darkPrimary', 'text-white');
+                t.classList.add('text-gray-500', 'dark:text-gray-400');
+            });
+            
+            // Add active class to current tab
             tab.classList.add('active');
             
-            const content = document.getElementById(`${target}-tab`);
-            if (content) content.classList.add('active');
+            // Check for dark mode and apply appropriate styles
+            const isDarkMode = document.documentElement.classList.contains('dark') || 
+                              document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            if (isDarkMode) {
+                tab.classList.add('bg-darkPrimary', 'text-white');
+            } else {
+                tab.classList.add('bg-primary', 'text-white');
+            }
+            
+            tab.classList.remove('text-gray-500', 'dark:text-gray-400');
+            
+            // Animate the slide transition between tab contents
+            activeContent.classList.add(goingRight ? 'slide-left' : 'slide-right');
+            newContent.classList.add(goingRight ? 'slide-from-right' : 'slide-from-left');
+            
+            // After animation completes, reset classes and show new content
+            setTimeout(() => {
+                document.querySelectorAll('.tab-content').forEach(c => {
+                    c.classList.remove('active', 'slide-left', 'slide-right', 'slide-from-left', 'slide-from-right');
+                });
+                newContent.classList.add('active');
+            }, 300); // Match this duration with CSS transition duration
+            
+            // Update the slider position
+            updateSliderPosition(tab);
         });
     });
     
     // Activate first tab by default if none is active
     if (!document.querySelector('.tab-btn.active') && tabs.length > 0) {
         tabs[0].click();
+    } else if (document.querySelector('.tab-btn.active')) {
+        // Update slider position on init for the active tab
+        updateSliderPosition(document.querySelector('.tab-btn.active'));
     }
+    
+    // Update slider position on window resize
+    window.addEventListener('resize', () => {
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab) {
+            updateSliderPosition(activeTab);
+        }
+    });
 }
+
+// File upload with loading indicator
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadLoading = document.getElementById('upload-loading');
+    const fileInfo = document.getElementById('file-info');
+    
+    // File upload form handling
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            // Hide file info and show loading spinner
+            if (fileInfo) fileInfo.classList.add('hidden');
+            if (uploadLoading) uploadLoading.classList.remove('hidden');
+        });
+    }
+    
+    // Link form handling
+    const linkForm = document.getElementById('linkForm');
+    const linkLoading = document.getElementById('link-loading');
+    
+    if (linkForm) {
+        linkForm.addEventListener('submit', function(e) {
+            // Show loading spinner
+            if (linkLoading) linkLoading.classList.remove('hidden');
+            
+            // You can add validation here if needed
+            const linkInput = document.getElementById('link');
+            if (linkInput && !linkInput.value.trim()) {
+                e.preventDefault(); // Prevent form submission if link is empty
+                alert('Please enter a valid URL');
+                linkLoading.classList.add('hidden');
+            }
+        });
+    }
+});
 
 /**
  * File Upload with Drag & Drop
@@ -265,14 +488,14 @@ function initFileUpload() {
         // Add highlighting on drag
         ['dragenter', 'dragover'].forEach(event => {
             uploadArea.addEventListener(event, () => {
-                uploadArea.classList.add('highlight');
+                uploadArea.classList.add('border-primary', 'bg-primary/5');
             });
         });
         
         // Remove highlighting when drag ends
         ['dragleave', 'drop'].forEach(event => {
             uploadArea.addEventListener(event, () => {
-                uploadArea.classList.remove('highlight');
+                uploadArea.classList.remove('border-primary', 'bg-primary/5');
             });
         });
         
@@ -302,7 +525,6 @@ function initFileUpload() {
     
     // Form submission
     uploadForm.addEventListener('submit', e => {
-        
         // Check if file is selected
         if (!fileInput.files || fileInput.files.length === 0) {
             updateProgressMessage('Please select a file first.', true);
@@ -313,11 +535,8 @@ function initFileUpload() {
         // Clear progress UI
         resetProgressUI();
         
-        // Submit the form
-        const formData = new FormData(uploadForm);
-        submitFormWithProgress(uploadForm.action, formData);
+        // Submit the form - using the standard form submit to maintain backend compatibility
     });
-    
     
     // Handle file selection
     function handleFileSelection(file) {
@@ -382,16 +601,15 @@ function initSmoothScrolling() {
 function initAnimations() {
     if (!('IntersectionObserver' in window)) return;
     
-    const fadeInElements = document.querySelectorAll(
-        '.feature-card, .step-card, .hero-title, .hero-subtitle, .upload-container'
-    );
+    const fadeInElements = document.querySelectorAll('.fade-in');
     
     if (fadeInElements.length === 0) return;
     
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                entry.target.classList.add('fade-in');
+                entry.target.classList.add('opacity-100', 'translate-y-0');
+                entry.target.classList.remove('opacity-0', 'translate-y-5');
                 observer.unobserve(entry.target);
             }
         });
@@ -401,5 +619,8 @@ function initAnimations() {
         threshold: 0.1
     });
     
-    fadeInElements.forEach(element => observer.observe(element));
+    fadeInElements.forEach(element => {
+        element.classList.add('opacity-0', 'translate-y-5', 'transition-all', 'duration-700');
+        observer.observe(element);
+    });
 }
