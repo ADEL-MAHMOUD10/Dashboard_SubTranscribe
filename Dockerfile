@@ -1,36 +1,28 @@
-# Stage 1: Builder
-FROM python:3 AS builder
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Create virtual environment
-RUN python3 -m venv venv
-ENV VIRTUAL_ENV=/app/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
-# Install dependencies
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
-RUN pip install -r requirements.txt
 
-# Stage 2: Runner
-FROM python:3 AS runner
-
-WORKDIR /app
-
-# Copy virtual environment from builder
-COPY --from=builder /app/venv venv
-ENV VIRTUAL_ENV=/app/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
-# Copy application code
-COPY app.py .
-COPY . .
+# Install dependencies in a single RUN command to reduce layers
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg gcc && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get remove -y gcc && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set environment variables
-ENV FLASK_APP=app.py
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# Expose port 443
-EXPOSE 443
+# Copy application code
+COPY . .
 
-# Run Gunicorn
-CMD ["gunicorn", "--bind", ":443", "--workers", "4", "--threads", "4", "app:app"]
+# Expose the port
+EXPOSE 8000
+
+# Use gunicorn as the entry point
+CMD ["gunicorn", "--workers=2", "--threads=4", "--worker-class=gthread", "--max-requests=100", "--max-requests-jitter=10", "--timeout=600", "--bind=0.0.0.0:8000", "app:app"]
