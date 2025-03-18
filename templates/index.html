@@ -5,35 +5,313 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Professional audio and video transcription powered by AI">
     <title>SubTranscribe - Professional Audio & Video Transcription</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#4f46e5',
+                            light: '#818cf8',
+                            dark: '#3730a3',
+                        },
+                        secondary: {
+                            DEFAULT: '#0ea5e9',
+                            light: '#38bdf8',
+                        },
+                        accent: '#06b6d4',
+                        surface: {
+                            light: '#f8fafc',
+                            dark: '#111827',
+                        },
+                        background: {
+                            light: '#ffffff',
+                            dark: '#030712',
+                        },
+                        darkPrimary: {
+                            DEFAULT: '#8b5cf6',
+                            light: '#a78bfa',
+                            dark: '#6d28d9',
+                        },
+                        darkAccent: '#7c3aed'
+                    },
+                    animation: {
+                        'wave': 'wave 1.2s ease-in-out infinite alternate',
+                        'dna-spin': 'dna-spin 20s linear infinite',
+                        'float': 'float 6s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        wave: {
+                            '0%': { height: 'var(--min-height, 10px)' },
+                            '100%': { height: 'var(--max-height, 60px)' },
+                        },
+                        'dna-spin': {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        },
+                        float: {
+                            '0%': { transform: 'translateY(0)' },
+                            '100%': { transform: 'translateY(-10px)' },
+                        }
+                    },
+                },
+            }
+        }
+    </script>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="shortcut icon" href="/static/image/subtitle.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <style>
+        /* Tab slider styles */
+        .tabs {
+            position: relative;
+        }
+        
+        .tab-slider {
+            position: absolute;
+            bottom: 0;
+            height: 100%;
+            z-index: 0;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn {
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Tab content transitions */
+        .tab-content {
+            display: none;
+            position: relative;
+            transition: all 0.3s ease;
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .tab-content.slide-left {
+            transform: translateX(-10%);
+            opacity: 0;
+        }
+        
+        .tab-content.slide-right {
+            transform: translateX(10%);
+            opacity: 0;
+        }
+        
+        .tab-content.slide-from-left {
+            display: block;
+            transform: translateX(-10%);
+            opacity: 0;
+            animation: slideInFromLeft 0.3s forwards;
+        }
+        
+        .tab-content.slide-from-right {
+            display: block;
+            transform: translateX(10%);
+            opacity: 0;
+            animation: slideInFromRight 0.3s forwards;
+        }
+        
+        @keyframes slideInFromLeft {
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideInFromRight {
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Mobile Navigation Styles - Updated */
+        .nav-toggle {
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-toggle:hover {
+            background-color: rgba(243, 244, 246, 0.8);
+        }
+        
+        .dark .nav-toggle:hover {
+            background-color: rgba(31, 41, 55, 0.8);
+        }
+        
+        /* Nav menu container styling */
+        .nav-menu {
+            background-color: white;
+            transform: translateY(0);
+            visibility: visible;
+            opacity: 1;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .dark .nav-menu {
+            background-color: #111827;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Nav menu when not active */
+        .nav-menu:not(.active) {
+            transform: translateY(-100%);
+            visibility: hidden;
+            opacity: 0;
+        }
+        
+        /* Specific styling for nav links in mobile view */
+        @media (max-width: 767px) {
+            .nav-menu {
+                padding: 0.5rem;
+            }
+            
+            .nav-list {
+                background-color: white;
+                border-radius: 0.5rem;
+            }
+            
+            .dark .nav-list {
+                background-color: #1f2937;
+            }
+            
+            .nav-item {
+                width: 100%;
+            }
+            
+            .nav-link {
+                background-color: white;
+                color: #4b5563;
+                transition: all 0.2s ease;
+                border-radius: 0.5rem;
+                display: block;
+                width: 100%;
+                padding: 0.75rem 1rem;
+                margin-bottom: 0.25rem;
+            }
+            
+            .dark .nav-link {
+                background-color: #1f2937;
+                color: #d1d5db;
+            }
+            
+            .nav-link:hover {
+                background-color: #f3f4f6;
+            }
+            
+            .dark .nav-link:hover {
+                background-color: #374151;
+            }
+            
+            .nav-link.active {
+                background-color: #e5e7eb;
+                color: #1f2937;
+                font-weight: 600;
+            }
+            
+            .dark .nav-link.active {
+                background-color: #374151;
+                color: #f9fafb;
+            }
+            
+            /* Button styling in nav for mobile */
+            .nav-link.btn {
+                margin-top: 0.5rem;
+                text-align: center;
+            }
+            
+            .nav-link.btn.btn-primary {
+                background-color: var(--primary, #4f46e5);
+                color: white;
+            }
+            
+            .dark .nav-link.btn.btn-primary {
+                background-color: var(--darkPrimary, #8b5cf6);
+                color: white;
+            }
+            
+            .nav-link.btn.btn-danger {
+                background-color: #ef4444;
+                color: white;
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .nav-menu {
+                background-color: transparent !important;
+                transform: none !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                box-shadow: none !important;
+            }
+            
+            .nav-link.active {
+                color: var(--primary);
+            }
+            
+            .dark .nav-link.active {
+                color: var(--darkPrimary);
+            }
+        }
+        
+        /* Fade-in-down animation for mobile menu items */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in-down {
+            animation: fadeInDown 0.3s ease forwards;
+            opacity: 0;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white transition-colors duration-300">
     <!-- Navbar -->
-    <nav class="navbar">
-        <div class="container">
-            <div class="nav-wrapper">
-                <div class="brand-wrapper">
-                    <a href="/" class="brand-link">
-                        <img src="/static/image/subtitle.ico" alt="SubTranscribe Logo" class="brand-logo">
-                        <span class="brand-name">SubTranscribe</span>
+    <nav class="fixed top-0 w-full bg-white/80 dark:bg-surface-dark/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 z-50 transition-colors duration-300">
+        <div class="container mx-auto max-w-6xl px-4">
+            <div class="flex items-center justify-between py-3">
+                <div class="flex items-center z-10">
+                    <a href="/" class="flex items-center gap-3 p-2 rounded-xl transition duration-300">
+                        <img src="/static/image/subtitle.ico" alt="SubTranscribe Logo" class="w-9 h-9 rounded-lg">
+                        <span class="text-2xl font-extrabold bg-gradient-to-r from-primary to-secondary dark:from-darkPrimary dark:to-secondary bg-clip-text text-transparent">SubTranscribe</span>
                     </a>
                 </div>
                 
-                <button class="nav-toggle" aria-label="Toggle navigation">
+                <button class="nav-toggle md:hidden p-2 text-2xl" aria-label="Toggle navigation">
                     <i class="fas fa-bars"></i>
                 </button>
 
-                <div class="nav-menu">
-                    <ul class="nav-list">
-                        <li class="nav-item"><a href="/" class="nav-link active">Home</a></li>
-                        <li class="nav-item"><a href="/about" class="nav-link">About</a></li>
-                        <li class="nav-item"><a href="{{ url_for('user_dashboard') }}" class="nav-link btn btn-primary">Dashboard</a></li>
-                        <li class="nav-item"><a href="{{ url_for('logout') }}" class="nav-link btn btn-danger">Logout</a></li>
-                        <li class="nav-item">
-                            <button class="theme-toggle" aria-label="Toggle theme">
-                                <i class="fas fa-sun"></i>
+                <div class="nav-menu fixed md:static top-[72px] left-0 right-0 md:bg-transparent bg-transparent dark:bg-transparent md:border-0 border-b border-gray-200 dark:border-gray-800 md:transform-none transform -translate-y-full transition-transform duration-300 md:opacity-100 md:visible opacity-0 invisible w-full md:w-auto z-40">
+                    <ul class="nav-list flex-col md:flex-row flex items-center gap-2 md:gap-4 p-4 md:p-0">
+                        <li class="nav-item w-full md:w-auto"><a href="/" class="nav-link text-center md:text-left block w-full md:w-auto py-3 md:py-2 px-4 rounded-xl active">Home</a></li>
+                        <li class="nav-item w-full md:w-auto"><a href="/about" class="nav-link text-center md:text-left block w-full md:w-auto py-3 md:py-2 px-4 rounded-xl">About</a></li>
+                        <li class="nav-item w-full md:w-auto"><a href="{{ url_for('user_dashboard') }}" class="nav-link btn btn-primary text-center block w-full md:w-auto py-3 md:py-2 px-4 rounded-xl bg-primary hover:bg-primary-dark dark:bg-darkPrimary dark:hover:bg-darkPrimary-dark text-white">Dashboard</a></li>
+                        <li class="nav-item w-full md:w-auto"><a href="{{ url_for('logout') }}" class="nav-link btn btn-danger text-center block w-full md:w-auto py-3 md:py-2 px-4 rounded-xl bg-red-500 hover:bg-red-600 text-white">Logout</a></li>
+                        <li class="nav-item w-full md:w-auto mt-2 md:mt-0">
+                            <button class="theme-toggle w-full md:w-auto flex items-center justify-center gap-2 py-2 px-4 md:ml-2 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300" aria-label="Toggle theme">
+                                <div class="w-5 h-5 flex items-center justify-center">
+                                    <i class="fas fa-sun text-amber-500 dark:text-purple-400"></i>
+                                </div>
+                                <span class="theme-label text-sm font-medium"></span>
                             </button>
                         </li>
                     </ul>
@@ -43,154 +321,246 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1 class="hero-title fade-in">Transform Your Media Into Text</h1>
-            <p class="hero-subtitle fade-in">Professional audio & video transcription powered by advanced AI technology</p>
+    <section class="hero relative pt-32 pb-24 text-center overflow-hidden bg-gradient-to-b from-surface-light to-background-light dark:from-surface-dark dark:to-background-dark transition-colors duration-300">
+        <!-- DNA Background -->
+        <div class="dna-bg">
+            <div class="dna-helix"></div>
+            <div class="dna-nodes"></div>
             
-            <div class="upload-container fade-in">
-                <div class="tabs">
-                    <button class="tab-btn active" data-tab="upload">
+            <!-- Transcription lines -->
+            <div class="transcription-line" style="top: 15%; width: 70%; left: 15%;"></div>
+            <div class="transcription-line" style="top: 35%; width: 80%; left: 10%;"></div>
+            <div class="transcription-line" style="top: 65%; width: 75%; left: 12%;"></div>
+            <div class="transcription-line" style="top: 85%; width: 65%; left: 17%;"></div>
+        </div>
+        
+        <div class="container mx-auto max-w-6xl px-4 relative z-10">
+            <h1 class="hero-title text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6 bg-gradient-to-r from-primary to-secondary dark:from-darkPrimary dark:to-secondary bg-clip-text text-transparent fade-in">Transform Your Media Into Text</h1>
+            <p class="hero-subtitle text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-12 fade-in">Professional audio & video transcription powered by advanced AI technology</p>
+            
+            <div class="audio-visualizer fade-in">
+                <!-- 40 bars for a more realistic waveform - keep as-is for script.js compatibility -->
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+            </div>
+            
+            <div class="upload-container max-w-4xl mx-auto bg-white dark:bg-surface-dark rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-lg border border-gray-200 dark:border-gray-800 transition-all duration-300 fade-in">
+                <div class="tabs flex gap-1 sm:gap-2 md:gap-4 mb-6 md:mb-8 bg-gray-50 dark:bg-background-dark p-1.5 sm:p-2 rounded-xl sm:rounded-2xl">
+                    <button class="tab-btn active flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 md:px-6 border-none bg-none text-gray-500 dark:text-gray-400 font-semibold text-xs sm:text-sm md:text-base cursor-pointer rounded-lg sm:rounded-xl transition-all duration-300" data-tab="upload">
                         <i class="fas fa-cloud-upload-alt"></i>
-                        Upload File
+                        <span class="hidden xs:inline">Upload File</span>
                     </button>
-                    <button class="tab-btn" data-tab="link">
+                    <button class="tab-btn flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 md:px-6 border-none bg-none text-gray-500 dark:text-gray-400 font-semibold text-xs sm:text-sm md:text-base cursor-pointer rounded-lg sm:rounded-xl transition-all duration-300" data-tab="link">
                         <i class="fas fa-link"></i>
-                        Use Link
+                        <span class="hidden xs:inline">Use Link</span>
                     </button>
                 </div>
 
                 <div class="tab-content active" id="upload-tab">
                     <form id="uploadForm" action="/v1" method="POST" enctype="multipart/form-data">
-                        <div class="upload-area">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <h3>Drag & Drop Your File Here</h3>
-                            <p>or</p>
+                        <div class="upload-area border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl sm:rounded-2xl py-8 sm:py-10 md:py-12 px-4 sm:px-6 md:px-8 text-center cursor-pointer transition-all duration-300 flex flex-col items-center gap-3 sm:gap-4">
+                            <i class="fas fa-cloud-upload-alt text-3xl sm:text-4xl md:text-5xl text-primary dark:text-darkPrimary"></i>
+                            <h3 class="text-lg sm:text-xl font-bold">Drag & Drop Your File Here</h3>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm sm:text-base">or</p>
                             <input type="file" id="file" name="file" accept="audio/*,video/*" hidden>
-                            <button type="button" class="btn btn-secondary browse-btn">
+                            <button type="button" class="browse-btn btn btn-secondary inline-flex items-center justify-center gap-2 py-2 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl font-semibold transition-all duration-300 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 text-sm sm:text-base">
                                 <i class="fas fa-folder-open"></i>
                                 Browse Files
                             </button>
-                            <p class="file-types">Supported formats: MP3, MP4, WAV, M4A, and more</p>
+                            <p class="file-types text-xs sm:text-sm text-gray-500 dark:text-gray-400">Supported formats: MP3, MP4, WAV, M4A, and more</p>
                         </div>
-                        <div id="file-info" class="file-info hidden">
-                            <div class="selected-file">
-                                <i class="fas fa-file-audio"></i>
-                                <span class="file-name"></span>
+                        <div id="file-info" class="file-info hidden mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row items-center sm:justify-between gap-3 sm:gap-0">
+                            <div class="selected-file flex items-center gap-2 sm:gap-3">
+                                <i class="fas fa-file-audio text-primary dark:text-darkPrimary"></i>
+                                <span class="file-name text-sm sm:text-base truncate max-w-[180px] sm:max-w-[240px] md:max-w-xs"></span>
                             </div>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary w-full sm:w-auto inline-flex items-center justify-center gap-2 py-2 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl font-semibold transition-all duration-300 bg-primary hover:bg-primary-dark dark:bg-darkPrimary dark:hover:bg-darkPrimary-dark text-white text-sm sm:text-base">
                                 <i class="fas fa-play"></i>
                                 Start Transcription
                             </button>
+                        </div>
+                        <!-- Upload Loading Indicator -->
+                        <div id="upload-loading" class="hidden mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center">
+                            <div class="upload-spinner mb-3">
+                                <div class="w-10 h-10 rounded-full border-4 border-primary dark:border-darkPrimary border-t-transparent dark:border-t-transparent animate-spin"></div>
+                            </div>
+                            <p class="text-sm sm:text-base text-gray-700 dark:text-gray-300">Uploading your file...</p>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Please wait, this may take a moment</p>
                         </div>
                     </form>
                 </div>
 
                 <div class="tab-content" id="link-tab">
                     <form id="linkForm" action="/v1" method="POST">
-                        <div class="input-group">
-                            <i class="fas fa-link"></i>
-                            <input type="url" id="link" name="link" placeholder="Paste your audio/video URL here" required>
+                        <div class="input-group relative mb-4 sm:mb-6">
+                            <i class="fas fa-link absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"></i>
+                            <input type="url" id="link" name="link" placeholder="Paste your audio/video URL here" required 
+                                class="w-full py-3 sm:py-4 pl-10 sm:pl-12 pr-3 sm:pr-4 border border-gray-200 dark:border-gray-700 rounded-lg sm:rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:border-primary dark:focus:border-darkPrimary focus:ring-2 focus:ring-primary-light/20 dark:focus:ring-darkPrimary-light/20 transition-all duration-300 text-sm sm:text-base">
                         </div>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary w-full inline-flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl font-semibold transition-all duration-300 bg-primary hover:bg-primary-dark dark:bg-darkPrimary dark:hover:bg-darkPrimary-dark text-white text-sm sm:text-base">
                             <i class="fas fa-play"></i>
                             Start Transcription
                         </button>
+                        
+                        <!-- Link Loading Indicator -->
+                        <div id="link-loading" class="hidden mt-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center">
+                            <div class="upload-spinner mb-3">
+                                <div class="w-10 h-10 rounded-full border-4 border-primary dark:border-darkPrimary border-t-transparent dark:border-t-transparent animate-spin"></div>
+                            </div>
+                            <p class="text-sm sm:text-base text-gray-700 dark:text-gray-300">Processing your link...</p>
+                            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">Please wait, this may take a moment</p>
+                        </div>
                     </form>
                 </div>
 
-                <div class="progress-container hidden">
-                    <div class="progress">
-                        <div class="progress-bar" role="progressbar"></div>
+                <div class="progress-container hidden mt-4 sm:mt-6">
+                    <div class="progress h-1.5 sm:h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div class="progress-bar h-full bg-gradient-to-r from-primary to-secondary dark:from-darkPrimary dark:to-secondary transition-all duration-300" role="progressbar"></div>
                     </div>
-                    <p id="progressMessage"></p>
+                    <p id="progressMessage" class="mt-2 sm:mt-3 text-xs sm:text-sm text-center text-gray-500 dark:text-gray-400"></p>
                 </div>
             </div>
+        </div>
+        
+        <!-- Waveform background -->
+        <div class="waveform">
+            <div class="wave-line"></div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section class="features">
-        <div class="container">
-            <h2 class="section-title">Why Choose SubTranscribe?</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-microphone-alt"></i>
+    <section class="features relative py-12 sm:py-16 md:py-24 bg-surface-light dark:bg-surface-dark transition-colors duration-300">
+        <div class="container mx-auto max-w-6xl px-4">
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-center mb-8 sm:mb-12 md:mb-16 text-gray-900 dark:text-white">Why Choose SubTranscribe?</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+                <div class="feature-card bg-white dark:bg-background-dark p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:shadow-lg sm:hover:shadow-xl">
+                    <div class="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 bg-gray-100 dark:bg-gray-800 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6">
+                        <i class="fas fa-microphone-alt text-xl sm:text-2xl md:text-3xl text-primary dark:text-darkPrimary"></i>
                     </div>
-                    <h3>High Accuracy</h3>
-                    <p>Powered by OpenAI's Whisper, delivering industry-leading transcription accuracy across multiple languages and accents.</p>
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4 text-gray-900 dark:text-white">High Accuracy</h3>
+                    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">Powered by OpenAI's Whisper, delivering industry-leading transcription accuracy across multiple languages and accents.</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-globe"></i>
+                <div class="feature-card bg-white dark:bg-background-dark p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:shadow-lg sm:hover:shadow-xl">
+                    <div class="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 bg-gray-100 dark:bg-gray-800 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6">
+                        <i class="fas fa-globe text-xl sm:text-2xl md:text-3xl text-primary dark:text-darkPrimary"></i>
                     </div>
-                    <h3>98+ Languages</h3>
-                    <p>Support for multiple languages with automatic language detection, making it perfect for international content.</p>
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4 text-gray-900 dark:text-white">98+ Languages</h3>
+                    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">Support for multiple languages with automatic language detection, making it perfect for international content.</p>
                 </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-shield-alt"></i>
+                <div class="feature-card bg-white dark:bg-background-dark p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:shadow-lg sm:hover:shadow-xl">
+                    <div class="w-12 sm:w-14 md:w-16 h-12 sm:h-14 md:h-16 bg-gray-100 dark:bg-gray-800 rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6">
+                        <i class="fas fa-shield-alt text-xl sm:text-2xl md:text-3xl text-primary dark:text-darkPrimary"></i>
                     </div>
-                    <h3>Secure & Private</h3>
-                    <p>Your files are encrypted during processing and automatically deleted afterward, ensuring complete privacy.</p>
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-4 text-gray-900 dark:text-white">Secure & Private</h3>
+                    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 leading-relaxed">Your files are encrypted during processing and automatically deleted afterward, ensuring complete privacy.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- How It Works Section -->
-    <section class="how-it-works">
-        <div class="container">
-            <h2 class="section-title">How It Works</h2>
-            <div class="steps-grid">
-                <div class="step-card">
-                    <div class="step-number">1</div>
-                    <img src="/static/image/upload-video-audio.webp" alt="Upload your media file" loading="lazy">
-                    <h3>Upload Your Media</h3>
-                    <p>Simply upload your audio or video file in any common format</p>
+    <section class="how-it-works relative py-12 sm:py-16 md:py-24 bg-background-light dark:bg-background-dark transition-colors duration-300">
+        <!-- DNA Background -->
+        <div class="dna-bg opacity-5">
+            <div class="dna-helix"></div>
+            <div class="dna-nodes"></div>
+        </div>
+        
+        <div class="container mx-auto max-w-6xl px-4 relative z-10">
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-center mb-8 sm:mb-12 md:mb-16 text-gray-900 dark:text-white">How It Works</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-10">
+                <div class="step-card bg-white dark:bg-surface-dark p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:shadow-lg sm:hover:shadow-xl text-center">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary dark:bg-darkPrimary text-white rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center text-base sm:text-lg md:text-xl font-bold mx-auto mb-4 sm:mb-6">1</div>
+                    <img src="/static/image/upload-video-audio.webp" alt="Upload your media file" loading="lazy" class="w-24 sm:w-32 md:w-40 lg:w-48 h-auto mx-auto mb-4 sm:mb-6 rounded-xl sm:rounded-2xl">
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 text-gray-900 dark:text-white">Upload Your Media</h3>
+                    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Simply upload your audio or video file in any common format</p>
                 </div>
-                <div class="step-card">
-                    <div class="step-number">2</div>
-                    <img src="/static/image/transcribe-audio-into-text.webp" alt="AI processes your content" loading="lazy">
-                    <h3>AI Processing</h3>
-                    <p>Our advanced AI engine transcribes your content with high accuracy</p>
+                <div class="step-card bg-white dark:bg-surface-dark p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:shadow-lg sm:hover:shadow-xl text-center">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary dark:bg-darkPrimary text-white rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center text-base sm:text-lg md:text-xl font-bold mx-auto mb-4 sm:mb-6">2</div>
+                    <img src="/static/image/transcribe-audio-into-text.webp" alt="AI processes your content" loading="lazy" class="w-24 sm:w-32 md:w-40 lg:w-48 h-auto mx-auto mb-4 sm:mb-6 rounded-xl sm:rounded-2xl">
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 text-gray-900 dark:text-white">AI Processing</h3>
+                    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Our advanced AI engine transcribes your content with high accuracy</p>
                 </div>
-                <div class="step-card">
-                    <div class="step-number">3</div>
-                    <img src="/static/image/download-audio-transcription.webp" alt="Download your transcription" loading="lazy">
-                    <h3>Get Results</h3>
-                    <p>Download your transcription in multiple formats</p>
+                <div class="step-card bg-white dark:bg-surface-dark p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:shadow-lg sm:hover:shadow-xl text-center col-span-1 sm:col-span-2 md:col-span-1 sm:max-w-md md:max-w-none mx-auto w-full">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary dark:bg-darkPrimary text-white rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center text-base sm:text-lg md:text-xl font-bold mx-auto mb-4 sm:mb-6">3</div>
+                    <img src="/static/image/download-audio-transcription.webp" alt="Download your transcription" loading="lazy" class="w-24 sm:w-32 md:w-40 lg:w-48 h-auto mx-auto mb-4 sm:mb-6 rounded-xl sm:rounded-2xl">
+                    <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-2 sm:mb-3 text-gray-900 dark:text-white">Get Results</h3>
+                    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Download your transcription in multiple formats</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-brand">
-                    <h3>SubTranscribe</h3>
-                    <p>Professional Audio & Video Transcription</p>
-                    <div class="social-links">
-                        <a href="mailto:adelam578568@gmail.com" class="social-link" aria-label="Email">
-                            <i class="fas fa-envelope"></i>
-                        </a>
-                        <a href="http://instagram.com/adel_mahmoud10/" class="social-link" aria-label="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="https://twitter.com/Adel_MAhmoud100" class="social-link" aria-label="Twitter">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="https://www.facebook.com/profile.php?id=100013266852973" class="social-link" aria-label="Facebook">
-                            <i class="fab fa-facebook"></i>
-                        </a>
-                    </div>
+    <footer class="footer relative bg-surface-light dark:bg-surface-dark py-10 sm:py-12 md:py-16 border-t border-gray-200 dark:border-gray-800 transition-colors duration-300">
+        <!-- DNA/Transcription background with reduced opacity -->
+        <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary-light via-secondary to-primary-light dark:from-darkPrimary-light dark:via-secondary dark:to-darkPrimary-light opacity-30"></div>
+        
+        <div class="container mx-auto max-w-6xl px-4">
+            <div class="text-center mb-5 sm:mb-6 md:mb-8">
+                <h3 class="text-lg sm:text-xl md:text-2xl font-extrabold mb-2 sm:mb-3 md:mb-4">SubTranscribe</h3>
+                <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-5 sm:mb-6 md:mb-8">Professional Audio & Video Transcription</p>
+                <div class="flex justify-center gap-2 sm:gap-3 md:gap-4 mt-5 sm:mt-6 md:mt-8">
+                    <a href="mailto:adelam578568@gmail.com" class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800 rounded-lg sm:rounded-xl text-gray-500 dark:text-gray-400 flex items-center justify-center transition-all duration-300 hover:-translate-y-1 hover:text-primary dark:hover:text-darkPrimary hover:shadow-md" aria-label="Email">
+                        <i class="fas fa-envelope text-sm sm:text-base"></i>
+                    </a>
+                    <a href="http://instagram.com/adel_mahmoud10/" class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800 rounded-lg sm:rounded-xl text-gray-500 dark:text-gray-400 flex items-center justify-center transition-all duration-300 hover:-translate-y-1 hover:text-primary dark:hover:text-darkPrimary hover:shadow-md" aria-label="Instagram">
+                        <i class="fab fa-instagram text-sm sm:text-base"></i>
+                    </a>
+                    <a href="https://twitter.com/Adel_MAhmoud100" class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800 rounded-lg sm:rounded-xl text-gray-500 dark:text-gray-400 flex items-center justify-center transition-all duration-300 hover:-translate-y-1 hover:text-primary dark:hover:text-darkPrimary hover:shadow-md" aria-label="X (Twitter)">
+                        <span class="flex items-center justify-center font-bold text-sm sm:text-base">𝕏</span>
+                    </a>
+                    <a href="https://www.facebook.com/profile.php?id=100013266852973" class="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800 rounded-lg sm:rounded-xl text-gray-500 dark:text-gray-400 flex items-center justify-center transition-all duration-300 hover:-translate-y-1 hover:text-primary dark:hover:text-darkPrimary hover:shadow-md" aria-label="Facebook">
+                        <i class="fab fa-facebook text-sm sm:text-base"></i>
+                    </a>
                 </div>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; 2024 SubTranscribe. All rights reserved. Designed by <span class="designer">ADEL MAHMOUD</span></p>
+            <div class="pt-4 sm:pt-5 md:pt-6 border-t border-gray-200 dark:border-gray-800 text-center">
+                <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">&copy; 2024 SubTranscribe. All rights reserved. Designed by <span class="text-primary dark:text-darkPrimary font-bold">ADEL MAHMOUD</span></p>
             </div>
         </div>
     </footer>
@@ -199,6 +569,21 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Force immediate application of theme at page load to prevent FOUC
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
     <script src="/static/js/script.js"></script>
 </body>
 </html>
