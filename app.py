@@ -1,5 +1,5 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, Response, session,flash,make_response
+from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, session,flash, Response
 from firebase_admin import db , credentials
 from werkzeug.utils import secure_filename
 from flask_cors import CORS, cross_origin
@@ -15,20 +15,19 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 import os
 import requests
-import time
 import warnings
-import pymongo
 import ffmpeg
 import gridfs
 import yt_dlp
-import json
 import uuid
-import secrets
 import firebase_admin 
 import threading
 import random
 import smtplib
-import threading
+import asyncio
+import json
+import time
+import aiohttp
 
 
 # Suppress specific warnings
@@ -91,30 +90,63 @@ firebase_admin.initialize_app(cred,{
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current time
 
+# Create an async function for Firebase updates
+async def async_update_firebase(upload_id, progress_percentage, message):
+    ref = db.reference(f'/UID/{upload_id}')
+    await ref.update_async({
+        "status": progress_percentage,
+        "message": message
+    })
+
+# Use this function in your update_progress_bar
 def update_progress_bar(upload_id, progress_percentage, message):
     """Update the progress bar in the Firebase database."""
     with upload_progress_lock:
         upload_progress[upload_id] = {"status": progress_percentage, "message": message}
-    # Update Firebase database
-    ref = db.reference(f'/UID/{upload_id}')
-    ref.update({
-        "status": progress_percentage,
-        "message": message
-    })
+    
+    # Run Firebase update properly
+    def run_async_firebase_update():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            # Create a Firebase reference
+            ref = db.reference(f'/UID/{upload_id}')
+            # Use the synchronous update method instead
+            ref.update({
+                "status": progress_percentage,
+                "message": message
+            })
+        finally:
+            loop.close()
+    
+    # Run in a separate thread to avoid blocking
+    threading.Thread(target=run_async_firebase_update, daemon=True).start()
     
 @app.route('/progress/<upload_id>', methods=['GET'])
 @cross_origin()  # Allow CORS for this route
 def progress_status(upload_id):
     """Return the current progress status as JSON."""
-    upload_id = session.get('upload_id')
-    progress = upload_progress.get(upload_id, {"status": 0, "message": "start uploading"})
+    # Use the provided upload_id parameter if it exists
+    if not upload_id or upload_id == 'undefined' or upload_id == 'null':
+        upload_id = session.get('upload_id')
+    
+    # If we still don't have a valid upload_id, return default progress
+    if not upload_id:
+        return jsonify({"status": 0, "message": " "})
+    
+    progress = upload_progress.get(upload_id, {"status": 0, "message": " "})
     return jsonify(progress)
 
 @app.route('/upload_id', methods=['GET'])
 def progress_id():
     """Create a new upload ID."""
+    # Generate a new upload ID if one doesn't exist in the session
+    if 'upload_id' not in session:
+        session['upload_id'] = str(uuid.uuid4())
+    
     upload_id = session.get('upload_id')
-    return jsonify(upload_id)
+    return upload_id  # Return as plain text, not JSON
+
 
 def Update_progress_db(transcript_id, status, message, Section, file_name=None, link=None):
     """Update the progress status in the MongoDB database."""
@@ -173,8 +205,6 @@ def upload_or_link():
 
     user = users_collection.find_one({'user_id': user_id})
 
-    # upload_id = str(uuid.uuid4())
-    # session['upload_id'] = upload_id
     upload_id = session.get('upload_id')
     if request.method == 'POST':
         link = request.form.get('link')  # Get the link from the form
@@ -200,7 +230,7 @@ def upload_or_link():
                         "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     })
 
-                response = make_response(redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id)))
+                response = redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
                 return response
             except Exception:
                 return render_template("error.html")  # Display error page
@@ -209,28 +239,37 @@ def upload_or_link():
     else:
         return redirect(url_for('login', user_id=session['user_id']))
 
-
-def upload_audio_to_assemblyai(upload_id,audio_file, file_size):
+def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     
+    # Pre-update to show the upload is starting
+    update_progress_bar(upload_id, 0, "Starting upload...")
+    
     def upload_chunks():
         """Generator function to upload file in chunks and track progress."""
         uploaded_size = 0
+        last_update_time = time.time()
+        update_interval = 0.5  # Update progress every 0.5 seconds
+        
         while True:
-            chunk = audio_file.read(800000)  # Read a 300 KB chunk
+            chunk = audio_file.read(800000)  # Read a 800 KB chunk
             if not chunk:
                 break
             yield chunk
             uploaded_size += len(chunk)
-            progress_percentage = (uploaded_size / file_size) * 100  # Calculate progress percentage
-            prog_message = f"Processing... {progress_percentage:.2f}%"
+            progress_percentage = (uploaded_size / file_size) * 100
             
-            print(f"Progress: {progress_percentage:.2f}%, Message: {prog_message}")
+            # Update progress at regular intervals
+            current_time = time.time()
+            if current_time - last_update_time >= update_interval:
+                prog_message = f"Processing... {progress_percentage:.1f}%"
+                update_progress_bar(upload_id, progress_percentage, prog_message)
+                last_update_time = current_time
         
-            # Update the progress bar
-            update_progress_bar(upload_id,progress_percentage,prog_message)
+        # Final update at 100%
+        update_progress_bar(upload_id, 100, "Upload complete, starting transcription...")
     
     # Upload the file to AssemblyAI and get the URL
     try:
@@ -262,7 +301,6 @@ def upload_audio_to_assemblyai(upload_id,audio_file, file_size):
         elif transcription_result['status'] == 'error':
             raise RuntimeError(f"Transcription failed: {transcription_result['error']}")
 
-        
 def convert_video_to_audio(video_path):
     """Convert video file to audio using ffmpeg."""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -674,7 +712,24 @@ def serve_file(filename):
 
     return response  # Return the file response
 
+@app.route('/progress_stream/<upload_id>')
+def progress_stream(upload_id):
+    """Create a server-sent events stream for progress updates."""
+    def generate():
+        last_status = None
+        while True:
+            with upload_progress_lock:
+                progress = upload_progress.get(upload_id, {"status": 0, "message": " "})
+            
+            # Only send updates when there's a change
+            if progress != last_status:
+                last_status = progress.copy()
+                yield f"data: {json.dumps(progress)}\n\n"
+            
+            time.sleep(0.5)  # Check for updates every 500ms
+    
+    return Response(generate(), mimetype='text/event-stream')
+
 # Main entry point
 if __name__ == "__main__":
     app.run(host="0.0.0.0",port=8000,debug=False,threaded=True)
-
