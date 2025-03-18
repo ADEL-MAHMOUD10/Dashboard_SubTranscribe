@@ -27,7 +27,6 @@ import smtplib
 import asyncio
 import json
 import time
-import aiohttp
 
 
 # Suppress specific warnings
