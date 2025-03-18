@@ -99,27 +99,20 @@ async def async_update_firebase(upload_id, progress_percentage, message):
 # Use this function in your update_progress_bar
 def update_progress_bar(upload_id, progress_percentage, message):
     """Update the progress bar in the Firebase database."""
-    # First update local dictionary for immediate API responses
+    # First update local dictionary
     with upload_progress_lock:
         upload_progress[upload_id] = {"status": progress_percentage, "message": message}
     
-    # Start a thread to update Firebase without blocking
-    def update_firebase():
-        try:
-            # Create a Firebase reference
-            ref = db.reference(f'/UID/{upload_id}')
-            # Use the synchronous update method
-            ref.update({
-                "status": progress_percentage,
-                "message": message
-            })
-            print(f"Firebase updated: {progress_percentage}% - {message}")
-        except Exception as e:
-            print(f"Firebase update error: {e}")
-    
-    # Use daemon thread so it doesn't block process exit
-    thread = threading.Thread(target=update_firebase, daemon=True)
-    thread.start()
+    try:
+        # Direct Firebase update
+        ref = db.reference(f'/UID/{upload_id}')
+        ref.update({
+            "status": progress_percentage,
+            "message": message
+        })
+        print(f"Firebase update: {progress_percentage}% - {message}")
+    except Exception as e:
+        print(f"Firebase update error: {e}")
     
 @app.route('/progress/<upload_id>', methods=['GET'])
 @cross_origin()  # Allow CORS for this route
@@ -147,7 +140,7 @@ def progress_id():
     return upload_id  # Return as plain text, not JSON
 
 
-def Update_progress_db(transcript_id, status, message, Section, file_name=None, link=None):
+def Update_progress(transcript_id, status, message, Section, file_name=None, link=None):
     """Update the progress status in the MongoDB database."""
     collection = dbase["Main"]  # Specify the collection name
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current time
@@ -246,42 +239,52 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     # Pre-update to show the upload is starting
     update_progress_bar(upload_id, 0, "Starting upload...")
     
-    def upload_chunks():
-        """Generator function to upload file in chunks and track progress."""
-        uploaded_size = 0
-        last_update_time = time.time()
-        last_percent = 0
-        update_interval = 0.3  # Update every 300ms
-        
-        while True:
-            # Use a balanced chunk size
-            chunk = audio_file.read(300000)  # 300KB chunks
-            if not chunk:
-                break
-                
-            yield chunk
-            uploaded_size += len(chunk)
+    # Create a separate thread just for progress updates
+    progress_data = {"uploaded_size": 0, "running": True}
+    
+    def progress_updater():
+        """Dedicated thread for progress updates"""
+        last_percentage = 0
+        while progress_data["running"]:
+            uploaded_size = progress_data["uploaded_size"]
             progress_percentage = (uploaded_size / file_size) * 100
             
-            # Update progress at regular intervals or when percentage changes significantly
-            current_time = time.time()
-            current_percent = int(progress_percentage)
-            
-            if (current_time - last_update_time >= update_interval) or (current_percent != last_percent):
+            # Only update if percentage has changed
+            current_percentage = int(progress_percentage)
+            if current_percentage > last_percentage:
                 prog_message = f"Processing... {progress_percentage:.1f}%"
                 
-                # Update the local progress dictionary first
+                # Direct update to Firebase (no threading to avoid nesting)
                 with upload_progress_lock:
                     upload_progress[upload_id] = {"status": progress_percentage, "message": prog_message}
                 
-                # Then update Firebase - but use our existing function to maintain compatibility
-                update_progress_bar(upload_id, progress_percentage, prog_message)
+                # Direct Firebase update
+                ref = db.reference(f'/UID/{upload_id}')
+                ref.update({
+                    "status": progress_percentage,
+                    "message": prog_message
+                })
                 
-                last_update_time = current_time
-                last_percent = current_percent
-        
-        # Final update at 100%
-        update_progress_bar(upload_id, 100, "Upload complete, starting transcription...")
+                last_percentage = current_percentage
+                print(f"Progress updated: {progress_percentage:.1f}%") 
+            
+            # Sleep to avoid excessive updates
+            time.sleep(0.2)
+    
+    # Start the dedicated progress update thread
+    progress_thread = threading.Thread(target=progress_updater, daemon=True)
+    progress_thread.start()
+    
+    def upload_chunks():
+        """Generator function to upload file in chunks and track progress."""
+        while True:
+            # Use smaller chunks for more frequent progress updates
+            chunk = audio_file.read(200000)  # 200KB chunks
+            if not chunk:
+                break
+            
+            yield chunk
+            progress_data["uploaded_size"] += len(chunk)
     
     # Upload the file to AssemblyAI and get the URL
     try:
@@ -291,7 +294,16 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
             raise RuntimeError("File upload failed.")
     except Exception as e:
         update_progress_bar(upload_id, 0, f"Error uploading audio: {e}")
+        progress_data["running"] = False  # Stop the progress thread
         return None
+    finally:
+        # Stop the progress updater thread
+        progress_data["running"] = False
+        # Give the thread a moment to send the final update
+        time.sleep(0.3)
+    
+    # Final update at 100%
+    update_progress_bar(upload_id, 100, "Upload complete, starting transcription...")
     
     upload_url = response.json()["upload_url"]
 
