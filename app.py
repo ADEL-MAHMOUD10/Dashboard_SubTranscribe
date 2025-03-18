@@ -77,7 +77,7 @@ otp_collection = dbs["otp"] # OTP collection
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(day=30)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 upload_progress = {}
 
