@@ -34,58 +34,105 @@ function initApp() {
 /**
  * Progress Tracking System
  */
-async function initProgressTracking() {
+let pollingActive = false;  // Define this globally
+
+function initProgressTracking() {
     try {
         // Get upload ID from server
-        const uploadId = await fetchUploadId();
-        if (!uploadId) {
-            console.warn('No upload ID available, progress tracking disabled');
-            updateProgressMessage('Ready to upload');
-            return;
-        }
-
-        // Use Server-Sent Events for real-time updates
-        const eventSource = new EventSource(`/progress_stream/${uploadId}`);
-        
-        eventSource.onmessage = (event) => {
-            const progress = JSON.parse(event.data);
-            updateProgressUI(progress);
-            
-            // Close connection when complete
-            if (progress.status >= 100) {
-                eventSource.close();
+        fetchUploadId().then(uploadId => {
+            if (!uploadId) {
+                console.warn('No upload ID available, progress tracking disabled');
+                updateProgressMessage('Ready to upload');
+                return;
             }
-        };
-        
-        eventSource.onerror = () => {
-            console.error('EventSource connection error');
-            eventSource.close();
-            
-            // Fall back to polling if SSE fails
-            fallbackToPolling(uploadId);
-        };
+
+            console.log("Setting up progress tracking for upload ID:", uploadId);
+
+            // Try Server-Sent Events first
+            setupEventSource(uploadId);
+        }).catch(error => {
+            console.error('Error fetching upload ID:', error);
+            updateProgressMessage('Progress tracking unavailable');
+        });
     } catch (error) {
         console.error('Failed to initialize progress tracking:', error);
-        fallbackToPolling(uploadId);
     }
 }
 
+function setupEventSource(uploadId) {
+    // Use Server-Sent Events for real-time updates
+    let eventSource = new EventSource(`/progress_stream/${uploadId}`);
+    let lastUpdate = Date.now();
+    
+    eventSource.onmessage = (event) => {
+        lastUpdate = Date.now();
+        try {
+            const progress = JSON.parse(event.data);
+            updateProgressUI(progress);
+            
+            console.log("SSE Update:", progress);
+            
+            // Close connection when complete
+            if (progress.status >= 100 && progress.message.includes("complete")) {
+                console.log("Closing SSE connection - process complete");
+                eventSource.close();
+            }
+        } catch (e) {
+            console.error("Error parsing SSE data:", e);
+        }
+    };
+    
+    eventSource.onerror = () => {
+        console.error('EventSource connection error, falling back to polling');
+        eventSource.close();
+        if (!pollingActive) {
+            fallbackToPolling(uploadId);
+        }
+    };
+    
+    // Safety timeout - if no updates for 5 seconds during upload, fall back to polling
+    const checkInterval = setInterval(() => {
+        if (Date.now() - lastUpdate > 5000) {
+            console.warn("No SSE updates for 5 seconds, falling back to polling");
+            clearInterval(checkInterval);
+            eventSource.close();
+            if (!pollingActive) {
+                fallbackToPolling(uploadId);
+            }
+        }
+    }, 1000);
+}
+
 function fallbackToPolling(uploadId) {
-    // Original polling code as backup
-    const pollingInterval = 2000; // 2 seconds
+    console.log("Activating fallback polling for upload ID:", uploadId);
+    pollingActive = true;
+    
     const progressPoll = setInterval(async () => {
         try {
-            const progress = await fetchProgress(uploadId);
+            const response = await fetch(`/progress/${uploadId}`, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+                credentials: 'include',
+                cache: 'no-store'  // Prevent caching
+            });
+
+            if (!response.ok) {
+                throw new Error(`Progress fetch failed: ${response.status}`);
+            }
+
+            const progress = await response.json();
+            console.log("Poll Update:", progress);
             updateProgressUI(progress);
             
             // Clear interval when complete
-            if (progress.status >= 100) {
+            if (progress.status >= 100 && progress.message.includes("complete")) {
                 clearInterval(progressPoll);
+                pollingActive = false;
             }
         } catch (error) {
             console.error('Error fetching progress:', error);
         }
-    }, pollingInterval);
+    }, 1000);  // Poll every second
 }
 
 /**
