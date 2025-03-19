@@ -1,4 +1,3 @@
-web: gunicorn --workers=3 --max-requests=100 --max-requests-jitter=10 --timeout 600 app:app
 """ this module contains
     - functions for managing users, including registration, login, logout, and password reset
     - functions for managing user sessions and tokens
