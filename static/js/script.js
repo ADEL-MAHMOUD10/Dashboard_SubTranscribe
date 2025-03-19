@@ -67,18 +67,30 @@ function setupEventSource(uploadId) {
         lastUpdate = Date.now();
         try {
             const progress = JSON.parse(event.data);
+            console.log("SSE Update:", progress);
+            
+            // If this is the first event and it has a near-zero status, reset the progress bar
+            if (!transcriptionStarted && progress.status <= 5) {
+                const progressBar = document.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = '0%';
+                    progressBar.setAttribute('aria-valuenow', 0);
+                }
+            }
             
             // Only show progress UI once we get real progress updates
             if (progress.status > 0 || 
-                (progress.message && progress.message.toLowerCase().includes("upload"))) {
+                (progress.message && (
+                    progress.message.toLowerCase().includes("upload") || 
+                    progress.message.toLowerCase().includes("initializing") ||
+                    progress.message.toLowerCase().includes("transfer")
+                ))) {
                 transcriptionStarted = true;
             }
             
             if (transcriptionStarted) {
                 updateProgressUI(progress);
             }
-            
-            console.log("SSE Update:", progress);
             
             // Close connection when complete but keep elements visible
             if (progress.status >= 100 && progress.message.includes("complete")) {
@@ -115,6 +127,7 @@ function fallbackToPolling(uploadId) {
     console.log("Activating fallback polling for upload ID:", uploadId);
     pollingActive = true;
     let transcriptionStarted = false;
+    let firstPoll = true;
     
     const progressPoll = setInterval(async () => {
         try {
@@ -132,9 +145,23 @@ function fallbackToPolling(uploadId) {
             const progress = await response.json();
             console.log("Poll Update:", progress);
             
+            // If this is our first poll and status is near zero, reset progress bar
+            if (firstPoll && progress.status <= 5) {
+                const progressBar = document.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = '0%';
+                    progressBar.setAttribute('aria-valuenow', 0);
+                }
+                firstPoll = false;
+            }
+            
             // Only show progress UI once we get real progress updates
             if (progress.status > 0 || 
-                (progress.message && progress.message.toLowerCase().includes("upload"))) {
+                (progress.message && (
+                    progress.message.toLowerCase().includes("upload") || 
+                    progress.message.toLowerCase().includes("initializing") ||
+                    progress.message.toLowerCase().includes("transfer")
+                ))) {
                 transcriptionStarted = true;
             }
             
@@ -208,8 +235,26 @@ function updateProgressUI(progressData) {
     
     // Make sure progress container is visible when we have real progress data
     if (progressContainer && 
-        (progressData.status > 0 || (progressData.message && progressData.message.includes("Upload")))) {
+        (progressData.status > 0 || 
+         progressData.message && (
+             progressData.message.includes("Upload") || 
+             progressData.message.includes("Initializing") ||
+             progressData.message.includes("Preparing")
+         )
+        )) {
         progressContainer.classList.remove('hidden');
+    }
+    
+    // IMPORTANT: For very low status values (0-5%), explicitly set width to 0%
+    // This prevents the bar from appearing full when first shown
+    if (progressData.status <= 5) {
+        progressBar.style.transition = 'none'; // Disable transition for immediate effect
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', 0);
+        // Re-enable transition after a small delay
+        setTimeout(() => {
+            progressBar.style.transition = 'width 0.5s ease-in-out';
+        }, 50);
     }
     
     // Keep both loading spinner and progress bar visible during transcription
@@ -217,7 +262,9 @@ function updateProgressUI(progressData) {
         (progressData.message.toLowerCase().includes("upload") || 
          progressData.message.toLowerCase().includes("transcri") ||
          progressData.message.toLowerCase().includes("extract") ||
-         progressData.message.toLowerCase().includes("transfer"))) {
+         progressData.message.toLowerCase().includes("transfer") ||
+         progressData.message.toLowerCase().includes("initializing") ||
+         progressData.message.toLowerCase().includes("preparing"))) {
         
         // Show the appropriate loading spinner based on which form was submitted
         if (window.lastSubmittedForm === 'link') {
@@ -240,12 +287,6 @@ function updateProgressUI(progressData) {
         return;
     }
     
-    // Explicitly ensure progress bar starts at 0 if status is low
-    if (progressData.status <= 5) {
-        progressBar.style.width = '0%';
-        progressBar.setAttribute('aria-valuenow', 0);
-    }
-    
     // Get current progress from the bar
     const currentWidth = parseFloat(progressBar.style.width || '0');
     const newPercentage = typeof progressData.status === 'number' 
@@ -253,9 +294,7 @@ function updateProgressUI(progressData) {
         : parseFloat(progressData.status) || 0;
     
     // Only update progress bar if new value is higher (prevents going backwards)
-    if (newPercentage >= currentWidth) {
-        // Add a subtle animation for smoother transitions
-        progressBar.style.transition = 'width 0.5s ease-in-out';
+    if (newPercentage > currentWidth) {
         progressBar.style.width = `${newPercentage}%`;
         progressBar.setAttribute('aria-valuenow', newPercentage);
         
@@ -265,8 +304,14 @@ function updateProgressUI(progressData) {
         } else {
             updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
         }
+    } else if (newPercentage < currentWidth && newPercentage <= 10) {
+        // If progress is significantly lower and we're at the beginning,
+        // allow reset to ensure proper initialization
+        progressBar.style.width = `${newPercentage}%`;
+        progressBar.setAttribute('aria-valuenow', newPercentage);
+        updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
     } else {
-        // If new value is lower, keep the message updated but don't reduce progress bar
+        // Otherwise just update the message but keep the bar position
         updateProgressMessage(progressData.message || `Processing ${currentWidth.toFixed(1)}%`);
     }
 }
@@ -593,9 +638,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (fileInfo) fileInfo.classList.add('hidden');
             if (uploadLoading) uploadLoading.classList.remove('hidden');
             
-            // Show progress container for file uploads - will now be explicitly shown on form submit
+            // Show progress container and reset progress bar
             if (progressContainer) {
                 progressContainer.classList.remove('hidden');
+                resetProgressBar();
+                
+                const progressMessage = document.getElementById('progressMessage');
+                if (progressMessage) {
+                    progressMessage.textContent = 'Preparing for upload...';
+                }
             }
         });
     }
@@ -612,15 +663,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading spinner
             if (linkLoading) linkLoading.classList.remove('hidden');
             
-            // Show progress container but explicitly set progress to 0%
+            // Show progress container and reset progress bar
             if (progressContainer) {
                 progressContainer.classList.remove('hidden');
-                
-                const progressBar = document.querySelector('.progress-bar');
-                if (progressBar) {
-                    progressBar.style.width = '0%';
-                    progressBar.setAttribute('aria-valuenow', 0);
-                }
+                resetProgressBar();
                 
                 const progressMessage = document.getElementById('progressMessage');
                 if (progressMessage) {
@@ -826,4 +872,25 @@ function initAnimations() {
         element.classList.add('opacity-0', 'translate-y-5', 'transition-all', 'duration-700');
         observer.observe(element);
     });
+}
+
+/**
+ * Reset progress bar to initial state
+ */
+function resetProgressBar() {
+    const progressBar = document.querySelector('.progress-bar');
+    const progressMessage = document.getElementById('progressMessage');
+    
+    if (progressBar) {
+        progressBar.style.transition = 'none';
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', 0);
+        setTimeout(() => {
+            progressBar.style.transition = 'width 0.5s ease-in-out';
+        }, 50);
+    }
+    
+    if (progressMessage) {
+        progressMessage.textContent = '';
+    }
 }
