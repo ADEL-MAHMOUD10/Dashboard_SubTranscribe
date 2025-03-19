@@ -1,18 +1,26 @@
+""" this module contains
+    - functions for managing users, including registration, login, logout, and password reset
+    - functions for managing user sessions and tokens
+    - functions for managing user roles and permissions
+    - functions for managing user activity logs and auditing
+    - functions for managing user-specific data and settings
+"""
+
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, session,flash, Response
 from firebase_admin import db , credentials
-from werkzeug.utils import secure_filename
 from flask_cors import CORS, cross_origin
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from tqdm import tqdm
 from bson import ObjectId
-from datetime import datetime
 from collections import defaultdict
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
+from celery import Celery
+from apscheduler.schedulers.background import BackgroundScheduler
 import os
 import requests
 import warnings
@@ -56,6 +64,16 @@ firebase_credentials = {
 # Create a Flask application instance
 app = Flask(__name__)
 CORS(app)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_PERMANENT'] = True
+
+# # Celery with Redis
+# app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+# app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
+# celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+# celery.conf.update(app.config)
 
 app.secret_key = SESSION_USERS
 
@@ -82,9 +100,9 @@ upload_progress_lock = threading.Lock()
 
 # Set up Firebase connection
 cred = credentials.Certificate(firebase_credentials)
-firebase_admin.initialize_app(cred,{
-    "databaseURL":"https://subtranscribe-default-rtdb.europe-west1.firebasedatabase.app/"
-    })
+firebase_admin.initialize_app(cred, {
+    "databaseURL": "https://subtranscribe-default-rtdb.europe-west1.firebasedatabase.app/"
+})
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current time
 
@@ -114,7 +132,7 @@ def update_progress_bar(upload_id, progress_percentage, message):
         print(f"Firebase update: {progress_percentage}% - {message}")
     except Exception as e:
         print(f"Firebase update error: {e}")
-    
+
 @app.route('/progress/<upload_id>', methods=['GET'])
 @cross_origin()  # Allow CORS for this route
 def progress_status(upload_id):
@@ -130,22 +148,20 @@ def progress_status(upload_id):
     progress = upload_progress.get(upload_id, {"status": 0, "message": " "})
     return jsonify(progress)
 
+
 @app.route('/upload_id', methods=['GET'])
 def progress_id():
     """Create a new upload ID."""
     # Generate a new upload ID if one doesn't exist in the session
-    if 'upload_id' not in session:
+    if 'upload_id' not in session or not session['upload_id']:
         session['upload_id'] = str(uuid.uuid4())
     
     upload_id = session.get('upload_id')
     return upload_id  # Return as plain text, not JSON
 
-
 def Update_progress(transcript_id, status, message, Section, file_name=None, link=None):
     """Update the progress status in the MongoDB database."""
     collection = dbase["Main"]  # Specify the collection name
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current time
-
     # Prepare the post data
     post = {
         "_id": transcript_id,
@@ -179,13 +195,14 @@ def delete_audio_from_gridfs(audio_id):
 
 def allowed_file(filename):
     """Check if the uploaded file has an allowed extension."""
-    ALLOWED_EXTENSIONS = {'.mp4', '.wmv', '.mov', '.mkv', '.h.264', '.mp3', '.wav'}
-    return '.' in filename and os.path.splitext(filename)[1].lower() in ALLOWED_EXTENSIONS
+    EXTENSIONS = {'.mp4', '.wmv', '.mov', '.mkv', '.h.264', '.mp3', '.wav'}
+    return '.' in filename and os.path.splitext(filename)[1].lower() in EXTENSIONS
 
 @app.route('/v1/', methods=['GET', 'POST'])
 def upload_or_link_no_user():
+    """if user is not logged in"""
     if 'user_id' in session:
-        return redirect(url_for('login', user_id=session['user_id']))
+        return redirect(url_for('main_user', user_id=session['user_id']))
     return redirect(url_for('login'))
 
 
@@ -202,15 +219,27 @@ def upload_or_link():
     if request.method == 'POST':
         link = request.form.get('link')  # Get the link from the form
         if link:
-            transcript_id = transcribe_from_link(upload_id,link)  # Transcribe from the provided link
-            return transcript_id  
+            # Ensure we have an upload ID for progress tracking
+            if not upload_id:
+                upload_id = str(uuid.uuid4())
+                session['upload_id'] = upload_id
+            
+            transcript_id = transcribe_from_link(upload_id, link)  # Transcribe from the provided link
+            if isinstance(transcript_id, str):  # If it's a valid transcript ID (not an error template)
+                return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
+            return transcript_id  # This would be the error template
         
         file = request.files['file']  # Get the uploaded file
         if file and allowed_file(file.filename):
+            # Ensure we have an upload ID for progress tracking
+            if not upload_id:
+                upload_id = str(uuid.uuid4())
+                session['upload_id'] = upload_id
+                
             audio_stream = file
             file_size = request.content_length  # Get file size in bytes
             try:
-                transcript_id = upload_audio_to_assemblyai(upload_id,audio_stream, file_size)  # Upload directly using stream
+                transcript_id = upload_audio_to_assemblyai(upload_id, audio_stream, file_size)  # Upload directly using stream
                                 
                 username = user.get('username')  
                 if username:
@@ -231,6 +260,7 @@ def upload_or_link():
             return render_template("error.html")  # Render error page if file type is not allowed
     else:
         return redirect(url_for('login', user_id=session['user_id']))
+
 
 def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
@@ -587,6 +617,14 @@ def transcribe_from_link(upload_id, link):
             update_progress_bar(upload_id, 0, f"Error: {error_message[:50]}...")
         return render_template("error.html")
 
+# def upload_audio_to_gridfs(file_path):
+#     """Upload audio file to MongoDB using GridFS."""
+#     with open(file_path, "rb") as f:
+#         # Store the file in GridFS and return the file ID
+#         audio_id = fs.put(f, filename=os.path.basename(file_path), content_type='audio/video')
+
+#     return audio_id
+
 @app.route('/v1/<user_id>')
 def main_user(user_id):
     if 'user_id' in session:
@@ -646,9 +684,8 @@ def login():
                 flash('Successfully logged in!', 'success')
             session['user_id'] = user['user_id']  # Store user_id in session
             return redirect(url_for('main_user', user_id=user['user_id']))
-        else:
-            flash('Incorrect username or password', 'danger')
-            return redirect(url_for('login'))
+        flash('Incorrect username or password', 'danger')
+        return redirect(url_for('login'))
         
     return render_template('login.html')
 
@@ -671,14 +708,12 @@ def check_user():
             otp = random.randint(100000, 999999)
             otp_collection.insert_one({'User': Email, 'OTP': otp,'created_at': datetime.now()})
             
-            
             send_email(Email, otp)
             
             flash(f'OTP has been sent to {Email}', 'success')
             return render_template('reset.html', email=Email)
-        else:
-            flash('User not found.', 'danger')
-            return redirect(url_for('check_user'))
+        flash('User not found.', 'danger')
+        return redirect(url_for('check_user'))
     return render_template('check_user.html')
         
 @app.route('/reset_password', methods=['POST'])
@@ -781,14 +816,11 @@ def dashboard(user_id):
     return render_template('dashboard.html', username=user['username'], files=files, months=months, uploads=uploads)
 
 def calculate_monthly_activity(files):
+    """calculates monthly activity"""
     monthly_activity = defaultdict(int)
-
-    for file in files:
-        
+    for file in files:        
         month = file['upload_time'].strftime('%B')
         monthly_activity[month] += 1
-
-    
     ordered_months = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
@@ -800,6 +832,7 @@ def calculate_monthly_activity(files):
 @app.route('/user_dashboard')
 def user_dashboard():
     # Retrieve the user_id from the session
+    """check user_id"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
@@ -809,6 +842,7 @@ def user_dashboard():
 
 @app.route('/delete_file', methods=['POST'])
 def delete_file():
+    """delete a file from the dashboard"""
     user_id = session.get('user_id')
     
     user_file = files_collection.find_one({'user_id': user_id})
@@ -838,8 +872,8 @@ def delete_file():
 
 @app.route('/redirect/<file_id>')
 def redirect_to_transcript(file_id):
+    """Redirect to the subtitle download page based on the transcript ID."""
     try:
-       
         file = files_collection.find_one({'_id': ObjectId(file_id)})
         user_id = session.get('user_id')
         if file:
@@ -877,7 +911,7 @@ def download_subtitle(user_id,transcript_id):
             return redirect(url_for('serve_file', filename=subtitle_file))  # Redirect to serve the file
         else:
             return render_template("error.html")  # Render error page if request fails
-    return render_template('subtitle.html')  # Render the subtitle download page
+    return render_template('subtitle.html')  # Render the download page with the updated template
 
 @app.route('/serve/<filename>')
 def serve_file(filename):
@@ -894,7 +928,10 @@ def progress_stream(upload_id):
     """Create a server-sent events stream for progress updates."""
     def generate():
         last_status = None
-        while True:
+        iteration_count = 0
+        max_iterations = 600  # Limit the connection to 5 minutes (600 * 0.5s)
+        
+        while iteration_count < max_iterations:
             with upload_progress_lock:
                 progress = upload_progress.get(upload_id, {"status": 0, "message": " "})
             
@@ -902,10 +939,21 @@ def progress_stream(upload_id):
             if progress != last_status:
                 last_status = progress.copy()
                 yield f"data: {json.dumps(progress)}\n\n"
+                
+                # If completed, exit early
+                if progress.get("status", 0) >= 100:
+                    break
             
             time.sleep(0.5)  # Check for updates every 500ms
+            iteration_count += 1
+        
+        # Final message indicating stream completion
+        yield f"data: {json.dumps({'status': last_status.get('status', 0), 'message': 'Stream ended'})}\n\n"
     
-    return Response(generate(), mimetype='text/event-stream')
+    response = Response(generate(), mimetype='text/event-stream')
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['Connection'] = 'keep-alive'
+    return response
 
 @app.route('/health')
 def health_check():
