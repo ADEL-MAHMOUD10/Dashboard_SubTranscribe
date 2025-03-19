@@ -1,3 +1,4 @@
+web: gunicorn --workers=3 --max-requests=100 --max-requests-jitter=10 --timeout 600 app:app
 """ this module contains
     - functions for managing users, including registration, login, logout, and password reset
     - functions for managing user sessions and tokens
@@ -19,7 +20,6 @@ from collections import defaultdict
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
-from celery import Celery
 from apscheduler.schedulers.background import BackgroundScheduler
 import os
 import requests
@@ -67,13 +67,6 @@ CORS(app)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
-
-# # Celery with Redis
-# app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-# app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
-
-# celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
-# celery.conf.update(app.config)
 
 app.secret_key = SESSION_USERS
 
