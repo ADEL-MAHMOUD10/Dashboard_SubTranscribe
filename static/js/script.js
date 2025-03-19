@@ -42,17 +42,15 @@ function initProgressTracking() {
         fetchUploadId().then(uploadId => {
             if (!uploadId) {
                 console.warn('No upload ID available, progress tracking disabled');
-                updateProgressMessage('Ready to upload');
                 return;
             }
 
             console.log("Setting up progress tracking for upload ID:", uploadId);
 
-            // Try Server-Sent Events first
+            // Try Server-Sent Events first but don't show progress elements yet
             setupEventSource(uploadId);
         }).catch(error => {
             console.error('Error fetching upload ID:', error);
-            updateProgressMessage('Progress tracking unavailable');
         });
     } catch (error) {
         console.error('Failed to initialize progress tracking:', error);
@@ -63,16 +61,26 @@ function setupEventSource(uploadId) {
     // Use Server-Sent Events for real-time updates
     let eventSource = new EventSource(`/progress_stream/${uploadId}`);
     let lastUpdate = Date.now();
+    let transcriptionStarted = false;
     
     eventSource.onmessage = (event) => {
         lastUpdate = Date.now();
         try {
             const progress = JSON.parse(event.data);
-            updateProgressUI(progress);
+            
+            // Only show progress UI once we get real progress updates
+            if (progress.status > 0 || 
+                (progress.message && progress.message.toLowerCase().includes("upload"))) {
+                transcriptionStarted = true;
+            }
+            
+            if (transcriptionStarted) {
+                updateProgressUI(progress);
+            }
             
             console.log("SSE Update:", progress);
             
-            // Close connection when complete
+            // Close connection when complete but keep elements visible
             if (progress.status >= 100 && progress.message.includes("complete")) {
                 console.log("Closing SSE connection - process complete");
                 eventSource.close();
@@ -106,6 +114,7 @@ function setupEventSource(uploadId) {
 function fallbackToPolling(uploadId) {
     console.log("Activating fallback polling for upload ID:", uploadId);
     pollingActive = true;
+    let transcriptionStarted = false;
     
     const progressPoll = setInterval(async () => {
         try {
@@ -122,7 +131,16 @@ function fallbackToPolling(uploadId) {
 
             const progress = await response.json();
             console.log("Poll Update:", progress);
-            updateProgressUI(progress);
+            
+            // Only show progress UI once we get real progress updates
+            if (progress.status > 0 || 
+                (progress.message && progress.message.toLowerCase().includes("upload"))) {
+                transcriptionStarted = true;
+            }
+            
+            if (transcriptionStarted) {
+                updateProgressUI(progress);
+            }
             
             // Clear interval when complete
             if (progress.status >= 100 && progress.message.includes("complete")) {
@@ -184,26 +202,72 @@ function updateProgressUI(progressData) {
     const progressMessage = document.getElementById('progressMessage');
     const uploadLoading = document.getElementById('upload-loading');
     const linkLoading = document.getElementById('link-loading');
+    const progressContainer = document.querySelector('.progress-container');
     
     if (!progressBar || !progressMessage) return;
     
-    // Hide loading spinners once progress updates start
-    if (uploadLoading) uploadLoading.classList.add('hidden');
-    if (linkLoading) linkLoading.classList.add('hidden');
+    // Make sure progress container is visible when we have real progress data
+    if (progressContainer && 
+        (progressData.status > 0 || (progressData.message && progressData.message.includes("Upload")))) {
+        progressContainer.classList.remove('hidden');
+    }
     
-    // Update progress bar
-    const percentage = typeof progressData.status === 'number' 
+    // Keep both loading spinner and progress bar visible during transcription
+    if (progressData.message && 
+        (progressData.message.toLowerCase().includes("upload") || 
+         progressData.message.toLowerCase().includes("transcri") ||
+         progressData.message.toLowerCase().includes("extract") ||
+         progressData.message.toLowerCase().includes("transfer"))) {
+        
+        // Show the appropriate loading spinner based on which form was submitted
+        if (window.lastSubmittedForm === 'link') {
+            if (uploadLoading) uploadLoading.classList.add('hidden');
+            if (linkLoading) linkLoading.classList.remove('hidden');
+        } else {
+            if (linkLoading) linkLoading.classList.add('hidden');
+            if (uploadLoading) uploadLoading.classList.remove('hidden');
+        }
+    } else if (progressData.status >= 100) {
+        // Only hide spinners when complete
+        if (uploadLoading) uploadLoading.classList.add('hidden');
+        if (linkLoading) linkLoading.classList.add('hidden');
+    }
+    
+    // Check for error status (-1)
+    if (progressData.status === -1) {
+        // Connection problem but don't reset progress bar
+        updateProgressMessage(progressData.message || "Connection issue, retrying...", true);
+        return;
+    }
+    
+    // Explicitly ensure progress bar starts at 0 if status is low
+    if (progressData.status <= 5) {
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', 0);
+    }
+    
+    // Get current progress from the bar
+    const currentWidth = parseFloat(progressBar.style.width || '0');
+    const newPercentage = typeof progressData.status === 'number' 
         ? progressData.status 
         : parseFloat(progressData.status) || 0;
     
-    progressBar.style.width = `${percentage}%`;
-    progressBar.setAttribute('aria-valuenow', percentage);
-    
-    // Update message based on progress
-    if (percentage >= 100) {
-        updateProgressMessage('Transcription complete! Preparing your download...');
+    // Only update progress bar if new value is higher (prevents going backwards)
+    if (newPercentage >= currentWidth) {
+        // Add a subtle animation for smoother transitions
+        progressBar.style.transition = 'width 0.5s ease-in-out';
+        progressBar.style.width = `${newPercentage}%`;
+        progressBar.setAttribute('aria-valuenow', newPercentage);
+        
+        // Update message based on progress
+        if (newPercentage >= 100) {
+            updateProgressMessage('Transcription successfully completed');
+        } else {
+            updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
+        }
     } else {
-        updateProgressMessage(progressData.message || `Processing ${percentage.toFixed(1)}%`);
+        // If new value is lower, keep the message updated but don't reduce progress bar
+        updateProgressMessage(progressData.message || `Processing ${currentWidth.toFixed(1)}%`);
     }
 }
 
@@ -419,6 +483,31 @@ function initTabSwitching() {
             
             if (!activeContent || !newContent || activeContent === newContent) return;
             
+            // Reset progress bar when switching tabs
+            const progressBar = document.querySelector('.progress-bar');
+            const progressMessage = document.getElementById('progressMessage');
+            const progressContainer = document.querySelector('.progress-container');
+            
+            if (progressBar) {
+                progressBar.style.width = '0%';
+                progressBar.setAttribute('aria-valuenow', 0);
+            }
+            
+            if (progressMessage) {
+                progressMessage.textContent = '';
+            }
+            
+            if (progressContainer) {
+                progressContainer.classList.add('hidden');
+            }
+            
+            // Hide both loading spinners when switching tabs
+            const uploadLoading = document.getElementById('upload-loading');
+            const linkLoading = document.getElementById('link-loading');
+            
+            if (uploadLoading) uploadLoading.classList.add('hidden');
+            if (linkLoading) linkLoading.classList.add('hidden');
+            
             // Determine animation direction
             const goingRight = Array.from(tabs).indexOf(tab) > 
                               Array.from(tabs).indexOf(document.querySelector('.tab-btn.active'));
@@ -484,16 +573,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const uploadForm = document.getElementById('uploadForm');
     const uploadLoading = document.getElementById('upload-loading');
     const fileInfo = document.getElementById('file-info');
+    const progressContainer = document.querySelector('.progress-container');
+    
+    // Initialize global variable to track which form was submitted
+    window.lastSubmittedForm = null;
+    
+    // Hide progress container initially
+    if (progressContainer) {
+        progressContainer.classList.add('hidden');
+    }
     
     // File upload form handling
     if (uploadForm) {
         uploadForm.addEventListener('submit', function(e) {
+            // Set which form was submitted
+            window.lastSubmittedForm = 'file';
+            
             // Hide file info and show loading spinner
             if (fileInfo) fileInfo.classList.add('hidden');
             if (uploadLoading) uploadLoading.classList.remove('hidden');
             
-            // Show progress container for file uploads
-            const progressContainer = document.querySelector('.progress-container');
+            // Show progress container for file uploads - will now be explicitly shown on form submit
             if (progressContainer) {
                 progressContainer.classList.remove('hidden');
             }
@@ -506,13 +606,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (linkForm) {
         linkForm.addEventListener('submit', function(e) {
+            // Set which form was submitted
+            window.lastSubmittedForm = 'link';
+            
             // Show loading spinner
             if (linkLoading) linkLoading.classList.remove('hidden');
             
-            // Show progress container for link uploads
-            const progressContainer = document.querySelector('.progress-container');
+            // Show progress container but explicitly set progress to 0%
             if (progressContainer) {
                 progressContainer.classList.remove('hidden');
+                
+                const progressBar = document.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = '0%';
+                    progressBar.setAttribute('aria-valuenow', 0);
+                }
+                
+                const progressMessage = document.getElementById('progressMessage');
+                if (progressMessage) {
+                    progressMessage.textContent = 'Initializing link extraction...';
+                }
             }
             
             // You can add validation here if needed
@@ -530,6 +643,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+/**
+ * Format file size in human-readable format
+ */
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
 /**
  * File Upload with Drag & Drop
@@ -613,8 +739,7 @@ function initFileUpload() {
         // Validate file type
         const validTypes = ['audio/mpeg', 'audio/wav', 'video/mp4', 'audio/m4a'];
         if (!validTypes.includes(file.type)) {
-            updateProgressMessage('Please upload a valid audio or video file.', true);
-            showProgressContainer();
+            alert('Please upload a valid audio or video file.');
             return;
         }
         
@@ -622,20 +747,28 @@ function initFileUpload() {
         if (fileInfo) {
             const fileName = fileInfo.querySelector('.file-name');
             if (fileName) {
-                fileName.textContent = file.name;
+                // Format file size and append to filename
+                const formattedSize = formatFileSize(file.size);
+                fileName.innerHTML = `${file.name} <span class="text-sm text-gray-500">(${formattedSize})</span>`;
                 fileInfo.classList.remove('hidden');
             }
         }
         
-        // Reset progress UI
-        resetProgressUI();
+        // Don't show progress container until form is submitted
+        if (progressContainer) {
+            progressContainer.classList.add('hidden');
+        }
     }
     
-    // Reset progress UI
+    // Reset progress UI - but don't show container
     function resetProgressUI() {
-        showProgressContainer();
         if (progressBar) progressBar.style.width = '0%';
-        updateProgressMessage('');
+        
+        // Progress message ID
+        const progressMessage = document.getElementById('progressMessage');
+        if (progressMessage) {
+            progressMessage.textContent = '';
+        }
     }
     
     // Show progress container
