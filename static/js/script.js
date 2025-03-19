@@ -61,25 +61,24 @@ function setupEventSource(uploadId) {
     // Use Server-Sent Events for real-time updates
     let eventSource = new EventSource(`/progress_stream/${uploadId}`);
     let lastUpdate = Date.now();
-    let firstEventReceived = false;
-    
-    console.log("SSE connection established for upload ID:", uploadId);
+    let transcriptionStarted = false;
     
     eventSource.onmessage = (event) => {
         lastUpdate = Date.now();
         try {
             const progress = JSON.parse(event.data);
-            console.log("SSE Update:", progress);
             
-            // Reset progress bar on first event if status is low
-            if (!firstEventReceived) {
-                firstEventReceived = true;
-                if (progress.status <= 5) {
-                    resetProgressBar();
-                }
+            // Only show progress UI once we get real progress updates
+            if (progress.status > 0 || 
+                (progress.message && progress.message.toLowerCase().includes("upload"))) {
+                transcriptionStarted = true;
             }
             
-            updateProgressUI(progress);
+            if (transcriptionStarted) {
+                updateProgressUI(progress);
+            }
+            
+            console.log("SSE Update:", progress);
             
             // Close connection when complete but keep elements visible
             if (progress.status >= 100 && progress.message.includes("complete")) {
@@ -115,7 +114,7 @@ function setupEventSource(uploadId) {
 function fallbackToPolling(uploadId) {
     console.log("Activating fallback polling for upload ID:", uploadId);
     pollingActive = true;
-    let firstPoll = true;
+    let transcriptionStarted = false;
     
     const progressPoll = setInterval(async () => {
         try {
@@ -133,15 +132,15 @@ function fallbackToPolling(uploadId) {
             const progress = await response.json();
             console.log("Poll Update:", progress);
             
-            // Reset progress bar on first poll if status is low
-            if (firstPoll) {
-                firstPoll = false;
-                if (progress.status <= 5) {
-                    resetProgressBar();
-                }
+            // Only show progress UI once we get real progress updates
+            if (progress.status > 0 || 
+                (progress.message && progress.message.toLowerCase().includes("upload"))) {
+                transcriptionStarted = true;
             }
             
-            updateProgressUI(progress);
+            if (transcriptionStarted) {
+                updateProgressUI(progress);
+            }
             
             // Clear interval when complete
             if (progress.status >= 100 && progress.message.includes("complete")) {
@@ -208,51 +207,68 @@ function updateProgressUI(progressData) {
     if (!progressBar || !progressMessage) return;
     
     // Make sure progress container is visible when we have real progress data
-    if (progressContainer) {
+    if (progressContainer && 
+        (progressData.status > 0 || (progressData.message && progressData.message.includes("Upload")))) {
         progressContainer.classList.remove('hidden');
     }
     
-    // For low status values, explicitly reset the bar to avoid confusion
-    if (progressData.status <= 5) {
-        console.log("Low status value detected, resetting progress bar to 0%");
-        progressBar.style.transition = 'none'; // Disable transition for immediate effect
-        progressBar.style.width = '0%';
-        progressBar.setAttribute('aria-valuenow', 0);
-        // Re-enable transition after a small delay
-        setTimeout(() => {
-            progressBar.style.transition = 'width 0.5s ease-in-out';
-        }, 50);
-    }
-    
-    // Hide the appropriate loading spinner based on progress
-    if (progressData.status > 10) {
+    // Keep both loading spinner and progress bar visible during transcription
+    if (progressData.message && 
+        (progressData.message.toLowerCase().includes("upload") || 
+         progressData.message.toLowerCase().includes("transcri") ||
+         progressData.message.toLowerCase().includes("extract") ||
+         progressData.message.toLowerCase().includes("transfer"))) {
+        
+        // Show the appropriate loading spinner based on which form was submitted
+        if (window.lastSubmittedForm === 'link') {
+            if (uploadLoading) uploadLoading.classList.add('hidden');
+            if (linkLoading) linkLoading.classList.remove('hidden');
+        } else {
+            if (linkLoading) linkLoading.classList.add('hidden');
+            if (uploadLoading) uploadLoading.classList.remove('hidden');
+        }
+    } else if (progressData.status >= 100) {
+        // Only hide spinners when complete
         if (uploadLoading) uploadLoading.classList.add('hidden');
         if (linkLoading) linkLoading.classList.add('hidden');
     }
     
     // Check for error status (-1)
     if (progressData.status === -1) {
+        // Connection problem but don't reset progress bar
         updateProgressMessage(progressData.message || "Connection issue, retrying...", true);
         return;
     }
     
-    // Update progress bar width
+    // Explicitly ensure progress bar starts at 0 if status is low
+    if (progressData.status <= 5) {
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', 0);
+    }
+    
+    // Get current progress from the bar
+    const currentWidth = parseFloat(progressBar.style.width || '0');
     const newPercentage = typeof progressData.status === 'number' 
         ? progressData.status 
         : parseFloat(progressData.status) || 0;
     
-    progressBar.style.width = `${newPercentage}%`;
-    progressBar.setAttribute('aria-valuenow', newPercentage);
-    
-    // Update message based on progress
-    if (newPercentage >= 100) {
-        updateProgressMessage('Transcription successfully completed');
+    // Only update progress bar if new value is higher (prevents going backwards)
+    if (newPercentage >= currentWidth) {
+        // Add a subtle animation for smoother transitions
+        progressBar.style.transition = 'width 0.5s ease-in-out';
+        progressBar.style.width = `${newPercentage}%`;
+        progressBar.setAttribute('aria-valuenow', newPercentage);
+        
+        // Update message based on progress
+        if (newPercentage >= 100) {
+            updateProgressMessage('Transcription successfully completed');
+        } else {
+            updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
+        }
     } else {
-        updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
+        // If new value is lower, keep the message updated but don't reduce progress bar
+        updateProgressMessage(progressData.message || `Processing ${currentWidth.toFixed(1)}%`);
     }
-    
-    // Log updates to help with debugging
-    console.log(`Progress update: ${newPercentage}% - ${progressData.message}`);
 }
 
 /**
@@ -577,15 +593,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (fileInfo) fileInfo.classList.add('hidden');
             if (uploadLoading) uploadLoading.classList.remove('hidden');
             
-            // Show progress container and reset progress bar
+            // Show progress container for file uploads - will now be explicitly shown on form submit
             if (progressContainer) {
                 progressContainer.classList.remove('hidden');
-                resetProgressBar();
-                
-                const progressMessage = document.getElementById('progressMessage');
-                if (progressMessage) {
-                    progressMessage.textContent = 'Preparing for upload...';
-                }
             }
         });
     }
@@ -602,10 +612,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading spinner
             if (linkLoading) linkLoading.classList.remove('hidden');
             
-            // Show progress container and reset progress bar
+            // Show progress container but explicitly set progress to 0%
             if (progressContainer) {
                 progressContainer.classList.remove('hidden');
-                resetProgressBar();
+                
+                const progressBar = document.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = '0%';
+                    progressBar.setAttribute('aria-valuenow', 0);
+                }
                 
                 const progressMessage = document.getElementById('progressMessage');
                 if (progressMessage) {
@@ -812,25 +827,3 @@ function initAnimations() {
         observer.observe(element);
     });
 }
-
-/**
- * Reset progress bar to initial state
- */
-function resetProgressBar() {
-    const progressBar = document.querySelector('.progress-bar');
-    const progressMessage = document.getElementById('progressMessage');
-    
-    if (progressBar) {
-        progressBar.style.transition = 'none';
-        progressBar.style.width = '0%';
-        progressBar.setAttribute('aria-valuenow', 0);
-        setTimeout(() => {
-            progressBar.style.transition = 'width 0.5s ease-in-out';
-        }, 50);
-    }
-    
-    if (progressMessage) {
-        progressMessage.textContent = 'Initializing...';
-    }
-}
-
