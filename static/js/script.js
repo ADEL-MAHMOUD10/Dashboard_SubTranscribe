@@ -182,14 +182,14 @@ async function fetchProgress(uploadId) {
 function updateProgressUI(progressData) {
     const progressBar = document.querySelector('.progress-bar');
     const progressMessage = document.getElementById('progressMessage');
-    const progressContainer = document.querySelector('.progress-container');
+    const uploadLoading = document.getElementById('upload-loading');
+    const linkLoading = document.getElementById('link-loading');
     
     if (!progressBar || !progressMessage) return;
     
-    // Show progress container but DON'T hide loading spinners
-    if (progressContainer) {
-        progressContainer.classList.remove('hidden');
-    }
+    // Hide loading spinners once progress updates start
+    if (uploadLoading) uploadLoading.classList.add('hidden');
+    if (linkLoading) linkLoading.classList.add('hidden');
     
     // Update progress bar
     const percentage = typeof progressData.status === 'number' 
@@ -202,12 +202,6 @@ function updateProgressUI(progressData) {
     // Update message based on progress
     if (percentage >= 100) {
         updateProgressMessage('Transcription complete! Preparing your download...');
-        
-        // Only hide loading spinners when the upload is completed (100%)
-        const uploadLoading = document.getElementById('upload-loading');
-        const linkLoading = document.getElementById('link-loading');
-        if (uploadLoading) uploadLoading.classList.add('hidden');
-        if (linkLoading) linkLoading.classList.add('hidden');
     } else {
         updateProgressMessage(progressData.message || `Processing ${percentage.toFixed(1)}%`);
     }
@@ -498,7 +492,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (fileInfo) fileInfo.classList.add('hidden');
             if (uploadLoading) uploadLoading.classList.remove('hidden');
             
-            // Don't show progress container yet - will be shown in updateProgressUI
+            // Show progress container for file uploads
+            const progressContainer = document.querySelector('.progress-container');
+            if (progressContainer) {
+                progressContainer.classList.remove('hidden');
+            }
         });
     }
     
@@ -511,7 +509,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading spinner
             if (linkLoading) linkLoading.classList.remove('hidden');
             
-            // Don't show progress container yet - will be shown in updateProgressUI
+            // Show progress container for link uploads
+            const progressContainer = document.querySelector('.progress-container');
+            if (progressContainer) {
+                progressContainer.classList.remove('hidden');
+            }
             
             // You can add validation here if needed
             const linkInput = document.getElementById('link');
@@ -519,6 +521,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault(); // Prevent form submission if link is empty
                 alert('Please enter a valid URL');
                 linkLoading.classList.add('hidden');
+                
+                // Hide progress container if validation fails
+                if (progressContainer) {
+                    progressContainer.classList.add('hidden');
+                }
             }
         });
     }
