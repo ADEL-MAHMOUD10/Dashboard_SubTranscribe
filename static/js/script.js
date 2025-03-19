@@ -176,25 +176,6 @@ async function fetchUploadId() {
 }
 
 /**
- * Fetch progress data for a specific upload
- */
-async function fetchProgress(uploadId) {
-    if (!uploadId) return { status: 0, message: 'Ready to upload' };
-    
-    const response = await fetch(`/progress/${uploadId}`, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        credentials: 'include'
-    });
-
-    if (!response.ok) {
-        throw new Error(`Progress fetch failed: ${response.status}`);
-    }
-
-    return await response.json();
-}
-
-/**
  * Update progress UI with latest status
  */
 function updateProgressUI(progressData) {
