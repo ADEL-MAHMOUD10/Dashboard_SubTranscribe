@@ -61,7 +61,9 @@ function setupEventSource(uploadId) {
     // Use Server-Sent Events for real-time updates
     let eventSource = new EventSource(`/progress_stream/${uploadId}`);
     let lastUpdate = Date.now();
-    let transcriptionStarted = false;
+    let firstEventReceived = false;
+    
+    console.log("SSE connection established for upload ID:", uploadId);
     
     eventSource.onmessage = (event) => {
         lastUpdate = Date.now();
@@ -69,28 +71,15 @@ function setupEventSource(uploadId) {
             const progress = JSON.parse(event.data);
             console.log("SSE Update:", progress);
             
-            // If this is the first event and it has a near-zero status, reset the progress bar
-            if (!transcriptionStarted && progress.status <= 5) {
-                const progressBar = document.querySelector('.progress-bar');
-                if (progressBar) {
-                    progressBar.style.width = '0%';
-                    progressBar.setAttribute('aria-valuenow', 0);
+            // Reset progress bar on first event if status is low
+            if (!firstEventReceived) {
+                firstEventReceived = true;
+                if (progress.status <= 5) {
+                    resetProgressBar();
                 }
             }
             
-            // Only show progress UI once we get real progress updates
-            if (progress.status > 0 || 
-                (progress.message && (
-                    progress.message.toLowerCase().includes("upload") || 
-                    progress.message.toLowerCase().includes("initializing") ||
-                    progress.message.toLowerCase().includes("transfer")
-                ))) {
-                transcriptionStarted = true;
-            }
-            
-            if (transcriptionStarted) {
-                updateProgressUI(progress);
-            }
+            updateProgressUI(progress);
             
             // Close connection when complete but keep elements visible
             if (progress.status >= 100 && progress.message.includes("complete")) {
@@ -126,7 +115,6 @@ function setupEventSource(uploadId) {
 function fallbackToPolling(uploadId) {
     console.log("Activating fallback polling for upload ID:", uploadId);
     pollingActive = true;
-    let transcriptionStarted = false;
     let firstPoll = true;
     
     const progressPoll = setInterval(async () => {
@@ -145,29 +133,15 @@ function fallbackToPolling(uploadId) {
             const progress = await response.json();
             console.log("Poll Update:", progress);
             
-            // If this is our first poll and status is near zero, reset progress bar
-            if (firstPoll && progress.status <= 5) {
-                const progressBar = document.querySelector('.progress-bar');
-                if (progressBar) {
-                    progressBar.style.width = '0%';
-                    progressBar.setAttribute('aria-valuenow', 0);
-                }
+            // Reset progress bar on first poll if status is low
+            if (firstPoll) {
                 firstPoll = false;
+                if (progress.status <= 5) {
+                    resetProgressBar();
+                }
             }
             
-            // Only show progress UI once we get real progress updates
-            if (progress.status > 0 || 
-                (progress.message && (
-                    progress.message.toLowerCase().includes("upload") || 
-                    progress.message.toLowerCase().includes("initializing") ||
-                    progress.message.toLowerCase().includes("transfer")
-                ))) {
-                transcriptionStarted = true;
-            }
-            
-            if (transcriptionStarted) {
-                updateProgressUI(progress);
-            }
+            updateProgressUI(progress);
             
             // Clear interval when complete
             if (progress.status >= 100 && progress.message.includes("complete")) {
@@ -234,20 +208,13 @@ function updateProgressUI(progressData) {
     if (!progressBar || !progressMessage) return;
     
     // Make sure progress container is visible when we have real progress data
-    if (progressContainer && 
-        (progressData.status > 0 || 
-         progressData.message && (
-             progressData.message.includes("Upload") || 
-             progressData.message.includes("Initializing") ||
-             progressData.message.includes("Preparing")
-         )
-        )) {
+    if (progressContainer) {
         progressContainer.classList.remove('hidden');
     }
     
-    // IMPORTANT: For very low status values (0-5%), explicitly set width to 0%
-    // This prevents the bar from appearing full when first shown
+    // For low status values, explicitly reset the bar to avoid confusion
     if (progressData.status <= 5) {
+        console.log("Low status value detected, resetting progress bar to 0%");
         progressBar.style.transition = 'none'; // Disable transition for immediate effect
         progressBar.style.width = '0%';
         progressBar.setAttribute('aria-valuenow', 0);
@@ -257,63 +224,35 @@ function updateProgressUI(progressData) {
         }, 50);
     }
     
-    // Keep both loading spinner and progress bar visible during transcription
-    if (progressData.message && 
-        (progressData.message.toLowerCase().includes("upload") || 
-         progressData.message.toLowerCase().includes("transcri") ||
-         progressData.message.toLowerCase().includes("extract") ||
-         progressData.message.toLowerCase().includes("transfer") ||
-         progressData.message.toLowerCase().includes("initializing") ||
-         progressData.message.toLowerCase().includes("preparing"))) {
-        
-        // Show the appropriate loading spinner based on which form was submitted
-        if (window.lastSubmittedForm === 'link') {
-            if (uploadLoading) uploadLoading.classList.add('hidden');
-            if (linkLoading) linkLoading.classList.remove('hidden');
-        } else {
-            if (linkLoading) linkLoading.classList.add('hidden');
-            if (uploadLoading) uploadLoading.classList.remove('hidden');
-        }
-    } else if (progressData.status >= 100) {
-        // Only hide spinners when complete
+    // Hide the appropriate loading spinner based on progress
+    if (progressData.status > 10) {
         if (uploadLoading) uploadLoading.classList.add('hidden');
         if (linkLoading) linkLoading.classList.add('hidden');
     }
     
     // Check for error status (-1)
     if (progressData.status === -1) {
-        // Connection problem but don't reset progress bar
         updateProgressMessage(progressData.message || "Connection issue, retrying...", true);
         return;
     }
     
-    // Get current progress from the bar
-    const currentWidth = parseFloat(progressBar.style.width || '0');
+    // Update progress bar width
     const newPercentage = typeof progressData.status === 'number' 
         ? progressData.status 
         : parseFloat(progressData.status) || 0;
     
-    // Only update progress bar if new value is higher (prevents going backwards)
-    if (newPercentage > currentWidth) {
-        progressBar.style.width = `${newPercentage}%`;
-        progressBar.setAttribute('aria-valuenow', newPercentage);
-        
-        // Update message based on progress
-        if (newPercentage >= 100) {
-            updateProgressMessage('Transcription successfully completed');
-        } else {
-            updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
-        }
-    } else if (newPercentage < currentWidth && newPercentage <= 10) {
-        // If progress is significantly lower and we're at the beginning,
-        // allow reset to ensure proper initialization
-        progressBar.style.width = `${newPercentage}%`;
-        progressBar.setAttribute('aria-valuenow', newPercentage);
-        updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
+    progressBar.style.width = `${newPercentage}%`;
+    progressBar.setAttribute('aria-valuenow', newPercentage);
+    
+    // Update message based on progress
+    if (newPercentage >= 100) {
+        updateProgressMessage('Transcription successfully completed');
     } else {
-        // Otherwise just update the message but keep the bar position
-        updateProgressMessage(progressData.message || `Processing ${currentWidth.toFixed(1)}%`);
+        updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
     }
+    
+    // Log updates to help with debugging
+    console.log(`Progress update: ${newPercentage}% - ${progressData.message}`);
 }
 
 /**
@@ -891,6 +830,7 @@ function resetProgressBar() {
     }
     
     if (progressMessage) {
-        progressMessage.textContent = '';
+        progressMessage.textContent = 'Initializing...';
     }
 }
+
