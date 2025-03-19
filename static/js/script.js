@@ -182,8 +182,14 @@ async function fetchProgress(uploadId) {
 function updateProgressUI(progressData) {
     const progressBar = document.querySelector('.progress-bar');
     const progressMessage = document.getElementById('progressMessage');
+    const uploadLoading = document.getElementById('upload-loading');
+    const linkLoading = document.getElementById('link-loading');
     
     if (!progressBar || !progressMessage) return;
+    
+    // Hide loading spinners once progress updates start
+    if (uploadLoading) uploadLoading.classList.add('hidden');
+    if (linkLoading) linkLoading.classList.add('hidden');
     
     // Update progress bar
     const percentage = typeof progressData.status === 'number' 
@@ -485,6 +491,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Hide file info and show loading spinner
             if (fileInfo) fileInfo.classList.add('hidden');
             if (uploadLoading) uploadLoading.classList.remove('hidden');
+            
+            // Show progress container for file uploads
+            const progressContainer = document.querySelector('.progress-container');
+            if (progressContainer) {
+                progressContainer.classList.remove('hidden');
+            }
         });
     }
     
@@ -497,12 +509,23 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show loading spinner
             if (linkLoading) linkLoading.classList.remove('hidden');
             
+            // Show progress container for link uploads
+            const progressContainer = document.querySelector('.progress-container');
+            if (progressContainer) {
+                progressContainer.classList.remove('hidden');
+            }
+            
             // You can add validation here if needed
             const linkInput = document.getElementById('link');
             if (linkInput && !linkInput.value.trim()) {
                 e.preventDefault(); // Prevent form submission if link is empty
                 alert('Please enter a valid URL');
                 linkLoading.classList.add('hidden');
+                
+                // Hide progress container if validation fails
+                if (progressContainer) {
+                    progressContainer.classList.add('hidden');
+                }
             }
         });
     }
