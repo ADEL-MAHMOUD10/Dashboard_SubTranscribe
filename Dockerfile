@@ -25,4 +25,4 @@ COPY . .
 EXPOSE 8000
 
 # Use gunicorn as the entry point
-CMD ["gunicorn", "--workers=2", "--threads=4", "--worker-class=gthread", "--max-requests=200", "--max-requests-jitter=10", "--timeout=600", "--bind=0.0.0.0:8000", "app:app"]
+CMD ["gunicorn", "--workers=2", "--threads=4", "--worker-class=gthread", "--max-requests=100", "--max-requests-jitter=10", "--timeout=600", "--bind=0.0.0.0:8000", "app:app"]
