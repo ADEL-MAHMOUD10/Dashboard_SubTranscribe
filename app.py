@@ -96,7 +96,6 @@ async def async_update_firebase(upload_id, progress_percentage, message):
         "message": message
     })
 
-# Use this function in your update_progress_bar
 def update_progress_bar(upload_id, progress_percentage, message):
     """Update the progress bar in the Firebase database."""
     # First update local dictionary
@@ -104,12 +103,14 @@ def update_progress_bar(upload_id, progress_percentage, message):
         upload_progress[upload_id] = {"status": progress_percentage, "message": message}
     
     try:
-        # Direct Firebase update
+        # Direct Firebase update using update() method instead of set() with merge
         ref = db.reference(f'/UID/{upload_id}')
         ref.update({
             "status": progress_percentage,
-            "message": message
+            "message": message,
+            "timestamp": int(time.time())  # Add a timestamp for ordering
         })
+        
         print(f"Firebase update: {progress_percentage}% - {message}")
     except Exception as e:
         print(f"Firebase update error: {e}")
@@ -243,33 +244,51 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     progress_data = {"uploaded_size": 0, "running": True}
     
     def progress_updater():
-        """Dedicated thread for progress updates"""
+        """Dedicated thread for progress updates optimized for Koyeb"""
         last_percentage = 0
+        last_update_time = time.time()
+        update_interval = 1.0  # Increase interval to reduce Firebase load
+        
         while progress_data["running"]:
+            # Check if thread should exit
+            if not progress_data["running"]:
+                break
+            
             uploaded_size = progress_data["uploaded_size"]
             progress_percentage = (uploaded_size / file_size) * 100
             
-            # Only update if percentage has changed
+            # Only update if percentage has changed significantly or time interval passed
             current_percentage = int(progress_percentage)
-            if current_percentage > last_percentage:
+            current_time = time.time()
+            
+            if (current_percentage > last_percentage or 
+                (current_time - last_update_time >= update_interval)):
+                
                 prog_message = f"Processing... {progress_percentage:.1f}%"
                 
-                # Direct update to Firebase (no threading to avoid nesting)
-                with upload_progress_lock:
-                    upload_progress[upload_id] = {"status": progress_percentage, "message": prog_message}
-                
-                # Direct Firebase update
-                ref = db.reference(f'/UID/{upload_id}')
-                ref.update({
-                    "status": progress_percentage,
-                    "message": prog_message
-                })
-                
-                last_percentage = current_percentage
-                print(f"Progress updated: {progress_percentage:.1f}%") 
+                # Direct update to Firebase with merge=true
+                try:
+                    ref = db.reference(f'/UID/{upload_id}')
+                    ref.update({
+                        "status": progress_percentage,
+                        "message": prog_message,
+                        "timestamp": current_time
+                    })
+                    
+                    with upload_progress_lock:
+                        upload_progress[upload_id] = {"status": progress_percentage, "message": prog_message}
+                    
+                    last_percentage = current_percentage
+                    last_update_time = current_time
+                    print(f"Progress updated: {progress_percentage:.1f}%")
+                except Exception as e:
+                    print(f"Firebase update failed: {e}")
             
-            # Sleep to avoid excessive updates
-            time.sleep(0.2)
+            # Sleep to avoid excessive updates, but use a pattern that allows quicker exits
+            for _ in range(5):  # Break the sleep into smaller chunks
+                if not progress_data["running"]:
+                    break
+                time.sleep(0.1)  # 5 * 0.1 = 0.5 seconds total, but more responsive
     
     # Start the dedicated progress update thread
     progress_thread = threading.Thread(target=progress_updater, daemon=True)
@@ -293,7 +312,12 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         if response.status_code != 200:
             raise RuntimeError("File upload failed.")
     except Exception as e:
-        update_progress_bar(upload_id, 0, f"Error uploading audio: {e}")
+        if upload_progress.get(upload_id, {}).get("status", 0) >= 90:
+            # If we're far along, keep high progress but show error
+            update_progress_bar(upload_id, 95, f"Error: {str(e)[:50]}...")
+        else:
+            # Otherwise start over
+            update_progress_bar(upload_id, 0, f"Error: {str(e)[:50]}...")
         progress_data["running"] = False  # Stop the progress thread
         return None
     finally:
@@ -373,6 +397,9 @@ def transcribe_from_link(upload_id, link):
                 update_progress_bar(upload_id, 0, "Failed to extract audio URL")
                 return render_template("error.html")
         
+        # Update progress after extracting URL
+        update_progress_bar(upload_id, 10, "Audio URL extracted successfully")
+        
         # Get file size
         response = requests.head(audio_url)
         total_size = int(response.headers.get('content-length', 0))
@@ -381,123 +408,183 @@ def transcribe_from_link(upload_id, link):
             update_progress_bar(upload_id, 0, "Could not determine file size")
             return render_template("error.html")
             
-        update_progress_bar(upload_id, 5, "Starting upload to transcription service...")
+        update_progress_bar(upload_id, 15, "Starting upload to transcription service...")
         
-        # Upload in chunks with less frequent progress updates
-        def upload_chunks():
-            uploaded_size = 0
-            last_percent = 0
+        # Create a separate thread for progress updates
+        progress_data = {"uploaded_size": 0, "running": True}
+        
+        def progress_updater():
+            """Dedicated thread for progress updates optimized for Koyeb"""
+            last_percentage = 15  # Start at 15%
+            last_update_time = time.time()
+            update_interval = 1.0  # Increase interval to reduce Firebase load
             
+            while progress_data["running"]:
+                # Check if thread should exit
+                if not progress_data["running"]:
+                    break
+            
+                uploaded_size = progress_data["uploaded_size"]
+                # Scale progress from 15-90% for upload phase
+                progress_percentage = 15 + (uploaded_size / total_size) * 75
+                
+                # Only update if percentage has changed significantly or time interval passed
+                current_percentage = int(progress_percentage)
+                current_time = time.time()
+                
+                if (current_percentage > last_percentage or 
+                    (current_time - last_update_time >= update_interval)):
+                    
+                    prog_message = f"Uploading... {current_percentage}%"
+                    
+                    # Direct update to Firebase with merge=true
+                    try:
+                        ref = db.reference(f'/UID/{upload_id}')
+                        ref.update({
+                            "status": progress_percentage,
+                            "message": prog_message,
+                            "timestamp": current_time
+                        })
+                        
+                        with upload_progress_lock:
+                            upload_progress[upload_id] = {"status": progress_percentage, "message": prog_message}
+                        
+                        last_percentage = current_percentage
+                        last_update_time = current_time
+                        print(f"Link progress updated: {progress_percentage:.1f}%")
+                    except Exception as e:
+                        print(f"Firebase update failed: {e}")
+                
+                # Sleep to avoid excessive updates, but use a pattern that allows quicker exits
+                for _ in range(5):  # Break the sleep into smaller chunks
+                    if not progress_data["running"]:
+                        break
+                    time.sleep(0.1)  # 5 * 0.1 = 0.5 seconds total, but more responsive
+        
+        # Start the dedicated progress update thread
+        progress_thread = threading.Thread(target=progress_updater, daemon=True)
+        progress_thread.start()
+        
+        # Upload in chunks with progress tracking
+        def upload_chunks():
             with requests.get(audio_url, stream=True) as f:
                 # Use smaller chunk size for more responsive updates
-                for chunk in f.iter_content(chunk_size=500000):  # 500KB chunks
+                for chunk in f.iter_content(chunk_size=200000):  # 200KB chunks
                     if not chunk:
                         break
                     
                     yield chunk
-                    uploaded_size += len(chunk)
-                    
-                    # Calculate percentage
-                    current_percent = int((uploaded_size / total_size) * 100)
-                    
-                    # Update only when percentage changes by at least 5%
-                    if current_percent >= last_percent + 5:
-                        prog_message = f"Uploading... {current_percent}%"
-                        update_progress_bar(upload_id, current_percent, prog_message)
-                        last_percent = current_percent
-            
-            # Final update
-            update_progress_bar(upload_id, 100, "Upload complete, starting transcription...")
+                    progress_data["uploaded_size"] += len(chunk)
         
         # Upload to AssemblyAI
         base_url = "https://api.assemblyai.com/v2"
         headers = {"authorization": TOKEN_THREE}
         
-        # Stream upload
-        response = requests.post(f"{base_url}/upload", 
-                                headers=headers, 
-                                data=upload_chunks(),
-                                stream=True,
-                                timeout=300)  # Add timeout
-        
-        if response.status_code != 200:
-            update_progress_bar(upload_id, 0, "Upload failed")
-            return render_template("error.html")
-        
-        # Start transcription
-        update_progress_bar(upload_id, 100, "Starting transcription...")
-        data = {"audio_url": audio_url}
-        response = requests.post(f"{base_url}/transcript", 
-                                json=data, 
-                                headers=headers,
-                                timeout=60)  # Add timeout
-        
-        if response.status_code != 200:
-            update_progress_bar(upload_id, 0, "Transcription request failed")
-            return render_template("error.html")
-        
-        transcript_id = response.json()['id']
-        
-        # Poll for status
-        update_progress_bar(upload_id, 100, "Processing transcription...")
-        polling_url = f"{base_url}/transcript/{transcript_id}"
-        
-        # Create a polling function with exponential backoff
-        poll_count = 0
-        while poll_count < 30:  # Limit to 30 polls to prevent infinite loops
-            transcript_response = requests.get(polling_url, headers=headers, timeout=30)
+        try:
+            # Stream upload
+            response = requests.post(f"{base_url}/upload", 
+                                    headers=headers, 
+                                    data=upload_chunks(),
+                                    stream=True,
+                                    timeout=300)  # Add timeout
             
-            if transcript_response.status_code == 200:
-                transcript_data = transcript_response.json()
-                status = transcript_data.get('status')
-                
-                if status == 'completed':
-                    # Success path
-                    user_id = session.get('user_id')
-                    user = users_collection.find_one({'user_id': user_id})
-                    username = user.get('username') if user else None
-                    
-                    if username:
-                        files_collection.insert_one({
-                            "username": username,
-                            "user_id": user_id,
-                            "file_name": f'From Link: {link}',
-                            "file_size": total_size,
-                            "transcript_id": transcript_id,
-                            "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        })
-                    
-                    Update_progress(transcript_id, status=100, message="Completed", 
-                                   Section="Download page", link=audio_url)
-                    
-                    update_progress_bar(upload_id, 100, "Transcription complete!")
-                    return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
-                
-                elif status == 'error':
-                    update_progress_bar(upload_id, 0, f"Transcription error: {transcript_data.get('error', 'Unknown error')}")
-                    Update_progress(transcript_id, status=0, message="Transcription failed", 
-                                  Section="Link", link=audio_url)
-                    return render_template("error.html")
-                
-                else:
-                    # Still processing
-                    wait_time = min(5 * (2 ** (poll_count // 5)), 30)  # Exponential backoff with 30s max
-                    time.sleep(wait_time)
-                    poll_count += 1
-            else:
-                # API error
-                update_progress_bar(upload_id, 0, "API Error checking transcription status")
+            # Stop the progress updater thread
+            progress_data["running"] = False
+            time.sleep(0.5)  # Give time for thread to finish
+            
+            if response.status_code != 200:
+                update_progress_bar(upload_id, 0, "Upload failed")
                 return render_template("error.html")
-        
-        # If we get here, we've polled too many times
-        update_progress_bar(upload_id, 0, "Transcription timed out")
-        return render_template("error.html")
-        
+            
+            # Start transcription
+            update_progress_bar(upload_id, 90, "Starting transcription...")
+            data = {"audio_url": response.json()["upload_url"]}
+            response = requests.post(f"{base_url}/transcript", 
+                                    json=data, 
+                                    headers=headers,
+                                    timeout=60)  # Add timeout
+            
+            if response.status_code != 200:
+                update_progress_bar(upload_id, 0, "Transcription request failed")
+                return render_template("error.html")
+            
+            transcript_id = response.json()['id']
+            
+            # Poll for status
+            update_progress_bar(upload_id, 95, "Processing transcription...")
+            polling_url = f"{base_url}/transcript/{transcript_id}"
+            
+            # Create a polling function with exponential backoff
+            poll_count = 0
+            while poll_count < 30:  # Limit to 30 polls to prevent infinite loops
+                transcript_response = requests.get(polling_url, headers=headers, timeout=30)
+                
+                if transcript_response.status_code == 200:
+                    transcript_data = transcript_response.json()
+                    status = transcript_data.get('status')
+                    
+                    if status == 'completed':
+                        # Success path
+                        user_id = session.get('user_id')
+                        user = users_collection.find_one({'user_id': user_id})
+                        username = user.get('username') if user else None
+                        
+                        if username:
+                            files_collection.insert_one({
+                                "username": username,
+                                "user_id": user_id,
+                                "file_name": f'From Link: {link}',
+                                "file_size": total_size,
+                                "transcript_id": transcript_id,
+                                "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            })
+                        
+                        Update_progress(transcript_id, status=100, message="Completed", 
+                                      Section="Download page", link=audio_url)
+                        
+                        update_progress_bar(upload_id, 100, "Transcription complete!")
+                        return transcript_id
+                    
+                    elif status == 'error':
+                        update_progress_bar(upload_id, 0, f"Transcription error: {transcript_data.get('error', 'Unknown error')}")
+                        Update_progress(transcript_id, status=0, message="Transcription failed", 
+                                      Section="Link", link=audio_url)
+                        return render_template("error.html")
+                    
+                    else:
+                        # Still processing - update with percentage if available
+                        progress_msg = f"Processing: {status}"
+                        update_progress_bar(upload_id, 95, progress_msg)
+                        
+                        wait_time = min(5 * (2 ** (poll_count // 5)), 30)  # Exponential backoff with 30s max
+                        time.sleep(wait_time)
+                        poll_count += 1
+                else:
+                    # API error
+                    update_progress_bar(upload_id, 0, "API Error checking transcription status")
+                    return render_template("error.html")
+            
+            # If we get here, we've polled too many times
+            update_progress_bar(upload_id, 0, "Transcription timed out")
+            return render_template("error.html")
+            
+        except requests.exceptions.Timeout:
+            update_progress_bar(upload_id, 0, "Request timed out")
+            return render_template("error.html")
+        finally:
+            # Ensure the progress thread is stopped
+            progress_data["running"] = False
+            
     except Exception as e:
         # Catch any errors and report them
         error_message = str(e)
         print(f"Error in transcribe_from_link: {error_message}")
-        update_progress_bar(upload_id, 0, f"Error: {error_message[:50]}...")
+        if upload_progress.get(upload_id, {}).get("status", 0) >= 90:
+            # If we're far along, keep high progress but show error
+            update_progress_bar(upload_id, 95, f"Error: {error_message[:50]}...")
+        else:
+            # Otherwise start over
+            update_progress_bar(upload_id, 0, f"Error: {error_message[:50]}...")
         return render_template("error.html")
 
 @app.route('/v1/<user_id>')
@@ -819,6 +906,11 @@ def progress_stream(upload_id):
             time.sleep(0.5)  # Check for updates every 500ms
     
     return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/health')
+def health_check():
+    """Simple health check endpoint for Koyeb."""
+    return jsonify({"status": "healthy", "timestamp": int(time.time())})
 
 # Main entry point
 if __name__ == "__main__":
