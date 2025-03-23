@@ -33,8 +33,6 @@ import smtplib
 import asyncio
 import json
 import time
-import aiohttp
-from functools import wraps
 
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
@@ -99,85 +97,31 @@ firebase_admin.initialize_app(cred, {
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current time
 
-# Add this helper function to run async code in Flask routes
-def async_route(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
-    return wrapper
-
-# Fixed async Firebase update function
+# Create an async function for Firebase updates
 async def async_update_firebase(upload_id, progress_percentage, message):
-    """Asynchronously update Firebase database with progress information."""
-    try:
-        # Use asyncio.to_thread to run the synchronous update in a thread
-        # without blocking the async event loop
-        ref = db.reference(f'/UID/{upload_id}')
-        
-        def update_firebase():
-            return ref.update({
-                "status": progress_percentage,
-                "message": message,
-                "timestamp": int(time.time())
-            })
-        
-        # Run the update in a separate thread
-        await asyncio.to_thread(update_firebase)
-        
-        # Also update local cache
-        with upload_progress_lock:
-            upload_progress[upload_id] = {"status": progress_percentage, "message": message}
-            
-        print(f"Async Firebase update: {progress_percentage}% - {message}")
-        return True
-    except Exception as e:
-        print(f"Async Firebase update error: {e}")
-        return False
+    ref = db.reference(f'/UID/{upload_id}')
+    await ref.update_async({
+        "status": progress_percentage,
+        "message": message
+    })
 
-# Fixed async version of update_progress_bar
-async def update_progress_bar_async(upload_id, progress_percentage, message):
-    """Asynchronously update the progress bar in the Firebase database."""
-    # Ensure message is a string
-    if not isinstance(message, str):
-        message = str(message)
-    
-    # Ensure progress_percentage is a number
-    try:
-        progress_percentage = float(progress_percentage)
-    except (TypeError, ValueError):
-        progress_percentage = 0
-    
-    # First update local dictionary with safe values
+def update_progress_bar(upload_id, progress_percentage, message):
+    """Update the progress bar in the Firebase database."""
+    # First update local dictionary
     with upload_progress_lock:
-        upload_progress[upload_id] = {
-            "status": progress_percentage,
-            "message": message
-        }
+        upload_progress[upload_id] = {"status": progress_percentage, "message": message}
     
     try:
-        # Use Firebase update
+        # Direct Firebase update - use update(), not set() with merge
         ref = db.reference(f'/UID/{upload_id}')
         ref.update({
             "status": progress_percentage,
             "message": message,
             "timestamp": int(time.time())
         })
-        
-        print(f"Async Firebase update: {progress_percentage}% - {message}")
-        return True
+        print(f"Firebase update: {progress_percentage}% - {message}")
     except Exception as e:
-        print(f"Async Firebase update error: {e}")
-        return False
-
-# Keep the original for backward compatibility
-def update_progress_bar(upload_id, progress_percentage, message):
-    """Update the progress bar in the Firebase database."""
-    # Schedule the async update in the background
-    asyncio.create_task(update_progress_bar_async(upload_id, progress_percentage, message))
-    
-    # Still update the local cache immediately for quick responses
-    with upload_progress_lock:
-        upload_progress[upload_id] = {"status": progress_percentage, "message": message}
+        print(f"Firebase update error: {e}")
 
 @app.route('/progress/<upload_id>', methods=['GET'])
 @cross_origin()  # Allow CORS for this route
@@ -253,9 +197,8 @@ def upload_or_link_no_user():
 
 
 @app.route('/v1', methods=['POST'])
-@async_route
-async def upload_or_link():
-    """Handle file uploads or links for transcription using async processing."""
+def upload_or_link():
+    """Handle file uploads or links for transcription."""
     user_id = session.get('user_id')
     if 'user_id' not in session:
         return redirect(url_for('login'))
@@ -271,13 +214,11 @@ async def upload_or_link():
                 upload_id = str(uuid.uuid4())
                 session['upload_id'] = upload_id
             
-            result = await transcribe_from_link_async(upload_id, link)  # Use async version
-            if result.get("status") == "completed":
-                transcript_id = result.get("transcript_id")
+            transcript_id = transcribe_from_link(upload_id, link)  # Transcribe from the provided link
+            if isinstance(transcript_id, str):  # If it's a valid transcript ID (not an error template)
                 return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
-            return render_template("error.html")  # This would be the error template
+            return transcript_id  # This would be the error template
         
-        # Handle file upload - keep this synchronous for now as it uses request.files streaming
         file = request.files['file']  # Get the uploaded file
         if file and allowed_file(file.filename):
             # Ensure we have an upload ID for progress tracking
@@ -288,8 +229,7 @@ async def upload_or_link():
             audio_stream = file
             file_size = request.content_length  # Get file size in bytes
             try:
-                # Start the upload process (this remains synchronous due to streaming)
-                transcript_id = upload_audio_to_assemblyai(upload_id, audio_stream, file_size)
+                transcript_id = upload_audio_to_assemblyai(upload_id, audio_stream, file_size)  # Upload directly using stream
                                 
                 username = user.get('username')  
                 if username:
@@ -529,9 +469,8 @@ def convert_video_to_audio(video_path):
         print(f"Error converting video to audio: {e}")
         return None
 
-# Fixed async version of transcribe_from_link
-async def transcribe_from_link_async(upload_id, link):
-    """Transcribe audio from a provided link with async processing."""
+def transcribe_from_link(upload_id, link):
+    """Transcribe audio from a provided link with optimized performance."""
     ydl_opts = {
         'format': 'bestaudio/best',
         'quiet': True,
@@ -541,268 +480,215 @@ async def transcribe_from_link_async(upload_id, link):
     }
     
     # Initial progress update
-    await update_progress_bar_async(upload_id, 0, "Initializing link extraction...")
+    update_progress_bar(upload_id, 0, "Initializing link extraction...")
     
     try:
-        # Extract audio URL (this part remains synchronous because yt_dlp doesn't support async)
-        info = None
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(link, download=False)  # Add download=False for speed
-        except Exception as e:
-            await update_progress_bar_async(upload_id, 0, f"Failed to extract audio: {str(e)[:50]}...")
-            return {"status": "error", "error": f"Failed to extract audio: {str(e)}"}
+        # Extract audio URL
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(link, download=False)  # Add download=False for speed
+            audio_url = info.get('url', None)
             
-        if not info:
-            await update_progress_bar_async(upload_id, 0, "Could not extract information from link")
-            return {"status": "error", "error": "Could not extract information from link"}
-            
-        audio_url = info.get('url', None)
-        if not audio_url:
-            await update_progress_bar_async(upload_id, 0, "Failed to extract audio URL")
-            return {"status": "error", "error": "Failed to extract audio URL"}
+            if not audio_url:
+                update_progress_bar(upload_id, 0, "Failed to extract audio URL")
+                return render_template("error.html")
         
         # Update progress after extracting URL
-        await update_progress_bar_async(upload_id, 10, "Audio source successfully identified")
+        update_progress_bar(upload_id, 10, "Audio source successfully identified")
         
-        # Get file size using requests instead of aiohttp
-        try:
-            response = requests.head(audio_url, timeout=30)
-            total_size = int(response.headers.get('content-length', 0))
+        # Get file size
+        response = requests.head(audio_url)
+        total_size = int(response.headers.get('content-length', 0))
+        
+        if total_size == 0:
+            update_progress_bar(upload_id, 0, "Could not determine file size")
+            return render_template("error.html")
             
-            if total_size == 0:
-                # Try to estimate size based on duration
-                duration = info.get('duration', 0)
-                if duration > 0:
-                    # Rough estimate: ~128kbps audio = 16KB per second
-                    total_size = duration * 16000
-                else:
-                    total_size = 10000000  # Default 10MB if we can't determine
-        except Exception as e:
-            print(f"Error getting file size: {e}")
-            total_size = 10000000  # Default 10MB if request fails
-            
-        await update_progress_bar_async(upload_id, 15, "Initiating transfer to transcription service...")
+        update_progress_bar(upload_id, 15, "Initiating transfer to transcription service...")
         
-        # This part handles the upload to AssemblyAI
-        # Use a shared event for signaling between threads
-        stop_event = threading.Event()
-        progress_data = {"uploaded_size": 0}
+        # Create a separate thread for progress updates
+        progress_data = {"uploaded_size": 0, "running": True}
         
-        # Create a fixed progress updater thread function
         def progress_updater():
+            """Dedicated thread for progress updates optimized for Koyeb"""
             last_percentage = 15  # Start at 15%
             last_update_time = time.time()
+            update_interval = 1.0  # Increase interval to reduce Firebase load
             
-            while not stop_event.is_set():
-                try:
-                    uploaded_size = progress_data.get("uploaded_size", 0)
-                    # Scale progress from 15-90% for upload phase
-                    progress_percentage = 15 + min((uploaded_size / max(total_size, 1)) * 75, 75)
-                    
-                    # Only update if percentage has changed significantly or time interval passed
-                    current_percentage = int(progress_percentage)
-                    current_time = time.time()
-                    
-                    if (current_percentage > last_percentage or 
-                        (current_time - last_update_time >= 1.0)):
-                        
-                        prog_message = f"Retrieving audio data: {current_percentage}% complete"
-                        
-                        # Use synchronous Firebase update to avoid threading issues
-                        try:
-                            ref = db.reference(f'/UID/{upload_id}')
-                            ref.update({
-                                "status": progress_percentage,
-                                "message": prog_message,
-                                "timestamp": int(current_time)
-                            })
-                            
-                            # Also update local cache
-                            with upload_progress_lock:
-                                upload_progress[upload_id] = {"status": progress_percentage, "message": prog_message}
-                            
-                            print(f"Firebase update: {progress_percentage:.1f}% - {prog_message}")
-                            last_percentage = current_percentage
-                            last_update_time = current_time
-                        except Exception as e:
-                            print(f"Firebase update failed: {e}")
-                except Exception as e:
-                    print(f"Error in progress thread: {e}")
+            while progress_data["running"]:
+                # Check if thread should exit
+                if not progress_data["running"]:
+                    break
+            
+                uploaded_size = progress_data["uploaded_size"]
+                # Scale progress from 15-90% for upload phase
+                progress_percentage = 15 + (uploaded_size / total_size) * 75
                 
-                # Sleep briefly but check for stop signal more frequently
-                for _ in range(5):
-                    if stop_event.is_set():
+                # Only update if percentage has changed significantly or time interval passed
+                current_percentage = int(progress_percentage)
+                current_time = time.time()
+                
+                if (current_percentage > last_percentage or 
+                    (current_time - last_update_time >= update_interval)):
+                    
+                    prog_message = f"Retrieving audio data: {current_percentage}% complete"
+                    
+                    # Direct update to Firebase with merge=true
+                    try:
+                        ref = db.reference(f'/UID/{upload_id}')
+                        ref.update({
+                            "status": progress_percentage,
+                            "message": prog_message,
+                            "timestamp": current_time
+                        })
+                        
+                        with upload_progress_lock:
+                            upload_progress[upload_id] = {"status": progress_percentage, "message": prog_message}
+                        
+                        last_percentage = current_percentage
+                        last_update_time = current_time
+                        print(f"Link progress updated: {progress_percentage:.1f}%")
+                    except Exception as e:
+                        print(f"Firebase update failed: {e}")
+                
+                # Sleep to avoid excessive updates, but use a pattern that allows quicker exits
+                for _ in range(5):  # Break the sleep into smaller chunks
+                    if not progress_data["running"]:
                         break
-                    time.sleep(0.1)
+                    time.sleep(0.1)  # 5 * 0.1 = 0.5 seconds total, but more responsive
         
         # Start the dedicated progress update thread
         progress_thread = threading.Thread(target=progress_updater, daemon=True)
         progress_thread.start()
         
-        # Upload to AssemblyAI (this remains synchronous because of streaming)
+        # Upload in chunks with progress tracking
+        def upload_chunks():
+            with requests.get(audio_url, stream=True) as f:
+                # Use smaller chunk size for more responsive updates
+                for chunk in f.iter_content(chunk_size=200000):  # 200KB chunks
+                    if not chunk:
+                        break
+                    
+                    yield chunk
+                    progress_data["uploaded_size"] += len(chunk)
+        
+        # Upload to AssemblyAI
         base_url = "https://api.assemblyai.com/v2"
         headers = {"authorization": TOKEN_THREE}
-        transcript_id = None
         
         try:
-            # Define the chunk upload function
-            def upload_chunks():
-                try:
-                    with requests.get(audio_url, stream=True, timeout=60) as f:
-                        f.raise_for_status()  # Raise exception for HTTP errors
-                        for chunk in f.iter_content(chunk_size=200000):  # 200KB chunks
-                            if not chunk:
-                                break
-                            yield chunk
-                            progress_data["uploaded_size"] = progress_data.get("uploaded_size", 0) + len(chunk)
-                except Exception as e:
-                    print(f"Error in upload_chunks: {e}")
-                    # Let the outer try/catch handle this
-                    raise
+            # Stream upload
+            response = requests.post(f"{base_url}/upload", 
+                                    headers=headers, 
+                                    data=upload_chunks(),
+                                    stream=True,
+                                    timeout=300)  # Add timeout
             
-            # Upload the audio in chunks
-            response = requests.post(
-                f"{base_url}/upload", 
-                headers=headers, 
-                data=upload_chunks(),
-                stream=True,
-                timeout=300
-            )
+            # Stop the progress updater thread
+            progress_data["running"] = False
+            time.sleep(0.5)  # Give time for thread to finish
             
             if response.status_code != 200:
-                raise Exception(f"AssemblyAI upload failed with status {response.status_code}")
+                update_progress_bar(upload_id, 0, "Audio retrieval unsuccessful")
+                return render_template("error.html")
             
             # Start transcription
-            await update_progress_bar_async(upload_id, 90, "Upload complete. Initiating transcription process...")
+            update_progress_bar(upload_id, 90, "Upload complete. Initiating transcription process...")
+            data = {"audio_url": response.json()["upload_url"]}
+            response = requests.post(f"{base_url}/transcript", 
+                                    json=data, 
+                                    headers=headers,
+                                    timeout=60)  # Add timeout
             
-            # Create the transcription request
-            upload_url = response.json().get("upload_url")
-            if not upload_url:
-                raise Exception("No upload URL returned from AssemblyAI")
+            if response.status_code != 200:
+                update_progress_bar(upload_id, 0, "Transcription request could not be processed")
+                return render_template("error.html")
+            
+            transcript_id = response.json()['id']
+            
+            # Poll for status
+            update_progress_bar(upload_id, 95, "Transcription analysis in progress...")
+            polling_url = f"{base_url}/transcript/{transcript_id}"
+            
+            # Create a polling function with exponential backoff
+            poll_count = 0
+            while poll_count < 30:  # Limit to 30 polls to prevent infinite loops
+                transcript_response = requests.get(polling_url, headers=headers, timeout=30)
                 
-            transcription_response = requests.post(
-                f"{base_url}/transcript", 
-                json={"audio_url": upload_url},
-                headers=headers,
-                timeout=60
-            )
+                if transcript_response.status_code == 200:
+                    transcript_data = transcript_response.json()
+                    status = transcript_data.get('status')
+                    
+                    if status == 'completed':
+                        # Success path
+                        user_id = session.get('user_id')
+                        user = users_collection.find_one({'user_id': user_id})
+                        username = user.get('username') if user else None
+                        
+                        if username:
+                            files_collection.insert_one({
+                                "username": username,
+                                "user_id": user_id,
+                                "file_name": f'From Link: {link}',
+                                "file_size": total_size,
+                                "transcript_id": transcript_id,
+                                "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            })
+                        
+                        Update_progress(transcript_id, status=100, message="Completed", 
+                                      Section="Download page", link=audio_url)
+                        
+                        update_progress_bar(upload_id, 100, "Transcription successfully completed")
+                        return transcript_id
+                    
+                    elif status == 'error':
+                        update_progress_bar(upload_id, 0, f"Transcription error: {transcript_data.get('error', 'Unknown error')}")
+                        Update_progress(transcript_id, status=0, message="Transcription failed", 
+                                      Section="Link", link=audio_url)
+                        return render_template("error.html")
+                    
+                    else:
+                        # Still processing - update with percentage if available
+                        progress_msg = f"Transcription in progress..."
+                        update_progress_bar(upload_id, 99, progress_msg)
+                        
+                        wait_time = min(5 * (2 ** (poll_count // 5)), 30)  # Exponential backoff with 30s max
+                        time.sleep(wait_time)
+                        poll_count += 1
+                else:
+                    # API error
+                    update_progress_bar(upload_id, 0, "API communication error during transcription process")
+                    return render_template("error.html")
             
-            if transcription_response.status_code != 200:
-                raise Exception(f"Transcription request failed with status {transcription_response.status_code}")
+            # If we get here, we've polled too many times
+            update_progress_bar(upload_id, 0, "Transcription process timed out. Please try again.")
+            return render_template("error.html")
             
-            transcript_id = transcription_response.json().get('id')
-            if not transcript_id:
-                raise Exception("No transcript ID returned from AssemblyAI")
-            
-            # Poll for transcription completion
-            await update_progress_bar_async(upload_id, 95, "Transcription analysis in progress...")
-            
-            result = await poll_for_completion(base_url, transcript_id, headers, upload_id)
-            
-            if result.get("status") == "completed":
-                # Success path
-                user_id = session.get('user_id')
-                user = users_collection.find_one({'user_id': user_id})
-                username = user.get('username') if user else None
-                
-                if username:
-                    files_collection.insert_one({
-                        "username": username,
-                        "user_id": user_id,
-                        "file_name": f'From Link: {link}',
-                        "file_size": total_size,
-                        "transcript_id": transcript_id,
-                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    })
-                
-                Update_progress(transcript_id, status=100, message="Completed", 
-                              Section="Download page", link=audio_url)
-                
-                return {"status": "completed", "transcript_id": transcript_id}
-            else:
-                # Error from polling
-                return result
-                
-        except Exception as e:
-            error_message = str(e)
-            print(f"Error during transcription process: {error_message}")
-            
-            if transcript_id:
-                # Try to save partial progress if we have a transcript ID
-                Update_progress(transcript_id, status=0, message=f"Error: {error_message[:50]}...", 
-                              Section="Error", link=audio_url)
-                
-            await update_progress_bar_async(upload_id, 0, f"Error: {error_message[:50]}...")
-            return {"status": "error", "error": error_message}
+        except requests.exceptions.Timeout:
+            update_progress_bar(upload_id, 0, "Request timed out")
+            return render_template("error.html")
         finally:
             # Ensure the progress thread is stopped
-            stop_event.set()
-            try:
-                # Wait for the thread to finish but with a timeout
-                progress_thread.join(timeout=1.0)
-            except Exception:
-                pass
+            progress_data["running"] = False
             
     except Exception as e:
         # Catch any errors and report them
         error_message = str(e)
-        print(f"Error in transcribe_from_link_async: {error_message}")
-        await update_progress_bar_async(upload_id, 0, f"Error: {error_message[:50]}...")
-        return {"status": "error", "error": error_message}
+        print(f"Error in transcribe_from_link: {error_message}")
+        if upload_progress.get(upload_id, {}).get("status", 0) >= 90:
+            # If we're far along, keep high progress but show error
+            update_progress_bar(upload_id, 95, f"Error: {error_message[:50]}...")
+        else:
+            # Otherwise start over
+            update_progress_bar(upload_id, 0, f"Error: {error_message[:50]}...")
+        return render_template("error.html")
 
-# Create a separate polling function to make code cleaner
-async def poll_for_completion(base_url, transcript_id, headers, upload_id):
-    """Poll for transcription completion."""
-    polling_endpoint = f"{base_url}/transcript/{transcript_id}"
-    poll_count = 0
-    
-    while poll_count < 30:  # Limit polling attempts
-        try:
-            # Use synchronous requests to avoid serialization issues
-            poll_response = requests.get(
-                polling_endpoint,
-                headers=headers,
-                timeout=30
-            )
-            
-            if poll_response.status_code == 200:
-                transcription_result = poll_response.json()
-                
-                if transcription_result['status'] == 'completed':
-                    # Success path
-                    await update_progress_bar_async(upload_id, 100, "Transcription successfully completed")
-                    return {"status": "completed", "transcript_id": transcript_id}
-                    
-                elif transcription_result['status'] == 'error':
-                    error_msg = transcription_result.get('error', 'Unknown error')
-                    await update_progress_bar_async(upload_id, 0, f"Transcription error: {error_msg}")
-                    return {"status": "error", "error": error_msg}
-                    
-                else:
-                    # Update message to show it's still processing
-                    status = transcription_result['status']
-                    status_msg = f"Transcription in progress - Current status: {status.replace('_', ' ').title()}"
-                    await update_progress_bar_async(upload_id, 98, status_msg)
-                    
-                    # Exponential backoff with 30s max
-                    wait_time = min(5 * (2 ** (poll_count // 5)), 30)
-                    await asyncio.sleep(wait_time)
-                    poll_count += 1
-            else:
-                # API error
-                await update_progress_bar_async(upload_id, 0, f"API error: {poll_response.status_code}")
-                return {"status": "error", "error": f"API returned status {poll_response.status_code}"}
-                
-        except Exception as e:
-            print(f"Error polling transcription status: {str(e)}")
-            await update_progress_bar_async(upload_id, 98, "Verifying transcription status...")
-            await asyncio.sleep(5)
-            poll_count += 1
-    
-    # If we get here, we've exceeded poll attempts
-    await update_progress_bar_async(upload_id, 0, "Transcription process timed out. Please try again.")
-    return {"status": "timeout", "error": "Transcription status check timed out"}
+# def upload_audio_to_gridfs(file_path):
+#     """Upload audio file to MongoDB using GridFS."""
+#     with open(file_path, "rb") as f:
+#         # Store the file in GridFS and return the file ID
+#         audio_id = fs.put(f, filename=os.path.basename(file_path), content_type='audio/video')
+
+#     return audio_id
 
 @app.route('/v1/<user_id>')
 def main_user(user_id):
@@ -1103,10 +989,9 @@ def serve_file(filename):
     return response  # Return the file response
 
 @app.route('/progress_stream/<upload_id>')
-@async_route
-async def progress_stream(upload_id):
-    """Create a server-sent events stream for progress updates using async."""
-    async def generate():
+def progress_stream(upload_id):
+    """Create a server-sent events stream for progress updates."""
+    def generate():
         last_status = None
         iteration_count = 0
         max_iterations = 600  # Limit the connection to 5 minutes (600 * 0.5s)
@@ -1131,7 +1016,6 @@ async def progress_stream(upload_id):
                 if progress is None:
                     try:
                         ref = db.reference(f'/UID/{upload_id}')
-                        # Use synchronous get to avoid serialization issues
                         firebase_data = ref.get()
                         if firebase_data:
                             progress = {
@@ -1154,30 +1038,17 @@ async def progress_stream(upload_id):
                 if progress is None:
                     progress = {"status": 0, "message": "Processing..."}
                 
-                # Ensure progress is serializable
-                if isinstance(progress, dict):
-                    # Deep copy and sanitize the progress object to ensure it's JSON serializable
-                    safe_progress = {}
-                    for key, value in progress.items():
-                        if isinstance(value, (str, int, float, bool, type(None))):
-                            safe_progress[key] = value
-                        else:
-                            # Convert non-serializable objects to strings
-                            safe_progress[key] = str(value)
+                # Only send updates when there's a change or periodically for keepalive
+                if progress != last_status or iteration_count % 20 == 0:
+                    last_status = progress.copy()
                     
-                    # Only send updates when there's a change or periodically for keepalive
-                    if safe_progress != last_status or iteration_count % 20 == 0:
-                        last_status = safe_progress.copy()
-                        
-                        # Add a nonce to prevent browser caching
-                        safe_progress['nonce'] = int(time.time() * 1000)
-                        yield f"data: {json.dumps(safe_progress)}\n\n"
-                        
-                        # If completed, exit early
-                        if safe_progress.get("status", 0) >= 100 and "complete" in safe_progress.get("message", "").lower():
-                            break
-                else:
-                    print(f"Warning: Non-dict progress object: {type(progress)}")
+                    # Add a nonce to prevent browser caching
+                    progress['nonce'] = int(time.time() * 1000)
+                    yield f"data: {json.dumps(progress)}\n\n"
+                    
+                    # If completed, exit early
+                    if progress.get("status", 0) >= 100 and "complete" in progress.get("message", "").lower():
+                        break
                 
             except Exception as e:
                 print(f"Error in SSE stream: {e}")
@@ -1186,15 +1057,11 @@ async def progress_stream(upload_id):
                     # After 3 failures, send an update to let client know there's an issue
                     yield f"data: {json.dumps({'status': -1, 'message': 'Connection error, retrying...', 'nonce': int(time.time() * 1000)})}\n\n"
             
-            await asyncio.sleep(0.5)  # Check for updates every 500ms
+            time.sleep(0.5)  # Check for updates every 500ms
             iteration_count += 1
         
         # Final message indicating stream completion
-        if last_status:
-            end_message = {'status': last_status.get('status', 0), 'message': 'Stream ended', 'nonce': int(time.time() * 1000)}
-            yield f"data: {json.dumps(end_message)}\n\n"
-        else:
-            yield f"data: {json.dumps({'status': 0, 'message': 'Stream ended', 'nonce': int(time.time() * 1000)})}\n\n"
+        yield f"data: {json.dumps({'status': last_status.get('status', 0), 'message': 'Stream ended', 'nonce': int(time.time() * 1000)})}\n\n"
     
     response = Response(generate(), mimetype='text/event-stream')
     response.headers['Cache-Control'] = 'no-cache, no-transform'
