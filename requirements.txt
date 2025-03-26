@@ -21,3 +21,4 @@ uuid
 threaded
 requests-toolbelt
 aiohttp
+flask[async]
