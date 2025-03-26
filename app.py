@@ -197,7 +197,7 @@ def upload_or_link_no_user():
 
 
 @app.route('/v1', methods=['POST'])
-async def upload_or_link():
+def upload_or_link():
     """Handle file uploads or links for transcription."""
     user_id = session.get('user_id')
     if 'user_id' not in session:
@@ -214,7 +214,7 @@ async def upload_or_link():
                 upload_id = str(uuid.uuid4())
                 session['upload_id'] = upload_id
             
-            transcript_id = await transcribe_from_link(upload_id, link)  # Transcribe from the provided link
+            transcript_id = transcribe_from_link(upload_id, link)  # Transcribe from the provided link
             if isinstance(transcript_id, str):  # If it's a valid transcript ID (not an error template)
                 return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
             return transcript_id  # This would be the error template
@@ -229,7 +229,7 @@ async def upload_or_link():
             audio_stream = file
             file_size = request.content_length  # Get file size in bytes
             try:
-                transcript_id = await upload_audio_to_assemblyai(upload_id, audio_stream, file_size)  # Upload directly using stream
+                transcript_id = upload_audio_to_assemblyai(upload_id, audio_stream, file_size)  # Upload directly using stream
                                 
                 username = user.get('username')  
                 if username:
