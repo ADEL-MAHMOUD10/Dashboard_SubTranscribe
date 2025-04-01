@@ -1140,3 +1140,57 @@ body {
 .btn {
     will-change: background-color, border-color;
 }
+
+/* Scroll Reveal Animations */
+.scroll-reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s ease-in-out;
+}
+
+.scroll-reveal.reveal {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Scroll to top button hover effect */
+.group:hover .group-hover\:animate-bounce {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-25%);
+    }
+}
+
+/* Different reveal animations based on data attributes */
+.scroll-reveal[data-direction="left"] {
+    transform: translateX(-50px);
+}
+
+.scroll-reveal[data-direction="right"] {
+    transform: translateX(50px);
+}
+
+.scroll-reveal[data-direction="up"] {
+    transform: translateY(50px);
+}
+
+.scroll-reveal[data-direction="down"] {
+    transform: translateY(-50px);
+}
+
+.scroll-reveal.reveal {
+    transform: translate(0);
+}
+
+/* Delay classes for staggered animations */
+.delay-100 { transition-delay: 100ms; }
+.delay-200 { transition-delay: 200ms; }
+.delay-300 { transition-delay: 300ms; }
+.delay-400 { transition-delay: 400ms; }
+.delay-500 { transition-delay: 500ms; }
