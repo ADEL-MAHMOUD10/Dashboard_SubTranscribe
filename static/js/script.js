@@ -10,7 +10,6 @@
  * - Smooth scrolling
  * - Animations
  */
-
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize all app features
     initApp();
@@ -28,7 +27,7 @@ function initApp() {
     initTabSwitching();
     initFileUpload();
     initSmoothScrolling();
-    initAnimations();
+    initScrollReveal();
 }
 
 /**
@@ -761,50 +760,121 @@ function initFileUpload() {
 }
 
 /**
- * Smooth Scrolling for anchor links
+ * Smooth Scrolling and Scroll-to-Top functionality
  */
 function initSmoothScrolling() {
+    // Handle anchor links
     document.querySelectorAll('a[href^="#"]:not([href="#"])').forEach(anchor => {
         anchor.addEventListener('click', function(e) {
             e.preventDefault();
             
             const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
+            if (!target) return;
+            
+            const header = document.querySelector('nav');
+            const headerHeight = header ? header.offsetHeight : 0;
+            const elementPosition = target.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+            
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+            
+            // Close mobile menu if open
+            closeMobileMenu();
         });
+    });
+
+    // Add scroll-to-top button
+    const scrollButton = createScrollToTopButton();
+    document.body.appendChild(scrollButton);
+    
+    // Show/hide scroll button
+    window.addEventListener('scroll', () => {
+        if (window.pageYOffset > 500) {
+            scrollButton.classList.remove('opacity-0', 'invisible');
+            scrollButton.classList.add('opacity-100', 'visible');
+        } else {
+            scrollButton.classList.add('opacity-0', 'invisible');
+            scrollButton.classList.remove('opacity-100', 'visible');
+        }
     });
 }
 
 /**
- * Animations with Intersection Observer API
+ * Create scroll to top button
  */
-function initAnimations() {
+function createScrollToTopButton() {
+    const button = document.createElement('button');
+    button.className = 'fixed bottom-6 right-6 bg-primary dark:bg-darkPrimary text-white p-3 rounded-full shadow-lg cursor-pointer transition-all duration-300 opacity-0 invisible hover:bg-primary-dark dark:hover:bg-darkPrimary-dark z-50 group';
+    button.innerHTML = `
+        <i class="fas fa-arrow-up text-lg group-hover:animate-bounce"></i>
+        <span class="sr-only">Scroll to top</span>
+    `;
+    
+    button.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+    
+    return button;
+}
+
+/**
+ * Close mobile menu helper
+ */
+function closeMobileMenu() {
+    const navMenu = document.querySelector('.nav-menu');
+    const navToggle = document.querySelector('.nav-toggle');
+    if (navMenu && navMenu.classList.contains('active')) {
+        navMenu.classList.remove('active');
+        if (navToggle) {
+            navToggle.setAttribute('aria-expanded', 'false');
+            navToggle.classList.remove('bg-gray-100', 'dark:bg-gray-800');
+            const icon = navToggle.querySelector('i');
+            if (icon && icon.classList.contains('fa-times')) {
+                icon.classList.replace('fa-times', 'fa-bars');
+            }
+        }
+    }
+}
+
+/**
+ * Scroll Reveal and Animations
+ */
+function initScrollReveal() {
     if (!('IntersectionObserver' in window)) return;
     
-    const fadeInElements = document.querySelectorAll('.fade-in');
-    
-    if (fadeInElements.length === 0) return;
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('opacity-100', 'translate-y-0');
-                entry.target.classList.remove('opacity-0', 'translate-y-5');
-                observer.unobserve(entry.target);
-            }
-        });
-    }, {
+    const observerOptions = {
         root: null,
         rootMargin: '0px',
         threshold: 0.1
-    });
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Handle both fade-in and scroll-reveal animations
+                if (entry.target.classList.contains('fade-in')) {
+                    entry.target.classList.add('opacity-100', 'translate-y-0');
+                    entry.target.classList.remove('opacity-0', 'translate-y-5');
+                }
+                if (entry.target.classList.contains('scroll-reveal')) {
+                    entry.target.classList.add('reveal');
+                }
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
     
-    fadeInElements.forEach(element => {
-        element.classList.add('opacity-0', 'translate-y-5', 'transition-all', 'duration-700');
+    // Observe both fade-in and scroll-reveal elements
+    document.querySelectorAll('.fade-in, .scroll-reveal').forEach(element => {
+        if (element.classList.contains('fade-in')) {
+            element.classList.add('opacity-0', 'translate-y-5', 'transition-all', 'duration-700');
+        }
         observer.observe(element);
     });
 }
