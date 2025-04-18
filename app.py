@@ -762,6 +762,7 @@ def logout():
         session.pop('user_id',None)
         session.pop('username',None)
         session.pop('password',None)
+        session.clear()
         flash('Successfully logged out!', 'success')
     return redirect(url_for('login'))
 
