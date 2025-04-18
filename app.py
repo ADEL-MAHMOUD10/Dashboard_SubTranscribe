@@ -65,6 +65,8 @@ CORS(app, supports_credentials=True, origins=['https://subtranscribe.koyeb.app']
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = True
 
 app.secret_key = SESSION_USERS
 
