@@ -737,9 +737,13 @@ def register():
 def login():
     session.permanent = True
     if 'user_id' in session:
-        upload_id = str(uuid.uuid4())
-        session['upload_id'] = upload_id
-        return redirect(url_for('main_user', user_id=session['user_id']))
+        user = users_collection.find_one({'user_id': session['user_id']})
+        if user:
+            upload_id = str(uuid.uuid4())
+            session['upload_id'] = upload_id
+            return redirect(url_for('main_user', user_id=session['user_id']))
+        else:
+            session.clear()
     if request.method == 'POST':
     
         identifier = request.form['email_username']
