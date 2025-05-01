@@ -1,0 +1,38 @@
+{
+    "name": "SubTranscribe - Professional Audio & Video Transcription",
+    "short_name": "subtranscribe",
+    "description": "Professional audio and video transcription powered by AI",
+    "icons": [
+      {
+        "src": "/static/images/subtitle.ico",
+        "type": "icon/ico",
+        "sizes": "192x192"
+      },
+      {
+        "src": "/static/images/subtitle.ico",
+        "type": "icon/ico",
+        "sizes": "512x512"
+      }
+    ],
+    "chrome_settings_overrides" :[ {
+    "homepage": "https://subtranscribe.koyeb.app/"
+      }
+    ],
+  "screenshots" : [
+    {
+      "src": "/static/images/Screenshot.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
+  ],
+    "start_url": "https://subtranscribe.koyeb.app/",
+    "background_color": "#181818",
+    "display_override": ["fullscreen", "minimal-ui"],
+    "display": "standalone",
+    "author": "Adel Mahmoud",
+    "orientation": "portrait",
+    "scope":"https://subtranscribe.koyeb.app/",
+    "theme_color": "#000",
+    "lang": "en",
+    "dir": "auto"
+  }
