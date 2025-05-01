@@ -4,12 +4,12 @@
     "description": "Professional audio and video transcription powered by AI",
     "icons": [
       {
-        "src": "/static/images/subtitle.ico",
+        "src": "/static/image/subtitle.ico",
         "type": "icon/ico",
         "sizes": "192x192"
       },
       {
-        "src": "/static/images/subtitle.ico",
+        "src": "/static/image/subtitle.ico",
         "type": "icon/ico",
         "sizes": "512x512"
       }
@@ -20,7 +20,7 @@
     ],
   "screenshots" : [
     {
-      "src": "/static/images/Screenshot.png",
+      "src": "/static/image/Screenshot.png",
       "sizes": "1280x720",
       "type": "image/png"
     }
