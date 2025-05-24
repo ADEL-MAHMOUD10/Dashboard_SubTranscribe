@@ -391,7 +391,10 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         upload_url = response.json()["upload_url"]
         
         # Request transcription from AssemblyAI using the uploaded file URL
-        data = {"audio_url": upload_url}
+        data = {
+            "audio_url": upload_url,
+            "speech_model": "slam-1"
+        }
         response = requests.post(f"{base_url}/transcript", 
                                 json=data, 
                                 headers=headers,
@@ -595,7 +598,10 @@ def transcribe_from_link(upload_id, link):
             
             # Start transcription
             update_progress_bar(upload_id, 90, "Upload complete. Initiating transcription process...")
-            data = {"audio_url": response.json()["upload_url"]}
+            data = {
+                "audio_url": response.json()["upload_url"],
+                "speech_model": "slam-1"
+            }
             response = requests.post(f"{base_url}/transcript", 
                                     json=data, 
                                     headers=headers,
