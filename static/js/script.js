@@ -11,6 +11,9 @@
  * - Animations
  */
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize form tracking
+    window.lastSubmittedForm = null;
+    
     // Initialize all app features
     initApp();
     
@@ -34,6 +37,7 @@ function initApp() {
  * Progress Tracking System
  */
 let pollingActive = false;  // Define this globally
+let uploadProgressTimer = null;
 
 function initProgressTracking() {
     try {
@@ -48,6 +52,14 @@ function initProgressTracking() {
 
             // Try Server-Sent Events first but don't show progress elements yet
             setupEventSource(uploadId);
+            
+            // Set up a safety fallback in case SSE doesn't initialize properly
+            setTimeout(() => {
+                if (!pollingActive) {
+                    console.warn("SSE might not have started properly, enabling polling as backup");
+                    fallbackToPolling(uploadId);
+                }
+            }, 2000);
         }).catch(error => {
             console.error('Error fetching upload ID:', error);
         });
@@ -57,79 +69,173 @@ function initProgressTracking() {
 }
 
 function setupEventSource(uploadId) {
+    if (!uploadId || uploadId === 'undefined' || uploadId === 'null') {
+        console.error('Invalid upload ID for SSE:', uploadId);
+        return;
+    }
+    
     // Use Server-Sent Events for real-time updates
-    let eventSource = new EventSource(`/progress_stream/${uploadId}`);
-    let lastUpdate = Date.now();
+    let eventSource;
+    let reconnectAttempts = 0;
+    const maxReconnects = 3;
+    let lastEventTime = Date.now();
     let transcriptionStarted = false;
     
-    eventSource.onmessage = (event) => {
-        lastUpdate = Date.now();
+    function createEventSource() {
         try {
-            const progress = JSON.parse(event.data);
-            
-            // Only show progress UI once we get real progress updates
-            if (progress.status > 0 || 
-                (progress.message && progress.message.toLowerCase().includes("upload"))) {
-                transcriptionStarted = true;
-            }
-            
-            if (transcriptionStarted) {
-                updateProgressUI(progress);
-            }
-            
-            console.log("SSE Update:", progress);
-            
-            // Close connection when complete but keep elements visible
-            if (progress.status >= 100 && progress.message.includes("complete")) {
-                console.log("Closing SSE connection - process complete");
+            // Close any existing connection
+            if (eventSource) {
                 eventSource.close();
             }
+            
+            eventSource = new EventSource(`/progress_stream/${uploadId}`);
+            lastEventTime = Date.now();
+            
+            eventSource.onmessage = (event) => {
+                lastEventTime = Date.now();
+                reconnectAttempts = 0; // Reset reconnect counter on successful message
+                
+                try {
+                    const progress = JSON.parse(event.data);
+                    
+                    // Only show progress UI once we get real progress updates
+                    if (progress.status > 0 || 
+                        (progress.message && progress.message.toLowerCase().includes("upload"))) {
+                        transcriptionStarted = true;
+                    }
+                    
+                    if (transcriptionStarted) {
+                        updateProgressUI(progress);
+                    }
+                    
+                    console.log("SSE Update:", progress);
+                    
+                    // Close connection when complete but keep elements visible
+                    if (progress.status >= 100 && progress.message.includes("complete")) {
+                        console.log("Closing SSE connection - process complete");
+                        eventSource.close();
+                    }
+                } catch (e) {
+                    console.error("Error parsing SSE data:", e);
+                }
+            };
+            
+            eventSource.onerror = (e) => {
+                console.error('EventSource connection error', e);
+                
+                // Only try to reconnect a limited number of times
+                if (reconnectAttempts < maxReconnects) {
+                    reconnectAttempts++;
+                    console.log(`SSE reconnect attempt ${reconnectAttempts}/${maxReconnects}`);
+                    
+                    // Use exponential backoff for reconnection
+                    setTimeout(() => {
+                        createEventSource();
+                    }, Math.min(1000 * Math.pow(2, reconnectAttempts), 8000));
+                } else {
+                    eventSource.close();
+                    console.log("Maximum SSE reconnection attempts reached, falling back to polling");
+                    if (!pollingActive) {
+                        fallbackToPolling(uploadId);
+                    }
+                }
+            };
         } catch (e) {
-            console.error("Error parsing SSE data:", e);
+            console.error('Failed to create EventSource:', e);
+            if (!pollingActive) {
+                fallbackToPolling(uploadId);
+            }
+            return;
         }
-    };
+    }
     
-    eventSource.onerror = () => {
-        console.error('EventSource connection error, falling back to polling');
-        eventSource.close();
-        if (!pollingActive) {
-            fallbackToPolling(uploadId);
-        }
-    };
+    // Create initial EventSource connection
+    createEventSource();
     
-    // Safety timeout - if no updates for 5 seconds during upload, fall back to polling
+    // Safety timeout - if no updates for 8 seconds during upload, fall back to polling
     const checkInterval = setInterval(() => {
-        if (Date.now() - lastUpdate > 5000) {
-            console.warn("No SSE updates for 5 seconds, falling back to polling");
+        if (Date.now() - lastEventTime > 8000) {
+            console.warn("No SSE updates for 8 seconds, falling back to polling");
             clearInterval(checkInterval);
-            eventSource.close();
+            
+            if (eventSource) {
+                eventSource.close();
+            }
+            
             if (!pollingActive) {
                 fallbackToPolling(uploadId);
             }
         }
-    }, 1000);
+    }, 2000); // Check every 2 seconds
 }
 
 function fallbackToPolling(uploadId) {
+    if (!uploadId || uploadId === 'undefined' || uploadId === 'null') {
+        console.error('Invalid upload ID for polling:', uploadId);
+        return;
+    }
+    
     console.log("Activating fallback polling for upload ID:", uploadId);
     pollingActive = true;
     let transcriptionStarted = false;
+    let consecutiveErrors = 0;
+    let lastPercentage = 0;
+    let noChangeCount = 0;
+    let pollInterval = 1000; // Start with 1 second polling
     
-    const progressPoll = setInterval(async () => {
+    // Clear any existing timer
+    if (uploadProgressTimer) {
+        clearInterval(uploadProgressTimer);
+    }
+    
+    // Function to perform the polling - this allows us to dynamically adjust the interval
+    const performPoll = async () => {
         try {
             const response = await fetch(`/progress/${uploadId}`, {
                 method: 'GET',
-                headers: { 'Accept': 'application/json' },
-                credentials: 'include',
-                cache: 'no-store'  // Prevent caching
+                headers: { 
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                },
+                credentials: 'include'
             });
 
             if (!response.ok) {
                 throw new Error(`Progress fetch failed: ${response.status}`);
             }
 
+            // Reset error counter on success
+            consecutiveErrors = 0;
+            
             const progress = await response.json();
-            console.log("Poll Update:", progress);
+            const currentPercentage = progress.status || 0;
+            
+            // Adjust polling frequency based on progress stage
+            if (currentPercentage === lastPercentage) {
+                noChangeCount++;
+                
+                // If no change for several polls, slow down polling
+                if (noChangeCount > 3) {
+                    // Exponential backoff with max 5 seconds
+                    // Increase the polling interval using exponential backoff,
+                    // but cap it at a maximum of 5 seconds to avoid excessive delays.
+                    pollInterval = Math.min(pollInterval * 1.5, 5000);
+                }
+            } else {
+                // Reset counter and interval when progress changes
+                noChangeCount = 0;
+                pollInterval = 1000;
+                lastPercentage = currentPercentage;
+            }
+            
+            // When progress is high, poll more frequently
+            if (currentPercentage >= 95) {
+                pollInterval = 800; // Faster polling at the end
+            }
+            
+            console.log("Poll Update:", progress, "Next poll in:", pollInterval + "ms");
             
             // Only show progress UI once we get real progress updates
             if (progress.status > 0 || 
@@ -143,13 +249,30 @@ function fallbackToPolling(uploadId) {
             
             // Clear interval when complete
             if (progress.status >= 100 && progress.message.includes("complete")) {
-                clearInterval(progressPoll);
+                clearTimeout(uploadProgressTimer);
                 pollingActive = false;
+            } else {
+                // Schedule next poll with dynamic interval
+                uploadProgressTimer = setTimeout(performPoll, pollInterval);
             }
         } catch (error) {
             console.error('Error fetching progress:', error);
+            consecutiveErrors++;
+            
+            // If we get too many consecutive errors, show a message but keep trying
+            if (consecutiveErrors > 3) {
+                updateProgressMessage("Connection issue, retrying...", true);
+                // Increase poll interval on errors to avoid overwhelming server
+                pollInterval = Math.min(pollInterval * 1.5, 8000);
+            }
+            
+            // Schedule next poll even after error
+            uploadProgressTimer = setTimeout(performPoll, pollInterval);
         }
-    }, 1000);  // Poll every second
+    };
+    
+    // Start polling immediately
+    performPoll();
 }
 
 /**
@@ -159,7 +282,12 @@ async function fetchUploadId() {
     try {
         const response = await fetch('/upload_id', {
             method: 'GET',
-            headers: { 'Accept': 'text/plain' },
+            headers: { 
+                'Accept': 'text/plain',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            },
             credentials: 'include'
         });
 
@@ -167,7 +295,8 @@ async function fetchUploadId() {
             throw new Error(`Failed to get upload ID: ${response.status}`);
         }
 
-        return await response.text();
+        const uploadId = await response.text();
+        return uploadId && uploadId !== 'undefined' && uploadId !== 'null' ? uploadId : null;
     } catch (error) {
         console.error('Error getting upload ID:', error);
         return null;
@@ -256,12 +385,24 @@ function updateProgressUI(progressData) {
  */
 function updateProgressMessage(message, isError = false) {
     const progressMessage = document.getElementById('progressMessage');
+    const progressError = document.querySelector('.progress-error');
+    const errorMessage = progressError ? progressError.querySelector('.error-message') : null;
+    
     if (!progressMessage) return;
     
-    progressMessage.textContent = message;
-    progressMessage.style.color = isError 
-        ? 'var(--error-color)' 
-        : null; // Use default text color from Tailwind
+    if (isError && progressError && errorMessage) {
+        // Show error message in the dedicated error container
+        progressMessage.style.display = 'none';
+        errorMessage.textContent = message;
+        progressError.classList.remove('hidden');
+    } else {
+        // Show normal progress message
+        progressMessage.style.display = '';
+        progressMessage.textContent = message;
+        if (progressError) {
+            progressError.classList.add('hidden');
+        }
+    }
 }
 
 /**
@@ -548,211 +689,212 @@ function initTabSwitching() {
     });
 }
 
-// File upload with loading indicator
-document.addEventListener('DOMContentLoaded', function() {
-    const uploadForm = document.getElementById('uploadForm');
-    const uploadLoading = document.getElementById('upload-loading');
-    const fileInfo = document.getElementById('file-info');
-    const progressContainer = document.querySelector('.progress-container');
-    
-    // Initialize global variable to track which form was submitted
-    window.lastSubmittedForm = null;
-    
-    // Hide progress container initially
-    if (progressContainer) {
-        progressContainer.classList.add('hidden');
-    }
-    
-    // File upload form handling
-    if (uploadForm) {
-        uploadForm.addEventListener('submit', function(e) {
-            // Set which form was submitted
-            window.lastSubmittedForm = 'file';
-            
-            // Hide file info and show loading spinner
-            if (fileInfo) fileInfo.classList.add('hidden');
-            if (uploadLoading) uploadLoading.classList.remove('hidden');
-            
-            // Show progress container for file uploads - will now be explicitly shown on form submit
-            if (progressContainer) {
-                progressContainer.classList.remove('hidden');
-            }
-        });
-    }
-    
-    // Link form handling
-    const linkForm = document.getElementById('linkForm');
-    const linkLoading = document.getElementById('link-loading');
-    
-    if (linkForm) {
-        linkForm.addEventListener('submit', function(e) {
-            // Set which form was submitted
-            window.lastSubmittedForm = 'link';
-            
-            // Show loading spinner
-            if (linkLoading) linkLoading.classList.remove('hidden');
-            
-            // Show progress container but explicitly set progress to 0%
-            if (progressContainer) {
-                progressContainer.classList.remove('hidden');
-                
-                const progressBar = document.querySelector('.progress-bar');
-                if (progressBar) {
-                    progressBar.style.width = '0%';
-                    progressBar.setAttribute('aria-valuenow', 0);
-                }
-                
-                const progressMessage = document.getElementById('progressMessage');
-                if (progressMessage) {
-                    progressMessage.textContent = 'Initializing link extraction...';
-                }
-            }
-            
-            // You can add validation here if needed
-            const linkInput = document.getElementById('link');
-            if (linkInput && !linkInput.value.trim()) {
-                e.preventDefault(); // Prevent form submission if link is empty
-                alert('Please enter a valid URL');
-                linkLoading.classList.add('hidden');
-                
-                // Hide progress container if validation fails
-                if (progressContainer) {
-                    progressContainer.classList.add('hidden');
-                }
-            }
-        });
-    }
-});
-
 /**
- * Format file size in human-readable format
- */
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-/**
- * File Upload with Drag & Drop
+ * Initialize the file upload functionality
  */
 function initFileUpload() {
     const uploadForm = document.getElementById('uploadForm');
+    const linkForm = document.getElementById('linkForm');
     const fileInput = document.getElementById('file');
     const uploadArea = document.querySelector('.upload-area');
-    const progressContainer = document.querySelector('.progress-container');
-    const progressBar = document.querySelector('.progress-bar');
-    const browseBtn = document.querySelector('.browse-btn');
     const fileInfo = document.getElementById('file-info');
+    const fileName = document.querySelector('.file-name');
+    const browseBtn = document.querySelector('.browse-btn');
     
-    if (!uploadForm || !fileInput) return;
+    if (!uploadForm || !fileInput || !uploadArea) return;
     
-    // Setup drag and drop
+    // Set up listeners for file input
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            handleFileSelection(this.files[0]);
+        }
+    });
+    
+    // Open file dialog when browse button is clicked
+    if (browseBtn) {
+        browseBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            fileInput.click();
+        });
+    }
+    
+    // Handle drag and drop events
     if (uploadArea) {
-        // Prevent default behavior
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
-            uploadArea.addEventListener(event, e => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
+        // Prevent default behavior to allow drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
         });
         
-        // Add highlighting on drag
-        ['dragenter', 'dragover'].forEach(event => {
-            uploadArea.addEventListener(event, () => {
-                uploadArea.classList.add('border-primary', 'bg-primary/5');
-            });
+        // Handle dragenter and dragover events
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, function() {
+                uploadArea.classList.add('border-primary', 'dark:border-darkPrimary', 'bg-gray-50', 'dark:bg-gray-800');
+            }, false);
         });
         
-        // Remove highlighting when drag ends
-        ['dragleave', 'drop'].forEach(event => {
-            uploadArea.addEventListener(event, () => {
-                uploadArea.classList.remove('border-primary', 'bg-primary/5');
-            });
+        // Handle dragleave and drop events
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, function() {
+                uploadArea.classList.remove('border-primary', 'dark:border-darkPrimary', 'bg-gray-50', 'dark:bg-gray-800');
+            }, false);
         });
         
         // Handle file drop
-        uploadArea.addEventListener('drop', e => {
+        uploadArea.addEventListener('drop', function(e) {
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 fileInput.files = files;
                 handleFileSelection(files[0]);
             }
-        });
-    }
-    
-    // File selection via browse button
-    if (browseBtn) {
-        browseBtn.addEventListener('click', () => {
+        }, false);
+        
+        // Clicking anywhere in the upload area should open the file dialog
+        uploadArea.addEventListener('click', function() {
             fileInput.click();
         });
     }
     
-    // File selection change
-    fileInput.addEventListener('change', () => {
-        if (fileInput.files.length > 0) {
-            handleFileSelection(fileInput.files[0]);
-        }
-    });
-    
-    // Form submission
-    uploadForm.addEventListener('submit', e => {
-        // Check if file is selected
-        if (!fileInput.files || fileInput.files.length === 0) {
-            updateProgressMessage('Please select a file first.', true);
-            showProgressContainer();
-            return;
-        }
-        
-        // Clear progress UI
-        resetProgressUI();
-        
-        // Submit the form - using the standard form submit to maintain backend compatibility
-    });
-    
-    // Handle file selection
-    function handleFileSelection(file) {
-        // Validate file type
-        const validTypes = ['audio/mpeg', 'audio/wav', 'video/mp4', 'audio/m4a'];
-        if (!validTypes.includes(file.type)) {
-            alert('Please upload a valid audio or video file.');
-            return;
-        }
-        
-        // Update UI with file info
-        if (fileInfo) {
-            const fileName = fileInfo.querySelector('.file-name');
-            if (fileName) {
-                // Format file size and append to filename
-                const formattedSize = formatFileSize(file.size);
-                fileName.innerHTML = `${file.name} <span class="text-sm text-gray-500">(${formattedSize})</span>`;
-                fileInfo.classList.remove('hidden');
+    // Handle form submissions
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (fileInput.files.length === 0) {
+                // No file selected
+                alert('Please select a file to upload.');
+                return;
             }
-        }
-        
-        // Don't show progress container until form is submitted
-        if (progressContainer) {
-            progressContainer.classList.add('hidden');
-        }
+            
+            // Mark that we're submitting the file form
+            window.lastSubmittedForm = 'file';
+            
+            // Reset progress UI
+            resetProgressUI();
+            
+            // Hide file info and show loading
+            if (fileInfo) fileInfo.classList.add('hidden');
+            const uploadLoading = document.getElementById('upload-loading');
+            if (uploadLoading) uploadLoading.classList.remove('hidden');
+            
+            // Get a fresh upload ID before submitting
+            fetchUploadId().then(uploadId => {
+                if (uploadId) {
+                    // Set up progress tracking with the new ID
+                    setupEventSource(uploadId);
+                    
+                    // Safety net in case SSE doesn't work
+                    setTimeout(() => {
+                        if (!pollingActive) {
+                            fallbackToPolling(uploadId);
+                        }
+                    }, 1000);
+                }
+                
+                // Submit the form
+                this.submit();
+            }).catch(error => {
+                console.error('Error fetching upload ID:', error);
+                // Submit anyway, even if we can't track progress
+                this.submit();
+            });
+        });
     }
     
-    // Reset progress UI - but don't show container
+    // Handle link form submission
+    if (linkForm) {
+        linkForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const linkInput = document.getElementById('link');
+            if (!linkInput.value) {
+                alert('Please enter a valid URL.');
+                return;
+            }
+            
+            // Mark that we're submitting the link form
+            window.lastSubmittedForm = 'link';
+            
+            // Reset progress UI
+            resetProgressUI();
+            
+            // Show link loading indicator
+            const linkLoading = document.getElementById('link-loading');
+            if (linkLoading) linkLoading.classList.remove('hidden');
+            
+            // Get a fresh upload ID before submitting
+            fetchUploadId().then(uploadId => {
+                if (uploadId) {
+                    // Set up progress tracking with the new ID
+                    setupEventSource(uploadId);
+                    
+                    // Safety net in case SSE doesn't work
+                    setTimeout(() => {
+                        if (!pollingActive) {
+                            fallbackToPolling(uploadId);
+                        }
+                    }, 1000);
+                }
+                
+                // Submit the form
+                this.submit();
+            }).catch(error => {
+                console.error('Error fetching upload ID:', error);
+                // Submit anyway, even if we can't track progress
+                this.submit();
+            });
+        });
+    }
+    
+    // Helper function to prevent default behavior
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    /**
+     * Handle file selection - display file name and size
+     */
+    function handleFileSelection(file) {
+        if (!fileInfo || !fileName) return;
+        
+        // Validate file type
+        const fileType = file.type.split('/')[0];
+        if (fileType !== 'audio' && fileType !== 'video') {
+            alert('Please select an audio or video file.');
+            return;
+        }
+        
+        // Format display of file name with size
+        const size = formatFileSize(file.size);
+        fileName.textContent = `${file.name} (${size})`;
+        
+        // Show file info section and hide other elements
+        fileInfo.classList.remove('hidden');
+        
+        // Reset progress UI
+        resetProgressUI();
+    }
+    
+    /**
+     * Reset progress UI elements
+     */
     function resetProgressUI() {
-        if (progressBar) progressBar.style.width = '0%';
-        
-        // Progress message ID
+        const progressBar = document.querySelector('.progress-bar');
         const progressMessage = document.getElementById('progressMessage');
-        if (progressMessage) {
-            progressMessage.textContent = '';
-        }
+        const progressContainer = document.querySelector('.progress-container');
+        const progressError = document.querySelector('.progress-error');
+        
+        if (progressBar) progressBar.style.width = '0%';
+        if (progressMessage) progressMessage.textContent = 'Preparing...';
+        if (progressContainer) progressContainer.classList.remove('hidden');
+        if (progressError) progressError.classList.add('hidden');
     }
     
-    // Show progress container
+    /**
+     * Show progress container
+     */
     function showProgressContainer() {
+        const progressContainer = document.querySelector('.progress-container');
         if (progressContainer) {
             progressContainer.classList.remove('hidden');
         }
@@ -877,4 +1019,17 @@ function initScrollReveal() {
         }
         observer.observe(element);
     });
+}
+
+/**
+ * Format file size in human-readable format
+ */
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }

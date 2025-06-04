@@ -18,7 +18,8 @@ dnspython
 Python-IO
 gunicorn
 uuid
-threaded
 requests-toolbelt
 aiohttp
+gevent
+greenlet
 flask[async]

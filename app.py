@@ -61,7 +61,12 @@ firebase_credentials = {
 
 # Create a Flask application instance
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=['https://subtranscribe.koyeb.app'])
+CORS(app, 
+     supports_credentials=True, 
+     origins=['https://subtranscribe.koyeb.app', 'http://localhost:5000', 'http://127.0.0.1:5000', 'http://localhost:8000', 'http://127.0.0.1:8000'],
+     expose_headers=['Content-Type', 'X-CSRFToken', 'Cache-Control', 'X-Requested-With'],
+     allow_headers=['Content-Type', 'X-CSRFToken', 'Authorization', 'Cache-Control', 'X-Requested-With'],
+     methods=['GET', 'POST', 'OPTIONS'])
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
@@ -114,14 +119,40 @@ def update_progress_bar(upload_id, progress_percentage, message):
         upload_progress[upload_id] = {"status": progress_percentage, "message": message}
     
     try:
-        # Direct Firebase update - use update(), not set() with merge
+        # Batch updates to Firebase to reduce overhead
+        # Only update Firebase every 5% change or for important status changes
+        should_update_firebase = False
+        
+        # Check if this is an important status message (start, completion, error)
+        important_status = (
+            progress_percentage == 0 or
+            progress_percentage == 100 or 
+            progress_percentage in [10, 25, 50, 75, 90, 95, 98] or
+            "error" in message.lower() or
+            "complete" in message.lower() or
+            "fail" in message.lower()
+        )
+        
+        # Get the last update if it exists
         ref = db.reference(f'/UID/{upload_id}')
-        ref.update({
-            "status": progress_percentage,
-            "message": message,
-            "timestamp": int(time.time())
-        })
-        print(f"Firebase update: {progress_percentage}% - {message}")
+        last_update = ref.get()
+        
+        if last_update:
+            last_percentage = last_update.get("status", 0)
+            # Update if percentage change is significant (>= 5%) or it's an important message
+            if abs(progress_percentage - last_percentage) >= 5 or important_status:
+                should_update_firebase = True
+        else:
+            # No previous update, so definitely update
+            should_update_firebase = True
+        
+        if should_update_firebase:
+            ref.update({
+                "status": progress_percentage,
+                "message": message,
+                "timestamp": int(time.time())
+            })
+            print(f"Firebase update: {progress_percentage}% - {message}")
     except Exception as e:
         print(f"Firebase update error: {e}")
 
@@ -137,19 +168,72 @@ def progress_status(upload_id):
     if not upload_id:
         return jsonify({"status": 0, "message": " "})
     
-    progress = upload_progress.get(upload_id, {"status": 0, "message": " "})
-    return jsonify(progress)
+    try:
+        # First try to get from local dictionary for faster response
+        with upload_progress_lock:
+            progress = upload_progress.get(upload_id)
+        
+        # If not in local cache, try Firebase
+        if not progress:
+            try:
+                ref = db.reference(f'/UID/{upload_id}')
+                firebase_data = ref.get()
+                if firebase_data:
+                    progress = {
+                        "status": firebase_data.get("status", 0),
+                        "message": firebase_data.get("message", "Processing...")
+                    }
+                    
+                    # Update local cache
+                    with upload_progress_lock:
+                        upload_progress[upload_id] = progress
+            except Exception as e:
+                print(f"Firebase error in progress_status: {e}")
+                # Default progress if Firebase fails
+                progress = {"status": 0, "message": "Connecting..."}
+        
+        # If still no progress data, return default
+        if not progress:
+            progress = {"status": 0, "message": "Initializing..."}
+        
+        return jsonify(progress)
+    except Exception as e:
+        print(f"Error in progress_status: {e}")
+        return jsonify({"status": 0, "message": "Error retrieving progress"})
 
 
 @app.route('/upload_id', methods=['GET'])
+@cross_origin()  # Allow CORS for this route
 def progress_id():
     """Create a new upload ID."""
-    # Generate a new upload ID if one doesn't exist in the session
-    if 'upload_id' not in session or not session['upload_id']:
-        session['upload_id'] = str(uuid.uuid4())
-    
-    upload_id = session.get('upload_id')
-    return upload_id  # Return as plain text, not JSON
+    try:
+        # Generate a new upload ID if one doesn't exist in the session
+        if 'upload_id' not in session or not session['upload_id']:
+            session['upload_id'] = str(uuid.uuid4())
+            session.modified = True
+        
+        upload_id = session.get('upload_id')
+        
+        # Ensure Firebase has an entry for this ID
+        ref = db.reference(f'/UID/{upload_id}')
+        existing = ref.get()
+        if not existing:
+            ref.set({
+                "status": 0,
+                "message": "Initialized",
+                "timestamp": int(time.time())
+            })
+        
+        # Set cache control headers
+        response = Response(upload_id)
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        response.headers['Content-Type'] = 'text/plain'
+        return response
+    except Exception as e:
+        print(f"Error generating upload ID: {e}")
+        return "error"
 
 def Update_progress(transcript_id, status, message, Section, file_name=None, link=None):
     """Update the progress status in the MongoDB database."""
@@ -296,7 +380,7 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
             """Dedicated thread for progress updates optimized for Koyeb"""
             last_percentage = 10  # Start at 10%
             last_update_time = time.time()
-            update_interval = 1.0  # Increase interval to reduce Firebase load
+            update_interval = 2.0  # Increase interval to reduce Firebase load (changed from 1.0 to 2.0)
             
             while progress_data["running"]:
                 # Check if thread should exit
@@ -311,7 +395,8 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                 current_percentage = int(progress_percentage)
                 current_time = time.time()
                 
-                if (current_percentage > last_percentage or 
+                # Update only on 5% increments or when update_interval has passed
+                if (current_percentage >= last_percentage + 5 or 
                     (current_time - last_update_time >= update_interval)):
                     
                     # More professional messages based on progress stages
@@ -347,7 +432,7 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                 for _ in range(5):  # Break the sleep into smaller chunks
                     if not progress_data["running"]:
                         break
-                    time.sleep(0.1)  # 5 * 0.1 = 0.5 seconds total, but more responsive
+                    time.sleep(0.2)  # 5 * 0.2 = 1.0 second total, but more responsive
         
         # Start the dedicated progress update thread
         progress_thread = threading.Thread(target=progress_updater, daemon=True)
@@ -392,8 +477,7 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         
         # Request transcription from AssemblyAI using the uploaded file URL
         data = {
-            "audio_url": upload_url,
-            "speech_model": "slam-1"
+            "audio_url": upload_url
         }
         response = requests.post(f"{base_url}/transcript", 
                                 json=data, 
@@ -517,7 +601,7 @@ def transcribe_from_link(upload_id, link):
             """Dedicated thread for progress updates optimized for Koyeb"""
             last_percentage = 15  # Start at 15%
             last_update_time = time.time()
-            update_interval = 1.0  # Increase interval to reduce Firebase load
+            update_interval = 2.0  # Increase interval to reduce Firebase load (changed from 1.0 to 2.0)
             
             while progress_data["running"]:
                 # Check if thread should exit
@@ -532,7 +616,8 @@ def transcribe_from_link(upload_id, link):
                 current_percentage = int(progress_percentage)
                 current_time = time.time()
                 
-                if (current_percentage > last_percentage or 
+                # Update only on 5% increments or when update_interval has passed
+                if (current_percentage >= last_percentage + 5 or 
                     (current_time - last_update_time >= update_interval)):
                     
                     prog_message = f"Retrieving audio data: {current_percentage}% complete"
@@ -559,7 +644,7 @@ def transcribe_from_link(upload_id, link):
                 for _ in range(5):  # Break the sleep into smaller chunks
                     if not progress_data["running"]:
                         break
-                    time.sleep(0.1)  # 5 * 0.1 = 0.5 seconds total, but more responsive
+                    time.sleep(0.2)  # 5 * 0.2 = 1.0 second total, but more responsive
         
         # Start the dedicated progress update thread
         progress_thread = threading.Thread(target=progress_updater, daemon=True)
@@ -599,8 +684,7 @@ def transcribe_from_link(upload_id, link):
             # Start transcription
             update_progress_bar(upload_id, 90, "Upload complete. Initiating transcription process...")
             data = {
-                "audio_url": response.json()["upload_url"],
-                "speech_model": "slam-1"
+                "audio_url": response.json()["upload_url"]
             }
             response = requests.post(f"{base_url}/transcript", 
                                     json=data, 
@@ -1002,13 +1086,27 @@ def serve_file(filename):
     return response  # Return the file response
 
 @app.route('/progress_stream/<upload_id>')
+@cross_origin()  # Allow CORS for this route
 def progress_stream(upload_id):
     """Create a server-sent events stream for progress updates."""
+    if not upload_id or upload_id == 'undefined' or upload_id == 'null':
+        # Try to get from session if parameter is invalid
+        upload_id = session.get('upload_id')
+        if not upload_id:
+            # If still no valid ID, return a one-time error message
+            response = Response('data: {"status": 0, "message": "Invalid upload ID", "error": true}\n\n', 
+                               mimetype='text/event-stream')
+            response.headers['Cache-Control'] = 'no-cache, no-transform'
+            response.headers['Connection'] = 'keep-alive'
+            response.headers['X-Accel-Buffering'] = 'no'
+            return response
+    
     def generate():
         last_status = None
         iteration_count = 0
-        max_iterations = 600  # Limit the connection to 5 minutes (600 * 0.5s)
+        max_iterations = 600  # Limit the connection to 10 minutes (600 * 1.0s)
         recovery_attempts = 0
+        check_interval = 1.0  # Check interval in seconds (increased from 0.5s)
         
         # Initial message
         initial_data = {
@@ -1019,17 +1117,25 @@ def progress_stream(upload_id):
         }
         yield f"data: {json.dumps(initial_data)}\n\n"
         
+        # Use a cache to avoid repeated Firebase calls
+        progress_cache = {}
+        last_firebase_check = 0
+        firebase_check_interval = 5  # Only check Firebase every 5 seconds
+        
         while iteration_count < max_iterations:
             try:
                 # First try the in-memory cache for faster responses
                 with upload_progress_lock:
                     progress = upload_progress.get(upload_id, None)
                 
-                # If not in memory, try Firebase
-                if progress is None:
+                # If not in memory and enough time has passed, try Firebase
+                current_time = time.time()
+                if progress is None and (current_time - last_firebase_check) >= firebase_check_interval:
                     try:
                         ref = db.reference(f'/UID/{upload_id}')
                         firebase_data = ref.get()
+                        last_firebase_check = current_time
+                        
                         if firebase_data:
                             progress = {
                                 "status": firebase_data.get("status", 0),
@@ -1039,20 +1145,22 @@ def progress_stream(upload_id):
                             # Update local cache with Firebase data
                             with upload_progress_lock:
                                 upload_progress[upload_id] = progress
+                                
+                            # Also update our function-local cache
+                            progress_cache = progress.copy()
                     except Exception as e:
                         print(f"Firebase read error in SSE: {e}")
-                        # If both in-memory and Firebase fail, use last known status
-                        if last_status:
-                            progress = last_status
-                        else:
-                            progress = {"status": 0, "message": "Connecting..."}
-                
-                # Default if still None
-                if progress is None:
-                    progress = {"status": 0, "message": "Processing..."}
+                        # If both in-memory and Firebase fail, use cached or last known status
+                        progress = progress_cache or last_status or {"status": 0, "message": "Connecting..."}
+                elif progress is None:
+                    # Use cached progress if we're not checking Firebase this time
+                    progress = progress_cache or last_status or {"status": 0, "message": "Processing..."}
+                else:
+                    # Update our local cache
+                    progress_cache = progress.copy()
                 
                 # Only send updates when there's a change or periodically for keepalive
-                if progress != last_status or iteration_count % 20 == 0:
+                if progress != last_status or iteration_count % 15 == 0:  # Reduced frequency from 20 to 15
                     last_status = progress.copy()
                     
                     # Add a nonce to prevent browser caching
@@ -1070,7 +1178,8 @@ def progress_stream(upload_id):
                     # After 3 failures, send an update to let client know there's an issue
                     yield f"data: {json.dumps({'status': -1, 'message': 'Connection error, retrying...', 'nonce': int(time.time() * 1000)})}\n\n"
             
-            time.sleep(0.5)  # Check for updates every 500ms
+            # Longer sleep interval to reduce server load
+            time.sleep(check_interval)
             iteration_count += 1
         
         # Final message indicating stream completion

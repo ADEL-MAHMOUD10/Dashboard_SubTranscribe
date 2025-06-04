@@ -17,6 +17,9 @@ RUN apt-get update && \
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+# Optimize Python memory usage for containerized environments
+ENV PYTHONMALLOC=malloc
+ENV PYTHONHASHSEED=random
 
 # Copy application code
 COPY . .
@@ -24,5 +27,5 @@ COPY . .
 # Expose the port
 EXPOSE 8000
 
-# Use gunicorn as the entry point
-CMD ["gunicorn", "--workers=2", "--threads=4", "--worker-class=gthread", "--max-requests=100", "--max-requests-jitter=10", "--timeout=600", "--bind=0.0.0.0:8000", "app:app"]
+# Use gunicorn with gevent worker for better async handling (optimized for limited resources)
+CMD ["gunicorn", "--workers=1", "--threads=4", "--worker-class=gevent", "--worker-connections=500", "--max-requests=100", "--max-requests-jitter=10", "--timeout=600", "--keep-alive=120", "--bind=0.0.0.0:8000", "app:app"]
