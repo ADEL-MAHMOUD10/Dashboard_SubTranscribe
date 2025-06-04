@@ -88,7 +88,9 @@ function setupEventSource(uploadId) {
                 eventSource.close();
             }
             
-            eventSource = new EventSource(`/progress_stream/${uploadId}`);
+            // Force HTTPS in production, this helps with CORS
+            let baseUrl = window.location.protocol + '//' + window.location.host;
+            eventSource = new EventSource(`${baseUrl}/progress_stream/${uploadId}`);
             lastEventTime = Date.now();
             
             eventSource.onmessage = (event) => {
@@ -102,6 +104,7 @@ function setupEventSource(uploadId) {
                     if (progress.status > 0 || 
                         (progress.message && progress.message.toLowerCase().includes("upload"))) {
                         transcriptionStarted = true;
+                        showProgressContainer(); // Ensure progress container is visible
                     }
                     
                     if (transcriptionStarted) {
@@ -183,6 +186,9 @@ function fallbackToPolling(uploadId) {
     let noChangeCount = 0;
     let pollInterval = 1000; // Start with 1 second polling
     
+    // Show progress container immediately when starting polling
+    showProgressContainer();
+    
     // Clear any existing timer
     if (uploadProgressTimer) {
         clearInterval(uploadProgressTimer);
@@ -191,7 +197,9 @@ function fallbackToPolling(uploadId) {
     // Function to perform the polling - this allows us to dynamically adjust the interval
     const performPoll = async () => {
         try {
-            const response = await fetch(`/progress/${uploadId}`, {
+            // Force HTTPS in production, this helps with CORS
+            let baseUrl = window.location.protocol + '//' + window.location.host;
+            const response = await fetch(`${baseUrl}/progress/${uploadId}`, {
                 method: 'GET',
                 headers: { 
                     'Accept': 'application/json',
@@ -275,12 +283,22 @@ function fallbackToPolling(uploadId) {
     performPoll();
 }
 
+// Make sure this function is available globally
+function showProgressContainer() {
+    const progressContainer = document.querySelector('.progress-container');
+    if (progressContainer) {
+        progressContainer.classList.remove('hidden');
+    }
+}
+
 /**
  * Fetch upload ID from server
  */
 async function fetchUploadId() {
     try {
-        const response = await fetch('/upload_id', {
+        // Force HTTPS in production, this helps with CORS
+        let baseUrl = window.location.protocol + '//' + window.location.host;
+        const response = await fetch(`${baseUrl}/upload_id`, {
             method: 'GET',
             headers: { 
                 'Accept': 'text/plain',
@@ -888,16 +906,6 @@ function initFileUpload() {
         if (progressMessage) progressMessage.textContent = 'Preparing...';
         if (progressContainer) progressContainer.classList.remove('hidden');
         if (progressError) progressError.classList.add('hidden');
-    }
-    
-    /**
-     * Show progress container
-     */
-    function showProgressContainer() {
-        const progressContainer = document.querySelector('.progress-container');
-        if (progressContainer) {
-            progressContainer.classList.remove('hidden');
-        }
     }
 }
 
