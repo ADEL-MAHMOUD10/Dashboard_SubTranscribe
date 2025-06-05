@@ -24,3 +24,4 @@ gevent
 greenlet
 flask[async]
 Flask-Limiter
+redis>=3.0
