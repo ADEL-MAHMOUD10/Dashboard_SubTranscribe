@@ -767,8 +767,12 @@ function initFileUpload() {
         }, false);
         
         // Clicking anywhere in the upload area should open the file dialog
-        uploadArea.addEventListener('click', function() {
-            fileInput.click();
+        uploadArea.addEventListener('click', function(e) {
+            // Only trigger file input click if the click was directly on the upload area
+            // and not on the browse button or any of its children
+            if (!e.target.closest('.browse-btn')) {
+                fileInput.click();
+            }
         });
     }
     

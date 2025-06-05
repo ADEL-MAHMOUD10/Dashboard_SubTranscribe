@@ -605,19 +605,17 @@ body {
 
 /* Features Section */
 .features {
-    padding: 8rem 0;
-    background: var(--surface-color);
+    padding: 4rem 0;
     position: relative;
-    transition: background-color 0.3s ease;
+    background: var(--surface-color);
 }
 
 .section-title {
-    text-align: center;
-    font-size: 2.5rem;
+    font-size: 2.25rem;
     font-weight: 800;
-    margin-bottom: 4rem;
+    text-align: center;
+    margin-bottom: 2rem;
     color: var(--text-primary);
-    transition: color 0.3s ease;
 }
 
 .features-grid {
@@ -627,12 +625,12 @@ body {
 }
 
 .feature-card {
-    background: var(--background-color);
     padding: 2rem;
-    border-radius: 1.5rem;
+    background: var(--background-color);
+    border-radius: 1rem;
     border: 1px solid var(--border-color);
-    transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-    will-change: background-color, border-color;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s ease;
 }
 
 .feature-card:hover {
@@ -641,15 +639,15 @@ body {
 }
 
 .feature-icon {
-    width: 60px;
-    height: 60px;
-    background: var(--surface-color);
+    width: 3.5rem;
+    height: 3.5rem;
     border-radius: 1rem;
+    background: var(--surface-color);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1.5rem;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .feature-icon i {
@@ -663,78 +661,17 @@ body {
     font-weight: 700;
     margin-bottom: 1rem;
     color: var(--text-primary);
-    transition: color 0.3s ease;
 }
 
 .feature-card p {
     color: var(--text-secondary);
-    line-height: 1.7;
-    transition: color 0.3s ease;
-}
-
-/* How It Works Section */
-.how-it-works {
-    padding: 8rem 0;
-    background: var(--background-color);
-}
-
-.steps-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 3rem;
-}
-
-.step-card {
-    text-align: center;
-    padding: 2rem;
-    background: var(--surface-color);
-    border-radius: 1.5rem;
-    border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
-    will-change: background-color, border-color;
-}
-
-.step-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--hover-shadow);
-}
-
-.step-number {
-    width: 48px;
-    height: 48px;
-    background: var(--primary-color);
-    color: white;
-    border-radius: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 1.25rem;
-    margin: 0 auto 1.5rem;
-}
-
-.step-card img {
-    width: 200px;
-    height: auto;
-    margin-bottom: 1.5rem;
-    border-radius: 1rem;
-}
-
-.step-card h3 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: var(--text-primary);
-}
-
-.step-card p {
-    color: var(--text-secondary);
+    line-height: 1.6;
 }
 
 /* Footer */
 .footer {
-    background: var(--surface-color);
     padding: 4rem 0 2rem;
+    background: var(--surface-color);
     border-top: 1px solid var(--border-color);
 }
 
@@ -922,8 +859,7 @@ body {
         width: 100%;
     }
 
-    .features-grid,
-    .steps-grid {
+    .features-grid {
         grid-template-columns: 1fr;
     }
 
@@ -1128,7 +1064,6 @@ body {
 
 /* Optimize theme switching performance */
 .feature-card, 
-.step-card, 
 .upload-container, 
 .tabs, 
 .wave-line, 

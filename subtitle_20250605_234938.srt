@@ -1,0 +1,308 @@
+1
+00:00:00,240 --> 00:00:03,864
+Smoke from hundreds of wildfires in Canada is triggering
+
+2
+00:00:03,912 --> 00:00:07,400
+air quality alerts throughout the US Skylines from
+
+3
+00:00:07,440 --> 00:00:11,000
+Maine to Maryland to Minnesota are gray and smoggy.
+
+4
+00:00:11,080 --> 00:00:15,720
+And in some places, the air quality warnings include the warning to stay inside.
+
+5
+00:00:15,880 --> 00:00:19,928
+We wanted to better understand what's happening here and why, so we called Peter DeCarlo,
+
+6
+00:00:20,024 --> 00:00:23,880
+an associate professor in the Department of Environmental Health and Engineering at
+
+7
+00:00:23,920 --> 00:00:26,780
+Johns Hopkins University. Good morning, Professor.
+
+8
+00:00:27,820 --> 00:00:31,220
+Good morning. So what is it about the conditions
+
+9
+00:00:31,300 --> 00:00:35,092
+right now that have caused this round of wildfires to affect
+
+10
+00:00:35,156 --> 00:00:37,360
+so many people so far away?
+
+11
+00:00:39,020 --> 00:00:42,068
+Well, there's a couple of things. The season has been pretty
+
+12
+00:00:42,084 --> 00:00:45,892
+dry already, and then the fact that we're getting hit in the US
+
+13
+00:00:46,076 --> 00:00:49,492
+is because there's a couple weather systems that are essentially channeling the smoke from
+
+14
+00:00:49,516 --> 00:00:53,108
+those Canadian wildfires through Pennsylvania into the mid Atlantic
+
+15
+00:00:53,124 --> 00:00:56,742
+and the Northeast and kind of just dropping the smoke there. So what
+
+16
+00:00:56,766 --> 00:01:00,182
+is it in this haze that makes it harmful? And I'm assuming it is
+
+17
+00:01:00,206 --> 00:01:03,318
+harmful. It is, it is.
+
+18
+00:01:03,374 --> 00:01:06,970
+The levels outside right now in Baltimore are considered unhealthy.
+
+19
+00:01:07,710 --> 00:01:11,126
+And most of that is due to what's called particulate matter, which are tiny
+
+20
+00:01:11,158 --> 00:01:14,230
+particles, microscopic, smaller than the width of your
+
+21
+00:01:14,270 --> 00:01:17,558
+hair, that can get into your lungs and impact your
+
+22
+00:01:17,614 --> 00:01:21,254
+respiratory system, your cardiovascular system, and even your
+
+23
+00:01:21,342 --> 00:01:25,494
+neurological, your brain. What makes this particularly harmful?
+
+24
+00:01:25,542 --> 00:01:28,742
+Is it the volume of particulate? Is it something in
+
+25
+00:01:28,766 --> 00:01:31,862
+particular? What is it exactly? Can you just drill down on that a little bit
+
+26
+00:01:31,886 --> 00:01:35,030
+more? Yeah. So the concentration of
+
+27
+00:01:35,070 --> 00:01:38,214
+particulate matter, I was looking at some of the monitors that we have
+
+28
+00:01:38,302 --> 00:01:41,654
+was reaching levels of what are, in science speak,
+
+29
+00:01:41,702 --> 00:01:45,542
+150 micrograms per meter cubed, which is more than 10 times what
+
+30
+00:01:45,566 --> 00:01:49,230
+the annual average should be in about four
+
+31
+00:01:49,270 --> 00:01:53,214
+times higher than what you're supposed to have on a 24 hour average.
+
+32
+00:01:53,342 --> 00:01:56,830
+And so the concentrations of these particles in the air are
+
+33
+00:01:56,870 --> 00:02:00,654
+just much, much, much higher than we typically see. And exposure
+
+34
+00:02:00,702 --> 00:02:04,030
+to those high levels can lead to a host of health problems. And who is
+
+35
+00:02:04,070 --> 00:02:07,726
+most vulnerable? I noticed that in New York City, for example, they're canceling
+
+36
+00:02:07,758 --> 00:02:11,326
+outdoor activities. And so here it is in the early days of summer
+
+37
+00:02:11,358 --> 00:02:14,606
+and they have to keep all the kids inside. So who tends to be vulnerable
+
+38
+00:02:14,638 --> 00:02:16,250
+in a situation like this?
+
+39
+00:02:17,370 --> 00:02:20,230
+It's the youngest. So children, obviously,
+
+40
+00:02:20,810 --> 00:02:24,130
+whose bodies are still developing, the elderly who are, you know,
+
+41
+00:02:24,170 --> 00:02:27,602
+their bodies are more in decline and they're more susceptible to the health impacts of
+
+42
+00:02:27,706 --> 00:02:31,250
+breathing, the poor air quality. And then people
+
+43
+00:02:31,290 --> 00:02:34,802
+who have pre existing health conditions, people with respiratory conditions or heart conditions, can be
+
+44
+00:02:34,826 --> 00:02:38,870
+triggered by high levels of air pollution. Could this get worse?
+
+45
+00:02:42,090 --> 00:02:45,844
+That's a good question. I mean, I think if in some areas
+
+46
+00:02:45,932 --> 00:02:49,076
+it's much worse than others and it just depends on kind of where the smoke
+
+47
+00:02:49,108 --> 00:02:52,372
+is concentrated. I think New York has some
+
+48
+00:02:52,396 --> 00:02:55,428
+of the higher concentrations right now, but that's going to change as that air moves
+
+49
+00:02:55,444 --> 00:02:58,452
+away from the New York area. But over the course of the next few days,
+
+50
+00:02:58,476 --> 00:03:02,212
+we will see different areas being hit at different times with
+
+51
+00:03:02,236 --> 00:03:05,604
+the highest concentrations. I was going to ask you about more fires start burning.
+
+52
+00:03:05,652 --> 00:03:09,364
+I don't expect the concentrations to go up too much higher. I was
+
+53
+00:03:09,372 --> 00:03:12,372
+going to ask you how and you started to answer this, but how much longer
+
+54
+00:03:12,436 --> 00:03:15,732
+could this last? Forgive me if I'm asking you to speculate, but what do
+
+55
+00:03:15,756 --> 00:03:19,104
+you think? Well, I think the fires are
+
+56
+00:03:19,112 --> 00:03:21,872
+going to burn for a little bit longer. But the key for us in the
+
+57
+00:03:21,896 --> 00:03:25,776
+US Is the weather system changing. Right now it's the weather systems
+
+58
+00:03:25,808 --> 00:03:29,360
+that are pulling that air into our Mid
+
+59
+00:03:29,400 --> 00:03:33,424
+Atlantic and Northeast region. As those weather systems
+
+60
+00:03:33,472 --> 00:03:37,040
+change and shift, we'll see that smoke going elsewhere and not
+
+61
+00:03:37,080 --> 00:03:40,352
+impact us in this region as much. I think that's going to be the
+
+62
+00:03:40,376 --> 00:03:44,352
+defining factor. I think the next couple days we're going to see a shift in
+
+63
+00:03:44,376 --> 00:03:47,630
+that weather pattern and start to push the smoke away from where we are.
+
+64
+00:03:47,760 --> 00:03:52,306
+And finally, with the impacts of climate change, we are seeing more wildfires.
+
+65
+00:03:52,418 --> 00:03:56,630
+Will we be seeing more of these kinds of wide ranging
+
+66
+00:03:57,210 --> 00:04:00,070
+air quality consequences or circumstances?
+
+67
+00:04:01,290 --> 00:04:05,090
+I mean, that is one of the predictions for climate change.
+
+68
+00:04:05,130 --> 00:04:09,346
+Looking into the future, the fire season is starting earlier and lasting longer
+
+69
+00:04:09,538 --> 00:04:13,714
+and we're seeing more frequent fires. So yeah, this is probably something that
+
+70
+00:04:13,802 --> 00:04:17,050
+we'll be seeing more, more frequently. This tends to be much more of an issue
+
+71
+00:04:17,090 --> 00:04:20,794
+in the western U.S. so the eastern U.S. getting hit right now is a
+
+72
+00:04:20,802 --> 00:04:24,666
+little bit new. But yeah, I think with climate change moving forward,
+
+73
+00:04:24,738 --> 00:04:28,554
+this is something that is going to happen more frequently. That's Peter
+
+74
+00:04:28,602 --> 00:04:31,818
+DeCarlo, associate professor in the Department of Environmental Health
+
+75
+00:04:31,874 --> 00:04:34,554
+and Engineering at Johns Hopkins University.
+
+76
+00:04:34,642 --> 00:04:38,470
+Professor DeCarlo, thanks so much for joining us and sharing this expertise with us.
+
+77
+00:04:39,330 --> 00:04:40,290
+Thank you for having me.
+

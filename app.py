@@ -75,7 +75,7 @@ limiter = Limiter(
 
 CORS(app, 
      supports_credentials=True, 
-     origins=['https://subtranscribe.koyeb.app', 'http://localhost:5000', 'http://127.0.0.1:5000', 'http://localhost:8000', 'http://127.0.0.1:8000','192.168.1.241:5000'],
+     origins=['https://subtranscribe.koyeb.app'],
      expose_headers=['Content-Type', 'X-CSRFToken', 'Cache-Control', 'X-Requested-With'],
      allow_headers=['Content-Type', 'X-CSRFToken', 'Authorization', 'Cache-Control', 'X-Requested-With'],
      methods=['GET', 'POST', 'OPTIONS'])
@@ -841,7 +841,7 @@ def cookies():
     return render_template('cookies.html')
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("20 per hour")
+@limiter.limit("30 per hour")
 def login():
     session.permanent = True
     if 'user_id' in session:
@@ -854,7 +854,7 @@ def login():
             session.clear()
     if request.method == 'POST':
     
-        identifier = request.form['email_username']
+        identifier = request.form['email']
         password = request.form['password']
 
         user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
@@ -990,9 +990,13 @@ def dashboard(user_id):
     # Convert the '_id' field to string before passing to template
     for file in files:
         file['_id'] = str(file['_id'])  # Convert ObjectId to string
-        
-        # convert upload_time to datetime
-        file['upload_time'] = datetime.strptime(file['upload_time'], '%Y-%m-%d %H:%M:%S')
+        if 'upload_time' in file and file['upload_time']:
+            try:
+                file['upload_time'] = datetime.strptime(file['upload_time'], '%Y-%m-%d %H:%M:%S')
+            except (ValueError, TypeError):
+                file['upload_time'] = None
+        else:
+            file['upload_time'] = None
 
     months, uploads = calculate_monthly_activity(files)
 
@@ -1001,14 +1005,21 @@ def dashboard(user_id):
 def calculate_monthly_activity(files):
     """calculates monthly activity"""
     monthly_activity = defaultdict(int)
-    for file in files:        
-        month = file['upload_time'].strftime('%B')
-        monthly_activity[month] += 1
+    for file in files:
+        if 'upload_time' in file and file['upload_time'] is not None:
+            month = file['upload_time'].strftime('%B')
+            monthly_activity[month] += 1
+        else:
+            monthly_activity['Unknown'] += 1
     ordered_months = [
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
     ]
     monthly_data = {month: monthly_activity.get(month, 0) for month in ordered_months}
+    
+    # Add 'Unknown' category if it exists
+    if monthly_activity['Unknown'] > 0:
+        monthly_data['Unknown'] = monthly_activity['Unknown']
 
     return list(monthly_data.keys()), list(monthly_data.values())
 
@@ -1073,11 +1084,16 @@ def redirect_to_transcript(file_id):
     
     return redirect(url_for('dashboard'))
 
+@app.route('/share/<transcript_id>', methods=['GET', 'POST'])
+def share_subtitle(transcript_id):
+    """Share the subtitle with others using the transcript ID."""
+    # Initialize variables with default values
+    file_name = None
+    file_size = None
+    upload_time = None
+    username = None
 
-@app.route('/v1/<user_id>/download/<transcript_id>', methods=['GET', 'POST'])
-def download_subtitle(user_id,transcript_id):
-    """Handle subtitle download based on the transcript ID."""
-
+    user_id = session.get('user_id')
     if request.method == 'POST':
         file_format = request.form['format']  # Get the requested file format
         headers = {"authorization": TOKEN_THREE}
@@ -1089,12 +1105,55 @@ def download_subtitle(user_id,transcript_id):
             subtitle_file = f"subtitle_{timesub}.{file_format}"  # Create the subtitle filename
             with open(subtitle_file, 'w') as f:
                 f.write(response.text)  # Write the subtitle text to the file
-            
             subtitle_path = Create_subtitle_to_db(subtitle_file)
             return redirect(url_for('serve_file', filename=subtitle_file))  # Redirect to serve the file
         else:
             return render_template("error.html")  # Render error page if request fails
-    return render_template('subtitle.html')  # Render the download page with the updated template
+        
+    # Get file info for GET request
+    get_filename = files_collection.find_one({'transcript_id': transcript_id})
+    if get_filename:
+        file_name = get_filename.get('file_name')
+        file_size = get_filename.get('file_size')/1000000  # convert to MB
+        upload_time = get_filename.get('upload_time')
+        username = get_filename.get('username')
+    return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=username,user_id=user_id) 
+
+@app.route('/v1/<user_id>/download/<transcript_id>', methods=['GET', 'POST'])
+def download_subtitle(user_id,transcript_id):
+    """Handle subtitle download based on the transcript ID."""
+    # Initialize variables with default values
+    file_name = None
+    file_size = None
+    upload_time = None
+    username = None
+    user_id = session.get('user_id')
+    if request.method == 'POST':
+        file_format = request.form['format']  # Get the requested file format
+        headers = {"authorization": TOKEN_THREE}
+        url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}/{file_format}"
+
+        response = requests.get(url, headers=headers)  # Request the subtitle file
+
+        if response.status_code == 200:
+            timesub = datetime.now().strftime("%Y%m%d_%H%M%S")  # Generate a timestamp for the subtitle file
+            subtitle_file = f"subtitle_{timesub}.{file_format}"  # Create the subtitle filename
+            with open(subtitle_file, 'w') as f:
+                f.write(response.text)  # Write the subtitle text to the file
+            subtitle_path = Create_subtitle_to_db(subtitle_file)
+            return redirect(url_for('serve_file', filename=subtitle_file))  # Redirect to serve the file
+        else:
+            return render_template("error.html")  # Render error page if request fails
+    
+    # Get file info for GET request
+    get_filename = files_collection.find_one({'transcript_id': transcript_id})
+    if get_filename:
+        file_name = get_filename.get('file_name')
+        file_size = get_filename.get('file_size')/1000000 # convert to MB
+        upload_time = get_filename.get('upload_time')
+        username = get_filename.get('username')
+    
+    return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=username,user_id=user_id)  # Render the download page with the updated template
 
 @app.route('/serve/<filename>')
 def serve_file(filename):
@@ -1193,20 +1252,29 @@ def progress_stream(upload_id):
 
 @app.route('/health')
 def health_check():
-    """Simple health check endpoint for Koyeb."""
-    return jsonify({"status": "healthy", "timestamp": int(time.time())})
+    """Health check endpoint for monitoring."""
+    firebase_status = check_firebase_connection()
+    return jsonify({"status": "ok", "firebase": firebase_status})
 
 def check_firebase_connection():
-    """Check if Firebase connection is working properly."""
+    """Check if Firebase connection is working."""
     try:
-        ref = db.reference('/.info/connected')
-        connected = ref.get()
-        return connected
+        ref = db.reference('/health')
+        ref.set({"last_check": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+        return "connected"
     except Exception as e:
-        print(f"Firebase connection check failed: {e}")
-        return False
+        return f"error: {str(e)}"
+
+@app.route('/sitemap.xml')
+def sitemap():
+    """Serve the sitemap.xml file."""
+    return send_file('sitemap.xml', mimetype='application/xml')
+
+@app.route('/robots.txt')
+def robots():
+    """Serve the robots.txt file."""
+    return send_file('robots.txt', mimetype='text/plain')
 
 # Main entry point
 if __name__ == "__main__":
     app.run(host="0.0.0.0",port=5000,debug=False,threaded=True)
-    
