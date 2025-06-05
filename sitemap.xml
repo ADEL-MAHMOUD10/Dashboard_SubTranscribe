@@ -2,59 +2,66 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <!-- Main Pages -->
     <url>
-        <loc>https://subtranscribe.com/</loc>
-        <changefreq>weekly</changefreq>
+        <loc>https://subtranscribe.koyeb.app/</loc>
+        <lastmod>2024-03-01</lastmod>
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>https://subtranscribe.com/login</loc>
-        <changefreq>monthly</changefreq>
+        <loc>https://subtranscribe.koyeb.app/login</loc>
+        <lastmod>2024-03-01</lastmod>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://subtranscribe.com/register</loc>
-        <changefreq>monthly</changefreq>
+        <loc>https://subtranscribe.koyeb.app/register</loc>
+        <lastmod>2024-03-01</lastmod>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>https://subtranscribe.com/about</loc>
+        <loc>https://subtranscribe.koyeb.app/about</loc>
+        <lastmod>2024-03-01</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     
     <!-- Legal Pages -->
     <url>
-        <loc>https://subtranscribe.com/privacy</loc>
-        <changefreq>monthly</changefreq>
+        <loc>https://subtranscribe.koyeb.app/privacy</loc>
+        <lastmod>2024-03-01</lastmod>
+        <changefreq>yearly</changefreq>
         <priority>0.5</priority>
     </url>
     <url>
-        <loc>https://subtranscribe.com/terms</loc>
-        <changefreq>monthly</changefreq>
+        <loc>https://subtranscribe.koyeb.app/terms</loc>
+        <lastmod>2024-03-01</lastmod>
+        <changefreq>yearly</changefreq>
         <priority>0.5</priority>
     </url>
     <url>
-        <loc>https://subtranscribe.com/cookies</loc>
-        <changefreq>monthly</changefreq>
+        <loc>https://subtranscribe.koyeb.app/cookies</loc>
+        <lastmod>2024-03-01</lastmod>
+        <changefreq>yearly</changefreq>
         <priority>0.5</priority>
     </url>
     
     <!-- User Account Pages -->
     <url>
-        <loc>https://subtranscribe.com/check_user</loc>
-        <changefreq>monthly</changefreq>
-        <priority>0.4</priority>
+        <loc>https://subtranscribe.koyeb.app/check_user</loc>
+        <lastmod>2024-03-01</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
     </url>
     <url>
-        <loc>https://subtranscribe.com/user_dashboard</loc>
-        <changefreq>weekly</changefreq>
+        <loc>https://subtranscribe.koyeb.app/user_dashboard</loc>
+        <lastmod>2024-03-01</lastmod>
+        <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
     
     <!-- Health Check -->
     <url>
-        <loc>https://subtranscribe.com/health</loc>
-        <changefreq>monthly</changefreq>
+        <loc>https://subtranscribe.koyeb.app/health</loc>
+        <lastmod>2024-03-01</lastmod>
+        <changefreq>yearly</changefreq>
         <priority>0.1</priority>
     </url>
 </urlset> 

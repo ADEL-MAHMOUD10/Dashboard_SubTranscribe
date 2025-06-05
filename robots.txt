@@ -1,20 +1,24 @@
+# robots.txt for subtranscribe.koyeb.app
+
 User-agent: *
 Allow: /
+Allow: /about
 Allow: /login
 Allow: /register
-Allow: /about
 Allow: /privacy
 Allow: /terms
 Allow: /cookies
 
-# Disallow admin and sensitive paths
-Disallow: /v1/
+# Disallow sensitive or administrative routes
+Disallow: /health
+Disallow: /api/
+Disallow: /admin/
 Disallow: /progress/
-Disallow: /upload_id
 Disallow: /progress_stream/
-Disallow: /redirect/
-Disallow: /delete_file
-Disallow: /serve/
+Disallow: /upload_id
+
+# Crawl delay to prevent overloading the server
+Crawl-delay: 10
 
 # Sitemap location
-Sitemap: https://subtranscribe.com/sitemap.xml 
+Sitemap: https://subtranscribe.koyeb.app/sitemap.xml 
