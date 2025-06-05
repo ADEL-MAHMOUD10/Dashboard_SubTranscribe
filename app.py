@@ -10,6 +10,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, session,flash, Response
 from firebase_admin import db , credentials
 from flask_cors import CORS, cross_origin
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -43,6 +45,8 @@ load_dotenv()
 TOKEN_ONE = os.getenv("M_api_key")
 TOKEN_THREE = os.getenv("A_api_key")
 SESSION_USERS = os.getenv('SESSION_ID')
+REDIS_URI = os.getenv("REDIS_URI")
+REDIS_TOKEN = os.getenv("REDIS_TOKEN")
 EMAIL_USER = os.getenv("STMP_USER")
 EMAIL_PASSWORD = os.getenv("STMP_PASSWORD")
 
@@ -61,9 +65,17 @@ firebase_credentials = {
 
 # Create a Flask application instance
 app = Flask(__name__)
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["100 per hour"],
+    storage_uri= REDIS_URI
+)
+
 CORS(app, 
      supports_credentials=True, 
-     origins=['https://subtranscribe.koyeb.app', 'http://localhost:5000', 'http://127.0.0.1:5000', 'http://localhost:8000', 'http://127.0.0.1:8000'],
+     origins=['https://subtranscribe.koyeb.app', 'http://localhost:5000', 'http://127.0.0.1:5000', 'http://localhost:8000', 'http://127.0.0.1:8000','192.168.1.241:5000'],
      expose_headers=['Content-Type', 'X-CSRFToken', 'Cache-Control', 'X-Requested-With'],
      allow_headers=['Content-Type', 'X-CSRFToken', 'Authorization', 'Cache-Control', 'X-Requested-With'],
      methods=['GET', 'POST', 'OPTIONS'])
@@ -72,6 +84,8 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
+app.config['DEBUG'] = False  
+
 
 app.secret_key = SESSION_USERS
 
@@ -796,12 +810,38 @@ def register():
         hashed_password = generate_password_hash(password)
         users_collection.insert_one({'Email': Email,'username': username, 'password': hashed_password ,"user_id":user_id})
         session['user_id'] = user_id
+        session['username'] = username  # Store username in session
         flash('Successfully log in! You can now download all your subtitles files', 'success')
         return redirect(url_for('login'))
 
     return render_template('register.html')
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
+def home():
+    """Render the intro page."""
+    if 'user_id' in session:
+        user = users_collection.find_one({'user_id': session['user_id']})
+        if user and 'username' not in session:
+            session['username'] = user['username']
+    return render_template('intro.html')
+
+@app.route('/privacy')
+def privacy():
+    """Render the privacy policy page."""
+    return render_template('privacy.html')
+
+@app.route('/terms')
+def terms():
+    """Render the terms of service page."""
+    return render_template('terms.html')
+    
+@app.route('/cookies')
+def cookies():
+    """Render the cookie policy page."""
+    return render_template('cookies.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("20 per hour")
 def login():
     session.permanent = True
     if 'user_id' in session:
@@ -822,10 +862,11 @@ def login():
             if 'user_id' in session:
                 flash('Successfully logged in!', 'success')
             session['user_id'] = user['user_id']  # Store user_id in session
+            session['username'] = user['username']  # Store username in session
             return redirect(url_for('main_user', user_id=user['user_id']))
         flash('Incorrect username or password', 'danger')
         return redirect(url_for('login'))
-        
+
     return render_template('login.html')
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -840,6 +881,7 @@ def logout():
 
 
 @app.route('/check_user', methods=['GET', 'POST'])
+@limiter.limit("5 per hour")
 def check_user():
     if request.method == 'POST':
         Email = request.form['email']
@@ -857,6 +899,7 @@ def check_user():
     return render_template('check_user.html')
         
 @app.route('/reset_password', methods=['POST'])
+@limiter.limit("5 per hour")
 def reset_password():
     email = request.form['email']
     user_otp = request.form['OTP']
@@ -1165,5 +1208,5 @@ def check_firebase_connection():
 
 # Main entry point
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",port=8000,debug=False,threaded=True)
+    app.run(host="0.0.0.0",port=5000,debug=False,threaded=True)
     

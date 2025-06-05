@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary SEO Meta Tags -->
+    <title>SubTranscribe - AI-Powered Audio & Video Transcription | Subtitle Generation</title>
+    <meta name="description" content="Convert audio and video to text with 99% accuracy using AI-powered transcription. Generate subtitles in multiple languages and formats. Free trial available.">
+    <meta name="keywords" content="audio transcription, video transcription, subtitle generation, AI transcription, speech to text, automatic subtitles, SRT, VTT">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="SubTranscribe">
+    <link rel="canonical" href="https://subtranscribe.com/">
+    
+    <!-- Theme and Appearance -->
+    <meta name="theme-color" content="#0F172A">
+    <meta name="color-scheme" content="dark light">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://subtranscribe.com/">
+    <meta property="og:title" content="SubTranscribe - Convert Audio & Video to Text with AI">
+    <meta property="og:description" content="Professional transcription and subtitle generation with 99% accuracy. Support for 30+ languages and multiple export formats.">
+    <meta property="og:image" content="https://subtranscribe.com/static/image/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://subtranscribe.com/">
+    <meta property="twitter:title" content="SubTranscribe - AI-Powered Transcription">
+    <meta property="twitter:description" content="Convert audio and video to text with our advanced AI technology. Generate accurate subtitles in minutes.">
+    <meta property="twitter:image" content="https://subtranscribe.com/static/image/twitter-image.jpg">
+    
+    <!-- Modern libraries -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js for dropdown functionality -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Ensure Tabler Icons load correctly -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@1.119.0/iconfont/tabler-icons.min.css">
+    <!-- Fallback CSS in case CDN fails -->
+    <style>
+        @import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css');
+        /* Additional fallback for icons */
+        @import url('https://cdn.jsdelivr.net/npm/@tabler/icons@1.119.0/iconfont/tabler-icons.min.css');
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <!-- Favicon and App Icons -->
+    <link rel="shortcut icon" href="/static/image/subtitle.ico">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Google Site Verification -->
+    <meta name="google-site-verification" content="wKrz4CXfeOSfl3f81F0MziKv6lL0Geb2kHQu4sA_WTg" />
+
+    <!-- Import modern fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#172554',
+                        },
+                        secondary: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                            950: '#2e1065',
+                        },
+                        dark: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    },
+                    height: {
+                        'screen-navbar': 'calc(100vh - 80px)',
+                    }
+                },
+            },
+            variants: {
+                extend: {
+                    transform: ['group-hover', 'hover'],
+                    scale: ['group-hover'],
+                    translate: ['group-hover'],
+                },
+            },
+        }
+    </script>
+
+    <style>
+        /* Simple overflow handling */
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            min-height: 100vh;
+        }
+        
+        /* Ensure all containers stay within viewport */
+        .container {
+            width: 100%;
+            max-width: 100%;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        /* Fix right space issues on mobile */
+        @media (max-width: 767px) {
+            .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            section {
+                padding-left: 0;
+                padding-right: 0;
+            }
+        }
+        
+        /* Container sizing */
+        .container {
+            max-width: 1280px;
+            width: 100%;
+        }
+        
+        /* Fix for Tailwind responsive classes */
+        @media (min-width: 1024px) {
+            .lg\:flex {
+                display: flex !important;
+            }
+            
+            .lg\:hidden {
+                display: none !important;
+            }
+        }
+        
+        @media (max-width: 1023px) {
+            .lg\:hidden:not(#mobileMenu) {
+                display: block !important;
+            }
+            
+            .hidden.lg\:flex {
+                display: none !important;
+            }
+        }
+        
+        /* Base Styles */
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #020617;
+            color: #e2e8f0;
+            overflow-x: hidden;
+            font-size: 0.95rem;
+        }
+        
+        /* Make regular text smaller */
+        p.text-white\/70, p.text-white\/80 {
+            font-size: 0.9rem;
+        }
+        
+        /* Keep section headers and navbar text larger */
+        .glass-card h3, .section-title, .nav-link, h2, h3, h4 {
+            font-size: inherit;
+        }
+        
+        /* Standard scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.6);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.8);
+        }
+        
+        /* Interactive Particles Background */
+        .particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -10;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.3;
+            z-index: -5;
+            transform-origin: center;
+            background: linear-gradient(135deg, var(--particle-color-start), var(--particle-color-end));
+        }
+        
+        /* Modern glass effect */
+        .glass {
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Button animations */
+        .btn-glow {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.6s ease;
+        }
+        
+        .btn-glow:hover::before {
+            left: 100%;
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        /* Shapes animation */
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(139, 92, 246, 0.4));
+            filter: blur(40px);
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* Floating animation */
+        @keyframes floating {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(5px, 10px); }
+            50% { transform: translate(10px, -5px); }
+            75% { transform: translate(-5px, -10px); }
+        }
+        
+        .floating {
+            animation: floating 10s ease-in-out infinite;
+        }
+        
+        /* Background decoration styles removed */
+        
+        /* Reveal animation */
+        .reveal {
+            position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease-in-out;
+        }
+        
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Custom animations */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+        
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1rem;
+            background: rgba(15, 23, 42, 0.9);
+            color: white;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .tooltip:hover::after {
+            opacity: 1;
+            transform: translate(-50%, -0.5rem);
+        }
+    </style>
+</head>
+<body class="min-h-screen m-0 p-0">
+    <!-- Interactive Particles Background -->
+    <div id="particles-background" class="particles-container"></div>
+    
+    <!-- Background Shapes -->
+    <div class="shape floating" style="width:40vw; height:40vw; max-width:600px; max-height:600px; top:-10%; right:-10%;"></div>
+    <div class="shape floating" style="width:30vw; height:30vw; max-width:400px; max-height:400px; bottom:-10%; left:-10%; animation-delay: 2s;"></div>
+    <div class="shape floating" style="width:25vw; height:25vw; max-width:350px; max-height:350px; top:40%; left:10%; animation-delay: 1s;"></div>
+    
+    <!-- Background decoration removed -->
+    
+        <!-- Modern Glassmorphism Navbar -->
+    <nav class="fixed w-full top-0 z-50" id="mainNav">
+        <!-- Glassmorphism Background -->
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-purple-900/80 backdrop-blur-md border-b border-white/10"></div>
+        
+        <div class="container mx-auto relative z-10">
+            <div class="flex items-center justify-between py-4 px-6">
+                <!-- Logo Area -->
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center group">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg p-1.5 transition-transform group-hover:scale-110">
+                            <img src="/static/image/subtitle.ico" alt="SubTranscribe" class="w-full h-full object-contain">
+                        </div>
+                        <div class="ml-3">
+                            <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">SubTranscribe</span>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden lg:flex items-center space-x-1">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#how-it-works" class="nav-link">How It Works</a>
+                    <a href="#faq" class="nav-link">FAQ</a>
+                    <a href="#about" class="nav-link">About</a>
+                    
+                    <div class="h-6 w-px bg-white/20 mx-2"></div>
+                    
+                    {% if session.get('user_id') %}
+                        <a href="/user_dashboard" class="nav-link flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            Dashboard
+                        </a>
+                        <div class="relative ml-2" id="userDropdown">
+                            <button id="userMenuBtn" class="flex items-center space-x-2 bg-white/10 hover:bg-white/20 rounded-full py-1.5 px-3 transition-all">
+                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs text-white">
+                                    {{ session.get('username', 'User')[0] | upper }}
+                                </div>
+                                <span class="text-white text-sm">{{ session.get('username', 'User') }}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <div id="userMenu" class="absolute right-0 mt-2 w-48 bg-dark-800/90 backdrop-blur-md rounded-lg shadow-lg border border-white/10 hidden">
+                                <div class="py-2">
+                                    <a href="/user_dashboard" class="block px-4 py-2 text-sm text-white hover:bg-white/10">Dashboard</a>
+                                    <a href="/logout" class="block px-4 py-2 text-sm text-red-400 hover:bg-white/10">Sign Out</a>
+                            </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <a href="/login" class="nav-link">Login</a>
+                        <a href="/register" class="ml-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 px-4 rounded-full transition-all shadow-md hover:shadow-lg">
+                            Sign Up
+                        </a>
+                        {% endif %}
+                                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button id="mobileMenuBtn" class="lg:hidden text-white focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                            </button>
+                </div>
+            
+            <!-- Mobile Menu -->
+            <div id="mobileMenu" class="lg:hidden hidden">
+                <div class="px-4 py-3 space-y-1 border-t border-white/10 bg-dark-900/80 backdrop-blur-md">
+                    <a href="#features" class="mobile-nav-link">Features</a>
+                    <a href="#how-it-works" class="mobile-nav-link">How It Works</a>
+                    <a href="#faq" class="mobile-nav-link">FAQ</a>
+                    <a href="#about" class="mobile-nav-link">About</a>
+                    
+                    <div class="h-px w-full bg-white/10 my-2"></div>
+                    
+                    {% if session.get('user_id') %}
+                        <div class="py-2">
+                            <div class="flex items-center mb-3">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
+                                    {{ session.get('username', 'User')[0] | upper }}
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-white text-sm font-medium">{{ session.get('username', 'User') }}</p>
+                                </div>
+                            </div>
+                            <a href="/user_dashboard" class="mobile-nav-link flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                Dashboard
+                            </a>
+                            <a href="/logout" class="block w-full text-center py-2 px-4 text-red-400 hover:bg-white/10 rounded-lg mt-2">Sign Out</a>
+                        </div>
+                    {% else %}
+                        <div class="flex flex-col space-y-2 pt-2">
+                            <a href="/login" class="mobile-nav-link">Login</a>
+                            <a href="/register" class="block w-full text-center py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg">Sign Up</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Add these styles to the head section -->
+    <style>
+        /* Navbar specific styles */
+        #mainNav {
+            display: block !important;
+        }
+        
+        .nav-link {
+            padding: 0.5rem 0.75rem;
+            color: #93c5fd; /* blue-300 */
+            border-radius: 0.5rem;
+            transition: color 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-link:hover {
+            color: #212224; 
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        
+        .nav-link:hover::after {
+            width: 80%;
+        }
+        
+        .mobile-nav-link {
+            display: block;
+            width: 100%;
+            padding: 0.5rem 1rem;
+            color: #93c5fd; /* blue-300 */
+            border-radius: 0.5rem;
+            transition: color 0.2s, background-color 0.2s;
+        }
+        
+        .mobile-nav-link:hover {
+            color: #bfdbfe; /* blue-200 */
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+    
+    <!-- Navbar JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu toggle
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileMenu = document.getElementById('mobileMenu');
+            
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                    
+                    // Change icon when menu is open
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenuBtn.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        `;
+                    } else {
+                        mobileMenuBtn.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        `;
+                    }
+                });
+                
+                // Close mobile menu when clicking links
+                const mobileLinks = mobileMenu.querySelectorAll('a');
+                mobileLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenuBtn.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        `;
+                    });
+                });
+            }
+            
+            // User dropdown toggle
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userMenu = document.getElementById('userMenu');
+            
+            if (userMenuBtn && userMenu) {
+                userMenuBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userMenu.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!userMenuBtn.contains(e.target) && !userMenu.contains(e.target)) {
+                        userMenu.classList.add('hidden');
+                    }
+                });
+                
+                // Prevent closing when clicking inside menu
+                userMenu.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+            
+            // Scroll effect for navbar
+            const nav = document.getElementById('mainNav');
+            let lastScrollTop = 0;
+            
+            window.addEventListener('scroll', function() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                if (scrollTop > 100) {
+                    nav.classList.add('shadow-lg');
+                    nav.querySelector('.absolute').classList.add('bg-dark-900/90');
+                    nav.querySelector('.absolute').classList.remove('from-blue-900/80', 'to-purple-900/80');
+                } else {
+                    nav.classList.remove('shadow-lg');
+                    nav.querySelector('.absolute').classList.remove('bg-dark-900/90');
+                    nav.querySelector('.absolute').classList.add('from-blue-900/80', 'to-purple-900/80');
+                }
+                
+                lastScrollTop = scrollTop;
+            });
+        });
+    </script>
+
+    <!-- Hero Section -->
+    <section class="min-h-screen pt-32 pb-20 relative">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col lg:flex-row items-center gap-12">
+                <!-- Hero Content -->
+                <div class="lg:w-1/2 text-center lg:text-left" data-aos="fade-right" data-aos-duration="1000">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
+                        <span class="sr-only">SubTranscribe - AI-Powered Audio & Video Transcription</span>
+                        Transform Your <span class="gradient-text">Media</span> Into <span class="gradient-text">Text</span>
+                    </h1>
+                    
+                    <p class="text-lg text-white/80 mb-8 max-w-xl mx-auto lg:mx-0">
+                        Professional <strong>audio & video transcription</strong> powered by advanced AI technology. 
+                        Get <strong>accurate subtitles</strong> in minutes with <strong>99% accuracy</strong>.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <a href="{{ url_for('login') }}" class="py-4 px-8 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-medium transition-all btn-glow pulse-glow">
+                            Get Started Free
+                        </a>
+                        <a href="#how-it-works" class="py-4 px-8 rounded-xl glass hover:bg-white/10 text-white font-medium transition-all flex items-center justify-center gap-2">
+                            <span>How It Works</span>
+                            <i class="ti ti-arrow-right"></i>
+                </a>
+            </div>
+            
+                    <!-- Trust Indicators -->
+                    <div class="mt-12 flex flex-wrap justify-center lg:justify-start gap-6">
+                        <div class="flex items-center gap-2">
+                            <i class="ti ti-shield-check text-green-400 text-xl"></i>
+                            <span class="text-white/80">Secure Processing</span>
+                    </div>
+                        <div class="flex items-center gap-2">
+                            <i class="ti ti-clock text-blue-400 text-xl"></i>
+                            <span class="text-white/80">Fast Turnaround</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="ti ti-sparkles text-purple-400 text-xl"></i>
+                            <span class="text-white/80">High Accuracy</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hero Illustration -->
+                <div class="lg:w-1/2 relative" data-aos="fade-up" data-aos-duration="1000" data-aos-delay="200">
+                    <div class="relative mx-4 sm:mx-0">
+                        <!-- Decorative elements -->
+                        <div class="absolute -top-10 -left-10 w-20 h-20 bg-primary-500/20 rounded-full blur-xl"></div>
+                        <div class="absolute -bottom-10 -right-10 w-20 h-20 bg-secondary-500/20 rounded-full blur-xl"></div>
+                        
+                        <!-- Main illustration -->
+                        <div class="glass-card p-4 md:p-6 relative z-10">
+                            <img src="/static/image/background.png" alt="SubTranscribe Dashboard" class="rounded-lg shadow-lg w-full">
+                            
+                            <!-- Floating badges -->
+                            <div class="absolute -top-5 -left-5 glass rounded-full py-2 px-4 flex items-center gap-2 animate-float hidden sm:flex">
+                                <i class="ti ti-waveform text-primary-400"></i>
+                                <span>Audio Recognition</span>
+                    </div>
+                            
+                            <div class="absolute -bottom-5 -right-5 glass rounded-full py-2 px-4 flex items-center gap-2 animate-float hidden sm:flex" style="animation-delay: 1s;">
+                                <i class="ti ti-subtitles text-secondary-400"></i>
+                                <span>Subtitle Generation</span>
+                </div>
+                
+                            <!-- Mobile badges (shown only on small screens) -->
+                            <div class="flex flex-col gap-2 mt-4 sm:hidden">
+                                <div class="glass rounded-full py-2 px-4 flex items-center gap-2 w-full">
+                                    <i class="ti ti-waveform text-primary-400"></i>
+                                    <span>Audio Recognition</span>
+                    </div>
+                                <div class="glass rounded-full py-2 px-4 flex items-center gap-2 w-full">
+                                    <i class="ti ti-subtitles text-secondary-400"></i>
+                                    <span>Subtitle Generation</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section id="features" class="py-20 relative">
+        <div class="container mx-auto px-4">
+            <!-- Section Header -->
+            <div class="text-center mb-16" data-aos="fade-up" data-aos-offset="10">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">Advanced Features</span> for Your Needs
+                </h2>
+                <p class="text-base text-white/70 max-w-2xl mx-auto">
+                    Our AI-powered platform offers everything you need to turn your audio and video into perfect transcriptions with industry-leading accuracy.
+                </p>
+                <!-- Structured Data for SEO -->
+                <script type="application/ld+json">
+                {
+                    "@context": "https://schema.org",
+                    "@type": "SoftwareApplication",
+                    "name": "SubTranscribe",
+                    "applicationCategory": "MultimediaApplication",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "USD"
+                    },
+                    "description": "AI-powered audio and video transcription service with subtitle generation",
+                    "operatingSystem": "Web-based",
+                    "aggregateRating": {
+                        "@type": "AggregateRating",
+                        "ratingValue": "4.8",
+                        "ratingCount": "256"
+                    },
+                    "featureList": ["Audio Transcription", "Subtitle Generation", "Multiple Languages", "Easy File Upload", "Secure Storage"]
+                }
+                </script>
+        </div>
+        
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mx-4 sm:mx-0">
+                <!-- Feature Card 1 -->
+                <div class="glass-card p-6" data-aos="fade-up">
+                    <div class="w-14 h-14 rounded-xl bg-primary-600/30 flex items-center justify-center mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+            </div>
+                    <h3 class="text-xl font-bold mb-3">Audio Transcription</h3>
+                    <p class="text-white/70 text-sm">
+                        Convert any audio file into accurate text with our advanced AI technology.
+                        Support for multiple file formats and languages.
+                    </p>
+                    <ul class="mt-4 space-y-2">
+                        <li class="flex items-start">
+                            <svg class="h-5 w-5 text-green-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-white/80 text-sm">Speaker identification</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="h-5 w-5 text-green-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-white/80 text-sm">Background noise filtering</span>
+                        </li>
+                    </ul>
+                </div>
+            
+                <!-- Feature Card 2 -->
+                <div class="glass-card p-6" data-aos="fade-up">
+                    <div class="w-14 h-14 rounded-xl bg-secondary-600/30 flex items-center justify-center mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-secondary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Subtitle Generation</h3>
+                    <p class="text-white/70">
+                        Create perfect SRT or VTT subtitles for your videos automatically.
+                        Accurate timing and formatting included.
+                    </p>
+                    <ul class="mt-4 space-y-2">
+                        <li class="flex items-start">
+                            <svg class="h-5 w-5 text-green-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-white/80 text-sm">Multiple subtitle formats</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="h-5 w-5 text-green-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="text-white/80 text-sm">Translation to multiple languages</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Feature Card 3 -->
+                <div class="glass-card p-6" data-aos="fade-up">
+                    <div class="w-14 h-14 rounded-xl bg-blue-600/30 flex items-center justify-center mb-6">
+                        <i class="ti ti-cloud-upload text-3xl text-blue-400"></i>
+                </div>
+                    <h3 class="text-xl font-bold mb-3">Easy File Upload</h3>
+                    <p class="text-white/70">
+                        Simply drag and drop your files for quick and hassle-free uploads.
+                        Support for large files up to 1GB.
+                    </p>
+                </div>
+                
+                <!-- Feature Card 4 -->
+                <div class="glass-card p-6" data-aos="fade-up">
+                    <div class="w-14 h-14 rounded-xl bg-green-600/30 flex items-center justify-center mb-6">
+                        <i class="ti ti-world text-3xl text-green-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Multiple Languages</h3>
+                    <p class="text-white/70">
+                        Support for over 30 languages with automatic language detection.
+                        High accuracy across all supported languages.
+                    </p>
+                </div>
+                
+                <!-- Feature Card 5 -->
+                <div class="glass-card p-6" data-aos="fade-up">
+                    <div class="w-14 h-14 rounded-xl bg-amber-600/30 flex items-center justify-center mb-6">
+                        <i class="ti ti-dashboard text-3xl text-amber-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">User Dashboard</h3>
+                    <p class="text-white/70">
+                        Manage all your files in one place with our intuitive dashboard.
+                        Track progress and download your files anytime.
+                    </p>
+                </div>
+                
+                <!-- Feature Card 6 -->
+                <div class="glass-card p-6" data-aos="fade-up">
+                    <div class="w-14 h-14 rounded-xl bg-rose-600/30 flex items-center justify-center mb-6">
+                        <i class="ti ti-shield-lock text-3xl text-rose-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Secure Storage</h3>
+                    <p class="text-white/70">
+                        Your files are securely stored with end-to-end encryption.
+                        Access your transcriptions anytime from anywhere.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 relative bg-dark-900/50">
+        <!-- Decorative elements -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+            <div class="absolute -top-10 -right-10 w-40 h-40 bg-primary-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-secondary-500/10 rounded-full blur-3xl"></div>
+                </div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+            <!-- Section Header -->
+            <div class="text-center mb-16" data-aos="fade-up" data-aos-offset="10">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">How It Works</span>
+                </h2>
+                <p class="text-base text-white/70 max-w-2xl mx-auto">
+                    Our straightforward process gets you from media to text in just a few simple steps.
+                </p>
+                </div>
+            
+            <!-- Steps -->
+            <div class="max-w-5xl mx-auto px-4 sm:px-0">
+                <div class="flex flex-col md:flex-row gap-8 mb-16">
+                    <!-- Step 1 -->
+                    <div class="md:w-1/3 text-center" data-aos="fade-up">
+                        <div class="glass-card p-6 h-full flex flex-col items-center">
+                            <div class="text-5xl mb-6 text-primary-400">
+                                <i class="ti ti-cloud-upload"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-3">Upload Your Media</h3>
+                            <p class="text-white/70">
+                                Simply upload your audio or video file through our easy-to-use interface.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2 -->
+                    <div class="md:w-1/3 text-center" data-aos="fade-up">
+                        <div class="glass-card p-6 h-full flex flex-col items-center">
+                            <div class="text-5xl mb-6 text-secondary-400">
+                                <i class="ti ti-brain"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-3">AI Processing</h3>
+                            <p class="text-white/70">
+                                Our AI engine processes your file with industry-leading accuracy.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3 -->
+                    <div class="md:w-1/3 text-center" data-aos="fade-up">
+                        <div class="glass-card p-6 h-full flex flex-col items-center">
+                            <div class="text-5xl mb-6 text-blue-400">
+                                <i class="ti ti-download"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-3">Get Results</h3>
+                            <p class="text-white/70">
+                                Download your transcription in your preferred format (SRT or VTT).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Process visualization -->
+                <div class="glass-card p-4 sm:p-8 relative mx-4 sm:mx-0" data-aos="fade-up">
+                    <div class="flex flex-col md:flex-row items-center gap-8">
+                        <div class="md:w-1/2">
+                            <h3 class="text-2xl font-bold mb-4">Real-time Progress Tracking</h3>
+                            <p class="text-white/70 mb-6">
+                                Watch as your file is processed in real-time with our detailed progress tracking. 
+                                You'll know exactly how much longer you need to wait.
+                            </p>
+                            <ul class="space-y-3 text-white/70">
+                                <li class="flex items-start gap-2">
+                                    <i class="ti ti-check text-green-400 mt-1"></i>
+                                    <span>Average processing time of under 5 minutes</span>
+                        </li>
+                                <li class="flex items-start gap-2">
+                                    <i class="ti ti-check text-green-400 mt-1"></i>
+                                    <span>Email notification when your file is ready</span>
+                        </li>
+                                <li class="flex items-start gap-2">
+                                    <i class="ti ti-check text-green-400 mt-1"></i>
+                                    <span>Secure download links for your files</span>
+                        </li>
+                    </ul>
+                        </div>
+                        <div class="md:w-1/2">
+                            <div class="relative">
+                                <div class="glass rounded-lg p-6">
+                                    <!-- Progress visualization -->
+                                    <div class="w-full bg-dark-800 rounded-full h-4 mb-6">
+                                        <div class="bg-gradient-to-r from-primary-600 to-secondary-500 h-4 rounded-full" style="width: 75%"></div>
+                                    </div>
+                                    <div class="flex justify-between items-center mb-6">
+                                        <span class="text-white/70">Processing: 75%</span>
+                                        <span class="text-white/70">Est. time: 1:20</span>
+                </div>
+                
+                                    <!-- Processing steps -->
+                                    <div class="space-y-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-xs">
+                                                <i class="ti ti-check"></i>
+                </div>
+                                            <span class="text-white/70">File uploaded</span>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-xs">
+                                                <i class="ti ti-check"></i>
+                                            </div>
+                                            <span class="text-white/70">Audio extraction</span>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center text-xs animate-pulse">
+                                                <i class="ti ti-loader"></i>
+                                            </div>
+                                            <span class="text-white">AI transcription in progress...</span>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-6 h-6 rounded-full bg-dark-700 flex items-center justify-center text-xs">
+                                                <i class="ti ti-circle"></i>
+                                            </div>
+                                            <span class="text-white/50">Formatting output</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 relative">
+        <div class="container mx-auto px-4">
+            <!-- Section Header -->
+            <div class="text-center mb-16" data-aos="fade-up" data-aos-offset="10">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">Frequently Asked Questions</span>
+                </h2>
+                <p class="text-base text-white/70 max-w-2xl mx-auto">
+                    Everything you need to know about our service.
+                </p>
+                </div>
+            
+            <!-- FAQ Accordion -->
+            <div class="max-w-3xl mx-auto" data-aos="fade-up">
+                <div class="space-y-6" x-data="{ active: 1 }">
+                    <!-- FAQ Item 1 -->
+                    <div class="glass-card overflow-hidden">
+                        <button 
+                            class="w-full flex items-center justify-between p-6" 
+                            @click="active = active === 1 ? null : 1"
+                        >
+                            <div class="flex items-center gap-3">
+                                <i class="ti ti-file-type text-primary-400 text-xl"></i>
+                                <span class="text-lg font-semibold">What file formats do you support?</span>
+                </div>
+                            <i 
+                                class="ti ti-chevron-down transition-transform"
+                                :class="active === 1 ? 'rotate-180' : ''"
+                            ></i>
+                        </button>
+                        <div 
+                            class="overflow-hidden transition-all duration-300 ease-in-out"
+                            :class="active === 1 ? 'max-h-96 p-6 pt-0' : 'max-h-0'"
+                        >
+                            <p class="text-white/70">
+                                We support a wide range of audio and video formats including MP3, WAV, MP4, MOV, AVI, and many more. If you have a specific format that's not listed, feel free to contact our support team.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- FAQ Item 2 -->
+                    <div class="glass-card overflow-hidden">
+                        <button 
+                            class="w-full flex items-center justify-between p-6" 
+                            @click="active = active === 2 ? null : 2"
+                        >
+                            <div class="flex items-center gap-3">
+                                <i class="ti ti-chart-bar text-secondary-400 text-xl"></i>
+                                <span class="text-lg font-semibold">How accurate is the transcription?</span>
+                            </div>
+                            <i 
+                                class="ti ti-chevron-down transition-transform"
+                                :class="active === 2 ? 'rotate-180' : ''"
+                            ></i>
+                        </button>
+                        <div 
+                            class="overflow-hidden transition-all duration-300 ease-in-out"
+                            :class="active === 2 ? 'max-h-96 p-6 pt-0' : 'max-h-0'"
+                        >
+                            <p class="text-white/70">
+                                Our AI-powered transcription system achieves accuracy rates of 95% or higher for clear audio with minimal background noise. The accuracy may vary depending on the audio quality, accents, and technical terminology.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- FAQ Item 3 -->
+                    <div class="glass-card overflow-hidden">
+                        <button 
+                            class="w-full flex items-center justify-between p-6" 
+                            @click="active = active === 3 ? null : 3"
+                        >
+                            <div class="flex items-center gap-3">
+                                <i class="ti ti-language text-blue-400 text-xl"></i>
+                                <span class="text-lg font-semibold">What languages do you support?</span>
+                            </div>
+                            <i 
+                                class="ti ti-chevron-down transition-transform"
+                                :class="active === 3 ? 'rotate-180' : ''"
+                            ></i>
+                        </button>
+                        <div 
+                            class="overflow-hidden transition-all duration-300 ease-in-out"
+                            :class="active === 3 ? 'max-h-96 p-6 pt-0' : 'max-h-0'"
+                        >
+                            <p class="text-white/70">
+                                We currently support over 30 languages including English, Spanish, French, German, Chinese, Japanese, and many more. Our system can automatically detect the spoken language or you can specify it during upload.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- FAQ Item 4 -->
+                    <div class="glass-card overflow-hidden">
+                        <button 
+                            class="w-full flex items-center justify-between p-6" 
+                            @click="active = active === 4 ? null : 4"
+                        >
+                            <div class="flex items-center gap-3">
+                                <i class="ti ti-clock text-amber-400 text-xl"></i>
+                                <span class="text-lg font-semibold">How long does the transcription take?</span>
+                            </div>
+                            <i 
+                                class="ti ti-chevron-down transition-transform"
+                                :class="active === 4 ? 'rotate-180' : ''"
+                            ></i>
+                        </button>
+                        <div 
+                            class="overflow-hidden transition-all duration-300 ease-in-out"
+                            :class="active === 4 ? 'max-h-96 p-6 pt-0' : 'max-h-0'"
+                        >
+                            <p class="text-white/70">
+                                Most transcriptions are completed within minutes. The exact processing time depends on the file length, audio quality, and current system load. For a 60-minute audio file, you can expect results in approximately 5-10 minutes.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- FAQ Item 5 -->
+                    <div class="glass-card overflow-hidden">
+                        <button 
+                            class="w-full flex items-center justify-between p-6" 
+                            @click="active = active === 5 ? null : 5"
+                        >
+                            <div class="flex items-center gap-3">
+                                <i class="ti ti-shield-lock text-green-400 text-xl"></i>
+                                <span class="text-lg font-semibold">How secure is my data?</span>
+                            </div>
+                            <i 
+                                class="ti ti-chevron-down transition-transform"
+                                :class="active === 5 ? 'rotate-180' : ''"
+                            ></i>
+                        </button>
+                        <div 
+                            class="overflow-hidden transition-all duration-300 ease-in-out"
+                            :class="active === 5 ? 'max-h-96 p-6 pt-0' : 'max-h-0'"
+                        >
+                            <p class="text-white/70">
+                                We take data security very seriously. All file uploads and downloads are encrypted using TLS/SSL. Your files are stored securely and are only accessible to you through your account. We do not share your data with third parties without your explicit consent.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- FAQ Item 6 -->
+                    <div class="glass-card overflow-hidden">
+                        <button 
+                            class="w-full flex items-center justify-between p-6" 
+                            @click="active = active === 6 ? null : 6"
+                        >
+                            <div class="flex items-center gap-3">
+                                <i class="ti ti-edit text-rose-400 text-xl"></i>
+                                <span class="text-lg font-semibold">Can I edit the transcriptions?</span>
+                            </div>
+                            <i 
+                                class="ti ti-chevron-down transition-transform"
+                                :class="active === 6 ? 'rotate-180' : ''"
+                            ></i>
+                        </button>
+                        <div 
+                            class="overflow-hidden transition-all duration-300 ease-in-out"
+                            :class="active === 6 ? 'max-h-96 p-6 pt-0' : 'max-h-0'"
+                        >
+                            <p class="text-white/70">
+                                Yes, you can edit your transcriptions directly in our user-friendly editor. This allows you to correct any errors or add speaker labels before downloading the final version.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Help -->
+                <div class="text-center mt-12">
+                    <p class="text-white/70 mb-4">Still have questions? We're here to help.</p>
+                    <a href="#contact" class="py-3 px-6 rounded-full glass hover:bg-primary-600/20 transition-all inline-flex items-center gap-2">
+                        <i class="ti ti-mail"></i>
+                        <span>Contact Support</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 relative bg-dark-900/50">
+        <!-- Decorative elements -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+            <div class="absolute -top-10 -left-10 w-40 h-40 bg-primary-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-secondary-500/10 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+            <!-- Section Header -->
+            <div class="text-center mb-16" data-aos="fade-up" data-aos-offset="10">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">About SubTranscribe</span>
+                </h2>
+                <p class="text-base text-white/70 max-w-2xl mx-auto">
+                    Transforming media into accessible text for everyone.
+                </p>
+                    </div>
+            
+            <div class="flex flex-col lg:flex-row gap-12 items-center">
+                <!-- About Content -->
+                <div class="lg:w-1/2" data-aos="fade-up">
+                    <h3 class="text-2xl font-bold mb-6">Our Mission</h3>
+                    <p class="text-white/70 mb-6">
+                        At SubTranscribe, we believe in making content accessible to everyone. Our mission is to provide accurate, fast, and affordable transcription services that help content creators, businesses, and individuals overcome language barriers and reach wider audiences.
+                    </p>
+                    <p class="text-white/70 mb-6">
+                        We leverage cutting-edge AI technology to deliver high-quality transcriptions while maintaining the human touch in our service and support.
+                    </p>
+                    
+                    <h3 class="text-2xl font-bold mb-6 mt-12">Why Choose Us?</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-primary-600/30 flex items-center justify-center flex-shrink-0 mt-1">
+                                <i class="ti ti-brand-speedtest text-xl text-primary-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold mb-2">Unmatched Speed</h4>
+                                <p class="text-white/70">
+                                    Our optimized AI processing delivers results faster than any other solution on the market.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-secondary-600/30 flex items-center justify-center flex-shrink-0 mt-1">
+                                <i class="ti ti-bulb text-xl text-secondary-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold mb-2">Cutting-edge Technology</h4>
+                                <p class="text-white/70">
+                                    We continuously improve our AI models to ensure the highest accuracy possible.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-blue-600/30 flex items-center justify-center flex-shrink-0 mt-1">
+                                <i class="ti ti-users text-xl text-blue-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold mb-2">Human-Centered Approach</h4>
+                                <p class="text-white/70">
+                                    Our team is dedicated to providing exceptional support and ensuring your success.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- About Image -->
+                <div class="lg:w-1/2" data-aos="fade-up">
+                    <div class="glass-card p-6 relative overflow-hidden mx-4 sm:mx-0">
+                        <img src="/static/Screenshot.png" alt="SubTranscribe Dashboard" class="rounded-lg w-full mb-6">
+                        
+                        <!-- Stats -->
+                        <div class="glass rounded-xl p-4 sm:p-6">
+                            <h4 class="text-xl font-semibold mb-4 text-center">Our Impact</h4>
+                            <div class="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+                                <div class="flex flex-col items-center">
+                                    <i class="ti ti-file-check text-2xl sm:text-3xl text-primary-400 mb-2"></i>
+                                    <div class="text-2xl sm:text-3xl font-bold gradient-text">1M+</div>
+                                    <div class="text-white/70 text-xs sm:text-sm">Files Processed</div>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <i class="ti ti-world text-2xl sm:text-3xl text-secondary-400 mb-2"></i>
+                                    <div class="text-2xl sm:text-3xl font-bold gradient-text">30+</div>
+                                    <div class="text-white/70 text-xs sm:text-sm">Languages</div>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <i class="ti ti-mood-smile text-2xl sm:text-3xl text-green-400 mb-2"></i>
+                                    <div class="text-2xl sm:text-3xl font-bold gradient-text">98%</div>
+                                    <div class="text-white/70 text-xs sm:text-sm">Satisfaction</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Policies Section -->
+    <section id="policies" class="py-20 relative">
+        <div class="container mx-auto px-4">
+            <!-- Section Header -->
+            <div class="text-center mb-16" data-aos="fade-up" data-aos-offset="10">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                    <span class="gradient-text">Our Policies</span>
+                </h2>
+                <p class="text-base text-white/70 max-w-2xl mx-auto">
+                    Transparency is important to us. Read our policies to understand how we handle your data.
+                </p>
+            </div>
+            
+            <!-- Policy Tabs -->
+            <div class="max-w-4xl mx-auto px-4 sm:px-0" data-aos="fade-up" x-data="{activeTab: 'privacy'}">
+                <!-- Tabs -->
+                <div class="flex justify-center mb-8">
+                    <div class="glass inline-flex rounded-full p-1 flex-wrap md:flex-nowrap w-full sm:w-auto justify-center">
+                        <button 
+                            @click="activeTab = 'privacy'" 
+                            :class="{'bg-primary-600 text-white': activeTab === 'privacy', 'hover:bg-white/10': activeTab !== 'privacy'}"
+                            class="py-2 px-3 md:px-6 rounded-full transition-all duration-300 text-sm md:text-base flex-1 sm:flex-initial"
+                        >
+                            <i class="ti ti-shield-lock md:mr-2"></i>
+                            <span class="hidden md:inline">Privacy Policy</span>
+                        </button>
+                        <button 
+                            @click="activeTab = 'terms'" 
+                            :class="{'bg-primary-600 text-white': activeTab === 'terms', 'hover:bg-white/10': activeTab !== 'terms'}"
+                            class="py-2 px-3 md:px-6 rounded-full transition-all duration-300 text-sm md:text-base flex-1 sm:flex-initial"
+                        >
+                            <i class="ti ti-file-text md:mr-2"></i>
+                            <span class="hidden md:inline">Terms of Service</span>
+                        </button>
+                        <button 
+                            @click="activeTab = 'cookies'" 
+                            :class="{'bg-primary-600 text-white': activeTab === 'cookies', 'hover:bg-white/10': activeTab !== 'cookies'}"
+                            class="py-2 px-3 md:px-6 rounded-full transition-all duration-300 text-sm md:text-base flex-1 sm:flex-initial"
+                        >
+                            <i class="ti ti-cookie md:mr-2"></i>
+                            <span class="hidden md:inline">Cookie Policy</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Tab Content -->
+                <div class="glass-card p-4 sm:p-8">
+                    <!-- Privacy Policy -->
+                    <div x-show="activeTab === 'privacy'" class="space-y-6">
+                        <h3 class="text-2xl font-bold mb-4">Privacy Policy</h3>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">1. Information We Collect</h4>
+                            <p class="text-white/70 mb-4">
+                                We collect information you provide directly to us when creating an account, uploading files, or contacting support. This may include your name, email address, and the content of your uploaded media files.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">2. How We Use Your Information</h4>
+                            <p class="text-white/70 mb-4">
+                                We use the information we collect to provide, maintain, and improve our services, process your files, communicate with you, and understand how users interact with our platform.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">3. Data Security</h4>
+                            <p class="text-white/70 mb-4">
+                                We implement industry-standard security measures to protect your personal information and uploaded content. All data is encrypted in transit and at rest.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">4. Data Retention</h4>
+                            <p class="text-white/70 mb-4">
+                                We retain your files and transcriptions for as long as your account is active. You can delete your content at any time from your dashboard.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">5. Your Rights</h4>
+                            <p class="text-white/70 mb-4">
+                                You have the right to access, correct, or delete your personal information. You can manage most of these actions directly from your account settings.
+                            </p>
+                        </div>
+                        
+                        <a href="/privacy" class="text-primary-400 hover:text-primary-300 inline-flex items-center gap-2">
+                            <span>Read full Privacy Policy</span>
+                            <i class="ti ti-arrow-right"></i>
+                        </a>
+                    </div>
+                    
+                    <!-- Terms of Service -->
+                    <div x-show="activeTab === 'terms'" class="space-y-6">
+                        <h3 class="text-2xl font-bold mb-4">Terms of Service</h3>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">1. User Accounts</h4>
+                            <p class="text-white/70 mb-4">
+                                You must create an account to use our services. You are responsible for maintaining the security of your account credentials and for all activities that occur under your account.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">2. Acceptable Use</h4>
+                            <p class="text-white/70 mb-4">
+                                You agree not to use our services for any illegal or unauthorized purpose. You must not upload content that infringes on the intellectual property rights of others.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">3. Service Limitations</h4>
+                            <p class="text-white/70 mb-4">
+                                We strive to provide accurate transcriptions, but the quality may vary depending on audio clarity, accents, and terminology. We make no guarantees regarding the accuracy of our transcriptions.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">4. Intellectual Property</h4>
+                            <p class="text-white/70 mb-4">
+                                You retain all rights to your content. By uploading content, you grant us a license to process and store it for the purpose of providing our services.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">5. Termination</h4>
+                            <p class="text-white/70 mb-4">
+                                We reserve the right to terminate or suspend your account if you violate our terms. You may also terminate your account at any time.
+                            </p>
+                        </div>
+                        
+                        <a href="/terms" class="text-primary-400 hover:text-primary-300 inline-flex items-center gap-2">
+                            <span>Read full Terms of Service</span>
+                            <i class="ti ti-arrow-right"></i>
+                </a>
+            </div>
+                    
+                    <!-- Cookie Policy -->
+                    <div x-show="activeTab === 'cookies'" class="space-y-6">
+                        <h3 class="text-2xl font-bold mb-4">Cookie Policy</h3>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">1. What Are Cookies</h4>
+                            <p class="text-white/70 mb-4">
+                                Cookies are small text files that are placed on your device when you visit our website. They help us improve your experience and provide certain functionalities.
+                            </p>
+        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">2. Types of Cookies We Use</h4>
+                            <p class="text-white/70 mb-4">
+                                We use essential cookies necessary for the functioning of our website, performance cookies to analyze how users interact with our site, and functionality cookies to remember your preferences.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">3. Third-Party Cookies</h4>
+                            <p class="text-white/70 mb-4">
+                                Some cookies are placed by third-party services that appear on our pages. These cookies help us understand how users interact with our site and provide enhanced features.
+                            </p>
+                    </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">4. Managing Cookies</h4>
+                            <p class="text-white/70 mb-4">
+                                You can control and manage cookies through your browser settings. Please note that removing certain cookies may impact your experience on our website.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-xl font-semibold mb-2">5. Changes to Our Cookie Policy</h4>
+                            <p class="text-white/70 mb-4">
+                                We may update our Cookie Policy from time to time. We will notify you of any changes by posting the new policy on this page.
+                            </p>
+                        </div>
+                        
+                        <a href="/cookies" class="text-primary-400 hover:text-primary-300 inline-flex items-center gap-2">
+                            <span>Read full Cookie Policy</span>
+                            <i class="ti ti-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer Section -->
+    <footer class="relative pt-20 pb-0 bg-dark-900/70 mb-0">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 mb-16">
+                <!-- Company Info -->
+                <div>
+                    <a href="{{ url_for('home') }}" class="flex items-center gap-3 mb-6">
+                        <img src="/static/image/subtitle.ico" alt="SubTranscribe Logo" class="w-10 h-10 rounded-lg">
+                        <span class="text-2xl font-bold gradient-text">SubTranscribe</span>
+                    </a>
+                    <p class="text-white/70 mb-6">
+                        Transforming audio and video into accurate text with cutting-edge AI technology.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-white/70 hover:text-primary-400 transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-white/70 hover:text-primary-400 transition-colors">
+                            <i class="fab fa-facebook text-xl"></i>
+                        </a>
+                        <a href="#" class="text-white/70 hover:text-primary-400 transition-colors">
+                            <i class="fab fa-instagram text-xl"></i>
+                        </a>
+                        <a href="#" class="text-white/70 hover:text-primary-400 transition-colors">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="text-xl font-bold mb-6">Quick Links</h4>
+                    <ul class="space-y-3">
+                        <li>
+                            <a href="#features" class="text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="ti ti-chevron-right text-xs"></i>
+                                <span>Features</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#how-it-works" class="text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="ti ti-chevron-right text-xs"></i>
+                                <span>How It Works</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#faq" class="text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="ti ti-chevron-right text-xs"></i>
+                                <span>FAQ</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#about" class="text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="ti ti-chevron-right text-xs"></i>
+                                <span>About Us</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#contact" class="text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="ti ti-chevron-right text-xs"></i>
+                                <span>Contact</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Legal -->
+                <div>
+                    <h4 class="text-xl font-bold mb-6">Legal</h4>
+                    <ul class="space-y-3">
+                        <li>
+                            <a href="/privacy" class="text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="ti ti-chevron-right text-xs"></i>
+                                <span>Privacy Policy</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/terms" class="text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="ti ti-chevron-right text-xs"></i>
+                                <span>Terms of Service</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/cookies" class="text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="ti ti-chevron-right text-xs"></i>
+                                <span>Cookie Policy</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-white/70 hover:text-white transition-colors flex items-center gap-2">
+                                <i class="ti ti-chevron-right text-xs"></i>
+                                <span>Accessibility</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Contact -->
+                <div id="contact">
+                    <h4 class="text-xl font-bold mb-6">Contact Us</h4>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <i class="ti ti-mail text-primary-400 mt-1"></i>
+                            <span class="text-white/70">support@subtranscribe.com</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="ti ti-phone text-primary-400 mt-1"></i>
+                            <span class="text-white/70">+20 1123456789</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="ti ti-map-pin text-primary-400 mt-1"></i>
+                            <span class="text-white/70">123 Tech Street, Egypt , Cairo</span>
+                        </li>
+                    </ul>
+                    
+                    <!-- Newsletter -->
+                    <div class="mt-8">
+                        <h5 class="text-lg font-semibold mb-4">Subscribe to Newsletter</h5>
+                        <form class="flex">
+                            <input 
+                                type="email" 
+                                placeholder="Your email" 
+                                class="w-full bg-dark-800 border border-dark-700 rounded-l-lg px-4 py-2 focus:outline-none focus:border-primary-500"
+                            >
+                            <button type="submit" class="bg-primary-600 hover:bg-primary-500 rounded-r-lg px-4 py-2 transition-colors">
+                                <i class="ti ti-send"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Footer -->
+            <div class="border-t border-white/10 pt-6 mt-6 pb-2">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="mb-2 md:mb-0">
+                        <p class="text-white/50 text-sm">
+                            © <span id="current-year">2024</span> SubTranscribe. All rights reserved.
+                        </p>
+            </div>
+                    <div class="flex items-center gap-4">
+                        <a href="/privacy" class="text-white/50 hover:text-white/80 text-sm">
+                            Privacy
+                        </a>
+                        <span class="text-white/30">|</span>
+                        <a href="/terms" class="text-white/50 hover:text-white/80 text-sm">
+                            Terms
+                        </a>
+                        <span class="text-white/30">|</span>
+                        <a href="/cookies" class="text-white/50 hover:text-white/80 text-sm">
+                            Cookies
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Organization Schema for SEO -->
+            <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "name": "SubTranscribe",
+                "url": "https://subtranscribe.com",
+                "logo": "https://subtranscribe.com/static/image/subtitle.ico",
+                "description": "AI-powered audio and video transcription service with subtitle generation",
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "123 Tech Street",
+                    "addressLocality": "Cairo",
+                    "addressRegion": "Cairo",
+                    "addressCountry": "Egypt"
+                },
+                "contactPoint": {
+                    "@type": "ContactPoint",
+                    "telephone": "+20 1123456789",
+                    "contactType": "customer service",
+                    "email": "support@subtranscribe.com"
+                },
+                "sameAs": [
+                    "https://twitter.com/subtranscribe",
+                    "https://facebook.com/subtranscribe",
+                    "https://instagram.com/subtranscribe",
+                    "https://linkedin.com/company/subtranscribe"
+                ]
+            }
+            </script>
+        </div>
+    </footer>
+
+    <!-- Libraries and Scripts -->
+    <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    
+    <!-- FAQ Schema for SEO -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What file formats does SubTranscribe support?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "SubTranscribe supports all common audio and video formats including MP3, WAV, MP4, MOV, AVI, and many more."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How accurate is the transcription?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Our AI-powered transcription service achieves up to 99% accuracy for clear audio in supported languages."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What languages are supported?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "SubTranscribe supports over 30 languages including English, Spanish, French, Arabic, Chinese, and many more."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How do I get started with SubTranscribe?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Simply create a free account, upload your audio or video file, and our AI will automatically transcribe it for you."
+                }
+            }
+        ]
+    }
+    </script>
+
+    <script>
+        // Add Alpine.js to window for global access
+        window.Alpine = window.Alpine || {};
+        window.Alpine.start = window.Alpine.start || function() {};
+        
+                    // Initialize AOS animations
+            document.addEventListener('DOMContentLoaded', function() {
+                // Set current year in footer
+                document.getElementById('current-year').textContent = new Date().getFullYear();
+                
+                // Simplified animation settings
+                AOS.init({
+                    once: true,
+                    duration: 800,
+                    offset: 100,
+                    delay: 100,
+                    easing: 'ease-out',
+                    anchorPlacement: 'top-center',
+                    disable: 'mobile'
+                });
+            
+            // Initialize Particles Background
+            initParticlesBackground();
+            
+            // Reveal animations for elements
+            const revealElements = document.querySelectorAll('.reveal');
+            const revealElementsOnScroll = function() {
+                for (let i = 0; i < revealElements.length; i++) {
+                    const windowHeight = window.innerHeight;
+                    const elementTop = revealElements[i].getBoundingClientRect().top;
+                    const elementVisible = 100; // Trigger earlier
+                    if (elementTop < windowHeight - elementVisible) {
+                        revealElements[i].classList.add('active');
+                    }
+                }
+            };
+            window.addEventListener('scroll', revealElementsOnScroll);
+            revealElementsOnScroll();
+            
+            // Force navbar display with inline styles as fallback
+            document.querySelectorAll('#navbar .hidden.md\\:inline-flex').forEach(el => {
+                el.style.display = 'inline-flex';
+            });
+            
+            // Initialize navbar
+            initNavbar();
+            
+            // Mobile menu functionality
+            function initNavbar() {
+                console.log("Initializing navbar...");
+                const mobileMenuButton = document.getElementById('mobile-menu-button');
+                const mobileMenu = document.getElementById('mobile-menu');
+                const navLinks = document.querySelectorAll('#navbar .hidden.md\\:inline-flex');
+                
+                // Force display of nav links if they're not visible
+                setTimeout(() => {
+                    navLinks.forEach(el => {
+                        const computedStyle = window.getComputedStyle(el);
+                        if (computedStyle.display === 'none' && window.innerWidth >= 768) {
+                            console.log("Forcing nav link display:", el);
+                            el.style.display = 'inline-flex';
+                        }
+                    });
+                }, 100);
+                
+                if (!mobileMenuButton || !mobileMenu) {
+                    console.error('Navbar elements not found');
+                    return;
+                }
+                
+                // Make sure mobile menu is initially hidden
+                mobileMenu.classList.add('hidden');
+                
+                mobileMenuButton.addEventListener('click', function() {
+                    console.log("Mobile menu button clicked");
+                    if (mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.remove('hidden');
+                        mobileMenuButton.innerHTML = '<i class="ti ti-x text-2xl"></i>';
+                    } else {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenuButton.innerHTML = '<i class="ti ti-menu-2 text-2xl"></i>';
+                    }
+                });
+            }
+            
+            // Handle mobile menu item clicks (close menu when an item is clicked)
+            const mobileMenuItems = mobileMenu.querySelectorAll('a');
+            mobileMenuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    mobileMenu.classList.add('hidden');
+                    mobileMenuButton.innerHTML = '<i class="ti ti-menu-2 text-2xl"></i>';
+                });
+            });
+            
+            // Navbar scroll behavior
+            const navbar = document.getElementById('navbar');
+            let lastScrollY = window.scrollY;
+            
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 100) {
+                    navbar.classList.add('glass');
+                    navbar.classList.add('shadow-lg');
+            } else {
+                    navbar.classList.remove('glass');
+                    navbar.classList.remove('shadow-lg');
+                }
+                
+                // Hide on scroll down, show on scroll up
+                if (window.scrollY > lastScrollY && window.scrollY > 300) {
+                    navbar.style.transform = 'translateY(-100%)';
+                } else {
+                    navbar.style.transform = 'translateY(0)';
+                }
+                
+                lastScrollY = window.scrollY;
+                });
+            });
+            
+        // Interactive Particles Background
+        function initParticlesBackground() {
+            const particlesContainer = document.getElementById('particles-background');
+            const numParticles = Math.min(window.innerWidth / 10, 100); // Responsive number of particles
+            const particles = [];
+            const colors = [
+                ['#60a5fa', '#3b82f6'], // Primary blue
+                ['#a78bfa', '#8b5cf6'], // Secondary purple
+                ['#34d399', '#10b981'], // Green
+                ['#f472b6', '#ec4899'], // Pink
+            ];
+            
+            // Create particles
+            for (let i = 0; i < numParticles; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random properties
+                const size = Math.random() * 10 + 5;
+                const colorPair = colors[Math.floor(Math.random() * colors.length)];
+                
+                // Set particle position and size
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+                
+                // Set custom properties for colors
+                particle.style.setProperty('--particle-color-start', colorPair[0]);
+                particle.style.setProperty('--particle-color-end', colorPair[1]);
+                
+                // Add to container
+                particlesContainer.appendChild(particle);
+                
+                // Store particle data for animation
+                particles.push({
+                    element: particle,
+                    size: size,
+                    x: parseFloat(particle.style.left),
+                    y: parseFloat(particle.style.top),
+                    speedX: Math.random() * 0.2 - 0.1,
+                    speedY: Math.random() * 0.2 - 0.1,
+                    maxDistance: 120 // Max distance to react to mouse/touch
+                });
+            }
+            
+            // Mouse/touch interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            let mouseActive = false;
+            
+            // Mouse move event
+            document.addEventListener('mousemove', function(e) {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                mouseActive = true;
+                
+                // Clear the timeout if it exists
+                if (window.mouseTimeout) {
+                    clearTimeout(window.mouseTimeout);
+                }
+                
+                // Set a timeout to mark the mouse as inactive after 2 seconds
+                window.mouseTimeout = setTimeout(function() {
+                    mouseActive = false;
+                }, 2000);
+            });
+            
+            // Touch events for mobile
+            document.addEventListener('touchstart', handleTouch);
+            document.addEventListener('touchmove', handleTouch);
+            
+            function handleTouch(e) {
+                if (e.touches && e.touches[0]) {
+                    mouseX = e.touches[0].clientX;
+                    mouseY = e.touches[0].clientY;
+                    mouseActive = true;
+                    
+                    // Clear the timeout if it exists
+                    if (window.mouseTimeout) {
+                        clearTimeout(window.mouseTimeout);
+                    }
+                    
+                    // Set a timeout to mark the mouse as inactive after 2 seconds
+                    window.mouseTimeout = setTimeout(function() {
+                        mouseActive = false;
+                    }, 2000);
+                }
+            }
+            
+            // Animation loop
+            function animateParticles() {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                
+                particles.forEach(particle => {
+                    // Update position
+                    particle.x += particle.speedX;
+                    particle.y += particle.speedY;
+                    
+                    // Boundary check
+                    if (particle.x < 0) particle.x = 100;
+                    if (particle.x > 100) particle.x = 0;
+                    if (particle.y < 0) particle.y = 100;
+                    if (particle.y > 100) particle.y = 0;
+                    
+                    // Mouse interaction
+                    if (mouseActive) {
+                        const rect = particle.element.getBoundingClientRect();
+                        const particleCenterX = rect.left + rect.width / 2;
+                        const particleCenterY = rect.top + rect.height / 2;
+                        
+                        const dx = mouseX - particleCenterX;
+                        const dy = mouseY - particleCenterY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        // Apply force if mouse is close enough
+                        if (distance < particle.maxDistance) {
+                            const force = (particle.maxDistance - distance) / particle.maxDistance;
+                            const directionX = dx / distance || 0;
+                            const directionY = dy / distance || 0;
+                            
+                            particle.x -= directionX * force * 0.2;
+                            particle.y -= directionY * force * 0.2;
+                        }
+                    }
+                    
+                    // Update DOM element position
+                    particle.element.style.left = `${particle.x}%`;
+                    particle.element.style.top = `${particle.y}%`;
+                });
+                
+                requestAnimationFrame(animateParticles);
+            }
+            
+                         // Start animation
+             animateParticles();
+         }
+         
+         // Audio waveform function removed
+     </script>
+</body>
+</html>

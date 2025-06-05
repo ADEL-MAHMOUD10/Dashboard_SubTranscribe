@@ -23,3 +23,4 @@ aiohttp
 gevent
 greenlet
 flask[async]
+Flask-Limiter
