@@ -69,7 +69,7 @@ app = Flask(__name__)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["100 per hour"],
+    default_limits=["200 per hour"],
     storage_uri= REDIS_URI
 )
 
@@ -171,7 +171,7 @@ def update_progress_bar(upload_id, progress_percentage, message):
         print(f"Firebase update error: {e}")
 
 @app.route('/progress/<upload_id>', methods=['GET'])
-@cross_origin()  # Allow CORS for this route
+@cross_origin(supports_credentials=True)  # Allow CORS for this route
 def progress_status(upload_id):
     """Get the progress status for a specific upload ID."""
     try:
@@ -216,7 +216,7 @@ def progress_status(upload_id):
 
 
 @app.route('/upload_id', methods=['GET'])
-@cross_origin()  # Allow CORS for this route
+@cross_origin(supports_credentials=True)  # Allow CORS for this route
 def progress_id():
     """Create a new upload ID."""
     try:
@@ -1166,7 +1166,7 @@ def serve_file(filename):
     return response  # Return the file response
 
 @app.route('/progress_stream/<upload_id>')
-@cross_origin()  # Allow CORS for this route
+@cross_origin(supports_credentials=True)  # Allow CORS for this route
 def progress_stream(upload_id):
     """Stream progress updates using Server-Sent Events (SSE)."""
     def generate():

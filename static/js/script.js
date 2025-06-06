@@ -81,7 +81,7 @@ function setupEventSource(uploadId) {
     let lastEventTime = Date.now();
     let transcriptionStarted = false;
     
-    function createEventSource() {
+    async function createEventSource() {
         try {
             // Close any existing connection
             if (eventSource) {
@@ -90,7 +90,7 @@ function setupEventSource(uploadId) {
             
             // Force HTTPS in production, this helps with CORS
             let baseUrl = window.location.protocol + '//' + window.location.host;
-            eventSource = new EventSource(`${baseUrl}/progress_stream/${uploadId}`);
+            eventSource = await new EventSource(`${baseUrl}/progress_stream/${uploadId}`);
             lastEventTime = Date.now();
             
             eventSource.onmessage = (event) => {
@@ -169,7 +169,7 @@ function setupEventSource(uploadId) {
                 fallbackToPolling(uploadId);
             }
         }
-    }, 2000); // Check every 2 seconds
+    }, 8000); // Check every 8 seconds
 }
 
 function fallbackToPolling(uploadId) {
