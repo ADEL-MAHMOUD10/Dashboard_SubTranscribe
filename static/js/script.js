@@ -436,12 +436,20 @@ function initFileUpload() {
             // Reset progress UI
             resetProgressUI();
             
-            // Show link loading indicator
-            const linkLoading = document.getElementById('link-loading');
-            if (linkLoading) linkLoading.classList.remove('hidden');
-            
-            // Submit the form directly
-            this.submit();
+            // Get a fresh upload ID before submitting
+            fetchUploadId().then(uploadId => {
+                if (uploadId) {
+                    // Use our custom upload function for links
+                    uploadLinkWithProgress(linkForm, uploadId);
+                } else {
+                    // Fallback to regular form submission
+                    this.submit();
+                }
+            }).catch(error => {
+                console.error('Error fetching upload ID:', error);
+                // Fallback to regular form submission
+                this.submit();
+            });
         });
     }
     
@@ -466,16 +474,17 @@ function initFileUpload() {
         // Set up progress event for tracking real upload progress
         xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable && event.total > 0) {
-                // Calculate actual upload percentage (0-100%)
-                const uploadPercentage = Math.round((event.loaded / event.total) * 100);
+                // Calculate actual upload percentage (0-95%)
+                // Cap at 95% to leave room for processing stage
+                const uploadPercentage = Math.min(95, Math.round((event.loaded / event.total) * 95));
                 
                 // Log actual bytes for debugging
                 console.log(`Upload progress: ${uploadPercentage}% (${event.loaded}/${event.total} bytes)`);
                 
-                // Update UI with the actual percentage
+                // Update UI with the actual percentage and professional message
                 updateProgressUI({
                     status: uploadPercentage,
-                    message: `Uploading: ${uploadPercentage}% complete`
+                    message: getProgressMessage(uploadPercentage)
                 });
             }
         });
@@ -486,9 +495,18 @@ function initFileUpload() {
                 if (xhr.status === 200) {
                     console.log('Upload complete, server processing');
                     
+                    // Update to 100% when complete
+                    updateProgressUI({
+                        status: 100,
+                        message: 'Processing complete! Redirecting to results...'
+                    });
+                    
                     // Handle the response (redirect)
                     if (xhr.responseURL) {
-                        window.location.href = xhr.responseURL;
+                        // Small delay to show completion message
+                        setTimeout(() => {
+                            window.location.href = xhr.responseURL;
+                        }, 1000);
                     }
                 } else {
                     // Error handling
@@ -501,7 +519,7 @@ function initFileUpload() {
         // Handle errors
         xhr.addEventListener('error', () => {
             console.error('Upload request failed');
-            updateProgressMessage('Upload failed. Please check your connection and try again.', true);
+            updateProgressMessage('Connection error. Please check your internet connection and try again.', true);
         });
         
         // Handle abort
@@ -513,6 +531,142 @@ function initFileUpload() {
         // Open and send the request
         xhr.open('POST', form.action, true);
         xhr.send(formData);
+        
+        /**
+         * Get appropriate progress message based on percentage
+         * @param {number} percentage - Current progress percentage
+         * @returns {string} - Appropriate message for current progress
+         */
+        function getProgressMessage(percentage) {
+            if (percentage < 20) {
+                return `Initiating upload: ${percentage}%`;
+            } else if (percentage < 40) {
+                return `Uploading file: ${percentage}%`;
+            } else if (percentage < 60) {
+                return `Processing data: ${percentage}%`;
+            } else if (percentage < 80) {
+                return `Optimizing content: ${percentage}%`;
+            } else if (percentage < 95) {
+                return `Finalizing upload: ${percentage}%`;
+            } else if (percentage < 100) {
+                return `Preparing transcription: ${percentage}%`;
+            } else {
+                return `Processing complete: 100%`;
+            }
+        }
+    }
+    
+    /**
+     * Handle link submission with progress indication
+     * @param {HTMLFormElement} form - The form element containing the link input
+     * @param {string} uploadId - The upload ID for backend tracking
+     */
+    function uploadLinkWithProgress(form, uploadId) {
+        const linkInput = form.querySelector('input[name="link"]');
+        if (!linkInput || !linkInput.value.trim()) return;
+        
+        // Show progress container
+        showProgressContainer();
+        
+        // Show link loading indicator
+        const linkLoading = document.getElementById('link-loading');
+        if (linkLoading) linkLoading.classList.remove('hidden');
+        
+        // Create and configure XMLHttpRequest
+        const xhr = new XMLHttpRequest();
+        
+        // Set initial progress
+        updateProgressUI({
+            status: 10,
+            message: 'Analyzing link...'
+        });
+        
+        // Since we can't track actual progress for link processing,
+        // simulate progress to provide feedback to the user
+        let progress = 10;
+        const progressInterval = setInterval(() => {
+            progress += 3;
+            if (progress >= 90) {
+                clearInterval(progressInterval);
+                progress = 90;
+            }
+            
+            updateProgressUI({
+                status: progress,
+                message: getLinkProgressMessage(progress)
+            });
+        }, 500);
+        
+        // Handle state changes
+        xhr.addEventListener('readystatechange', () => {
+            if (xhr.readyState === 4) {
+                clearInterval(progressInterval);
+                
+                if (xhr.status === 200) {
+                    console.log('Link submitted, processing');
+                    
+                    // Update to 100% when complete
+                    updateProgressUI({
+                        status: 100,
+                        message: 'Processing complete! Redirecting to results...'
+                    });
+                    
+                    // Handle the response (redirect)
+                    if (xhr.responseURL) {
+                        // Small delay to show completion message
+                        setTimeout(() => {
+                            window.location.href = xhr.responseURL;
+                        }, 1000);
+                    }
+                } else {
+                    // Error handling
+                    console.error('Link submission failed with status:', xhr.status);
+                    updateProgressMessage('Link processing failed. Please verify the link and try again.', true);
+                }
+            }
+        });
+        
+        // Handle errors
+        xhr.addEventListener('error', () => {
+            clearInterval(progressInterval);
+            console.error('Link submission failed');
+            updateProgressMessage('Connection error. Please check your internet connection and try again.', true);
+        });
+        
+        // Handle abort
+        xhr.addEventListener('abort', () => {
+            clearInterval(progressInterval);
+            console.log('Link submission aborted');
+            updateProgressMessage('Link processing was cancelled.', true);
+        });
+        
+        // Create form data with the link
+        const formData = new FormData(form);
+        
+        // Open and send the request
+        xhr.open('POST', form.action, true);
+        xhr.send(formData);
+        
+        /**
+         * Get appropriate progress message for link processing based on percentage
+         * @param {number} percentage - Current progress percentage
+         * @returns {string} - Appropriate message for current progress
+         */
+        function getLinkProgressMessage(percentage) {
+            if (percentage < 20) {
+                return `Validating link: ${percentage}%`;
+            } else if (percentage < 40) {
+                return `Extracting media information: ${percentage}%`;
+            } else if (percentage < 60) {
+                return `Preparing audio stream: ${percentage}%`;
+            } else if (percentage < 80) {
+                return `Processing content: ${percentage}%`;
+            } else if (percentage < 95) {
+                return `Finalizing transcription: ${percentage}%`;
+            } else {
+                return `Processing complete: 100%`;
+            }
+        }
     }
     
     // Helper function to prevent default behavior

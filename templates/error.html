@@ -210,6 +210,50 @@
                                     </div>
                                 </div>
                             
+                            {% elif ('link' in error|lower or 'url' in error|lower or 'media' in error|lower or 'transcription failed' in error|lower) and not ('format' in error|lower and 'extension' in error|lower) %}
+                                <div class="mb-6">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mr-3">
+                                            <i class="fas fa-link-slash text-blue-400"></i>
+                                        </div>
+                                        <h2 class="text-xl font-semibold">Link Processing Error</h2>
+                                    </div>
+                                    <p class="text-white/70 mb-4">{{ error }}</p>
+                                    
+                                    <div class="space-y-3 mt-6">
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Make sure the link points directly to an audio or video file</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Check that the content is publicly accessible</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Try using a different link or upload a file directly</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">We dosn't support <i class="fa-brands fa-youtube"></i> YouTube videos yet</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">For <i class="fa-brands fa-google-drive"></i> Drive, make sure the video is not private</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            
                             {% elif 'format' in error|lower or 'extension' in error|lower %}
                                 <div class="mb-6">
                                     <div class="flex items-center mb-4">
@@ -314,8 +358,8 @@
                                 <i class="fas fa-arrow-left"></i>
                                 <span>Go Back</span>
                             </a>
-                            <a href="/v1/dashboard/{{ user_id }}" class="py-3 px-6 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all inline-flex items-center gap-2">
-                                <i class="fas fa-arrow-left"></i>
+                            <a href="/v1/" class="py-3 px-6 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all inline-flex items-center gap-2">
+                                <i class="fas fa-tachometer-alt"></i>
                                 <span>Dashboard</span>
                             </a>
                             <a href="https://api.whatsapp.com/send?phone=+201069854790&text=Error" class="py-3 px-6 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all inline-flex items-center gap-2">

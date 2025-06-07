@@ -183,6 +183,9 @@ def upload_or_link_no_user():
         return redirect(url_for('main_user', user_id=session['user_id']))
     return redirect(url_for('login'))
 
+def generate_error_id():
+    error_id = str(uuid.uuid4())
+    return error_id
 
 @app.route('/v1', methods=['POST'])
 def upload_or_link():
@@ -200,27 +203,26 @@ def upload_or_link():
     upload_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     username = user.get('username', 'Unknown') if user else 'Unknown'
     
+    err_id = generate_error_id()
     if request.method == 'POST':
         link = request.form.get('link')  # Get the link from the form
         if link: 
-            transcript_id = transcribe_from_link(upload_id, link)  # Transcribe from the provided link
-            if isinstance(transcript_id, str):  # If it's a valid transcript ID (not an error template)
-                try:
-                    # Store link information in database
-                    files_collection.insert_one({
-                        "username": username,
-                        "user_id": user_id,
-                        "file_name": "Link: " + link[:50] + ("..." if len(link) > 50 else ""),
-                        "file_size": 0,
-                        "transcript_id": transcript_id,
-                        "upload_time": upload_time,
-                        "link": link
-                    })
-                except Exception as e:
-                    print(f"Error storing link data: {str(e)}")
+            result = transcribe_from_link(upload_id, link)  # Transcribe from the provided link
+            
+            # Check if result is a dictionary containing an error
+            if isinstance(result, dict) and 'error' in result:
+                error_message = result['error']
+                session['error'] = error_message
+                # Redirect to error page instead of rendering directly
+                return redirect(url_for('show_error', error_id=err_id))
                 
-                return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
-            return render_template('error.html', error='Link could not be processed')
+            # If it's a string, it's a valid transcript ID
+            if isinstance(result, str):
+                return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=result))
+                
+            # Fallback error
+            print("Unexpected result from transcribe_from_link:", result)
+            return redirect(url_for('show_error', error_id=err_id, error='Link could not be processed. Please try a different link.'))
         
         file = request.files['file']  # Get the uploaded file
         if file and allowed_file(file.filename):
@@ -247,12 +249,11 @@ def upload_or_link():
                     
                     return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
                 else:
-                    return render_template("error.html", error="Processing failed. Please try again.")
+                    return redirect(url_for('show_error', error_id = err_id,error="Processing failed. Please try again."))
             except Exception as e:
-                print(f"Upload error: {str(e)}")
-                return render_template("error.html", error=f"Upload error: {str(e)[:100]}")
+                return redirect(url_for('show_error',error_id = err_id, error=f"Upload error: {str(e)[:100]}"))
         else:
-            return render_template("error.html", error="Invalid file type or no file provided")
+            return redirect(url_for('show_error', error_id= err_id , error="Invalid file type or no file provided"))
     else:
         return redirect(url_for('login', user_id=session['user_id']))
 
@@ -389,7 +390,7 @@ def transcribe_from_link(upload_id, link):
                 total_size = 0
     except Exception as e:
         print(f"Error extracting audio URL: {str(e)}")
-        return render_template('error.html', error=f"Could not process link: {str(e)}")
+        return {'error': "Unable to process this media link. Please ensure it's from a supported platform and is publicly accessible."}
     
     try:
         # Request transcription from AssemblyAI using the link
@@ -403,7 +404,17 @@ def transcribe_from_link(upload_id, link):
                                 timeout=60)  # Add timeout
         
         if response.status_code != 200:
-            return None
+            error_message = "Media processing failed. Please ensure your link contains valid audio or video content."
+            if response.status_code == 400:
+                error_message = "Invalid media format. Please provide a direct link to a supported audio or video file."
+            elif response.status_code == 401:
+                error_message = "Authorization error. Please try again later."
+            elif response.status_code == 429:
+                error_message = "Service is currently busy. Please try again in a few minutes."
+            elif response.status_code >= 500:
+                error_message = "Transcription service is temporarily unavailable. Please try again later."
+                
+            return {'error': error_message}
         
         transcript_id = response.json()["id"]
         polling_endpoint = f"{base_url}/transcript/{transcript_id}"
@@ -439,7 +450,7 @@ def transcribe_from_link(upload_id, link):
                     
                 elif transcription_result['status'] == 'error':
                     error_msg = transcription_result.get('error', 'Unknown error')
-                    return None
+                    return {'error': f"Transcription failed: {error_msg}. Please try a different media file or format."}
                     
                 else:
                     # Exponential backoff
@@ -453,12 +464,12 @@ def transcribe_from_link(upload_id, link):
                 poll_count += 1
         
         # If we get here, we've exceeded poll attempts
-        return None
+        return {'error': "Transcription is taking longer than expected. Please try again or use a shorter media file."}
         
     except Exception as e:
         error_message = str(e)
         print(f"Link processing error: {error_message}")
-        return None
+        return {'error': "An error occurred while processing your media. Please check the link and try again."}
 
 @app.route('/v1/<user_id>')
 def main_user(user_id):
@@ -841,14 +852,15 @@ def download_subtitle(user_id, transcript_id):
             url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}/{file_format}"
 
             # Add debug logging
-            print(f"Requesting subtitle from: {url}")
+            # print(f"Requesting subtitle from: {url}")
             
             response = requests.get(url, headers=headers)  # Request the subtitle file
             
             # Debug response
-            print(f"Response status: {response.status_code}")
+            # print(f"Response status: {response.status_code}")
+
             if response.status_code != 200:
-                print(f"Error response: {response.text}")
+                return render_template("error.html", error="Error downloading subtitle file.")
 
             if response.status_code == 200:
                 timesub = datetime.now().strftime("%Y%m%d_%H%M%S")  # Generate a timestamp for the subtitle file
@@ -882,9 +894,9 @@ def download_subtitle(user_id, transcript_id):
                     if status == 'processing':
                         return render_template("error.html", error="Transcript is still processing. Please try again later.")
                     elif status == 'error':
-                        return render_template("error.html", error="There was an error processing your transcript.")
+                        return render_template("error.html")
                     else:
-                        return render_template("error.html", error=f"Transcript status: {status}. Cannot download at this time.")
+                        return render_template("error.html")
                         
                 return render_template("error.html", error="Bad request. The transcript might not be ready yet.")
             else:
@@ -955,6 +967,23 @@ def sitemap():
 def robots():
     """Serve the robots.txt file."""
     return send_file('robots.txt', mimetype='text/plain')
+
+# Add a dedicated error route to help with debugging
+@app.route('/error/<error_id>')
+def show_error(error_id):
+    """Debug route to show errors"""
+    error = session.get('error')
+    user_id = session.get('user_id')
+    return render_template('error.html', error=error, user_id=user_id)
+
+# Test route for error page
+@app.route('/test_error')
+def test_error():
+    """Test route to verify error template works"""
+    user_id = session.get('user_id', 'test_user')
+    return render_template('error.html', 
+                          error="This is a test error message", 
+                          user_id=user_id)
 
 # Main entry point
 if __name__ == "__main__":

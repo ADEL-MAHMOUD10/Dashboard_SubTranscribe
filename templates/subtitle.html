@@ -172,11 +172,15 @@
                     <a href="/" class="py-2 px-3 text-white hover:bg-white/10 rounded-lg transition-all">Home</a>
                     <a href="/about" class="py-2 px-3 text-white hover:bg-white/10 rounded-lg transition-all">About</a>
                     {% if session.get('user_id') %}
-                    <a href="/logout" class="py-2 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all ml-2">
+                    <a href="/user_dashboard" class="py-2 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all ml-2">
+                        <i class="fas fa-home"></i>
+                        Dashboard
+                    </a>
+                    <a href="/logout" class="py-2 px-4 bg-white/10 hover:bg-red-500 text-white rounded-lg transition-all ml-2">
                         Sign Out
                     </a>
                     {% else %}
-                    <a href="/login" class="py-2 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all ml-2">
+                    <a href="/login" class="py-2 px-4 bg-white/10 hover:bg-green-500 text-white rounded-lg transition-all ml-2">
                         Sign In
                     </a>
                     {% endif %}
@@ -188,7 +192,11 @@
                 <a href="/" class="block py-2 px-4 text-white hover:bg-white/10">Home</a>
                 <a href="/about" class="block py-2 px-4 text-white hover:bg-white/10">About</a>
                 {% if session.get('user_id') %}
-                <a href="/logout" class="block py-2 px-4 text-white hover:bg-white/10">Sign Out</a>
+                <a href="/user_dashboard" class="block py-2 px-4 text-white hover:bg-white/10">
+                    <i class="fas fa-home mr-2"></i>
+                    Dashboard
+                </a>
+                <a href="/logout" class="block py-2 px-4 text-white hover:bg-red/10">Sign Out</a>
                 {% else %}
                 <a href="/login" class="block py-2 px-4 text-white hover:bg-white/10">Sign In</a>
                 {% endif %}
@@ -217,7 +225,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <p class="text-white/70 mb-1">Original File:</p>
-                            <p class="font-semibold">{{ filename }}</p>
+                            <p class="font-semibold truncate">{{ filename }}</p>
                         </div>
                         <div>
                             <p class="text-white/70 mb-1">File Size:</p>
@@ -353,7 +361,7 @@
                 <!-- Back to Dashboard -->
                 <div class="mt-8 text-center" data-aos="fade-up" data-aos-delay="500">
                     <div class="flex justify-center items-center space-x-4">
-                        <a href="/v1/dashboard/{{ user_id }}" class="text-primary-400 hover:text-primary-300 transition-colors inline-flex items-center gap-1">
+                        <a href="/user_dashboard" class="text-primary-400 hover:text-primary-300 transition-colors inline-flex items-center gap-1">
                             <i class="fas fa-arrow-left text-xs"></i>
                             <span>Back to Dashboard</span>
                         </a>
