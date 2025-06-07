@@ -1,32 +1,351 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/css/error.css">
-    <link rel="icon" href="/static/image/error.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <title>Error</title>
+    <title>Error - SubTranscribe</title>
+    
+    <!-- Modern libraries -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js for dropdown functionality -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Ensure Tabler Icons load correctly -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@1.119.0/iconfont/tabler-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <!-- Favicon and App Icons -->
+    <link rel="shortcut icon" href="/static/image/error.png">
+    
+    <!-- Import modern fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    
+    <!-- Common styles -->
+    <link rel="stylesheet" href="/static/css/common.css">
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#172554',
+                        },
+                        secondary: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                            950: '#2e1065',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    }
+                },
+            }
+        }
+    </script>
 </head>
-<body>
-    <div class="error">
-        <div>
-            <img src="/static/image/error-page.png" alt="...">
-        </div>
-        <div class="info">
-            <h1>Something's wrong here</h1>
-            <p>Please Select video or audio file.</p>
-            <div class="toogle">
-                <div>
-                    <a href="https://api.whatsapp.com/send?phone=+201069854790&text=Error"><button>Help</button></a>
+<body class="min-h-screen m-0 p-0 bg-[#020617] text-white flex items-center justify-center">
+    <!-- Interactive Particles Background -->
+    <div id="particles-background" class="particles-container"></div>
+    
+    <!-- Background Shapes -->
+    <div class="shape floating" style="width:40vw; height:40vw; max-width:600px; max-height:600px; top:-10%; right:-10%;"></div>
+    <div class="shape floating" style="width:30vw; height:30vw; max-width:400px; max-height:400px; bottom:-10%; left:-10%; animation-delay: 2s;"></div>
+    <div class="shape floating" style="width:25vw; height:25vw; max-width:350px; max-height:350px; top:40%; left:10%; animation-delay: 1s;"></div>
+
+    <!-- Error Container -->
+    <div class="container mx-auto px-4 py-8 relative z-10">
+        <div class="max-w-4xl mx-auto glass-card overflow-hidden rounded-2xl shadow-2xl">
+            <div class="flex flex-col md:flex-row">
+                <!-- Left Side - Error Illustration -->
+                <div class="md:w-1/2 p-8 flex items-center justify-center">
+                    <div class="w-full max-w-sm">
+                        <img src="/static/image/error-page.png" alt="Error" class="w-full h-auto animate-float">
+                    </div>
                 </div>
-                <div class="social">
-                    <a class="insta" href="http://instagram.com/adel_mahmoud10/"><i class="fa-brands fa-instagram"></i></a>
-                    <a class="x" href="https://twitter.com/Adel_MAhmoud100?s=09"><i class="fa-brands fa-x-twitter"></i></a>
-                    <a class="face" href="https://www.facebook.com/profile.php?id=100013266852973"><i class="fa-brands fa-facebook"></i></a>
+                
+                <!-- Right Side - Error Details -->
+                <div class="md:w-1/2 p-8 md:p-12 bg-gradient-to-br from-purple-900/50 to-blue-900/50">
+                    <div class="max-w-md">
+                        <h1 class="text-3xl font-bold mb-4 text-white">
+                            <span class="gradient-text">Oops!</span> Something went wrong
+                        </h1>
+                        
+                        {% if error %}
+                            <!-- Handle different error types -->
+                            {% if 'empty' in error|lower or 'transcript text is empty' in error|lower %}
+                                <div class="mb-6">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mr-3">
+                                            <i class="fas fa-exclamation-circle text-red-400"></i>
+                                        </div>
+                                        <h2 class="text-xl font-semibold">Empty Transcript Error</h2>
+                                    </div>
+                                    <p class="text-white/70 mb-4">The transcription service couldn't detect any speech in your audio/video file.</p>
+                                    
+                                    <div class="space-y-3 mt-6">
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Make sure your file contains clear, audible speech</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Check that the audio quality is good enough for transcription</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Try uploading a different file format (.mp3, .wav recommended)</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Ensure the file isn't corrupted or too short</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                            {% elif 'processing' in error|lower %}
+                                <div class="mb-6">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center mr-3">
+                                            <i class="fas fa-clock text-yellow-400"></i>
+                                        </div>
+                                        <h2 class="text-xl font-semibold">Processing In Progress</h2>
+                                    </div>
+                                    <p class="text-white/70 mb-4">The transcription service is still working on your file.</p>
+                                    
+                                    <div class="space-y-3 mt-6">
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Please wait a few minutes before trying again</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Larger files may take longer to process</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">You can check your dashboard for status updates</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                            {% elif 'file' in error|lower and ('not found' in error|lower or 'missing' in error|lower) %}
+                                <div class="mb-6">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center mr-3">
+                                            <i class="fas fa-file-circle-xmark text-orange-400"></i>
+                                        </div>
+                                        <h2 class="text-xl font-semibold">File Not Found</h2>
+                                    </div>
+                                    <p class="text-white/70 mb-4">The file you're trying to access may have been deleted or moved.</p>
+                                    
+                                    <div class="space-y-3 mt-6">
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Check that you're using the correct link</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Try uploading your file again</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Check your dashboard for available files</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                            {% elif 'format' in error|lower or 'extension' in error|lower %}
+                                <div class="mb-6">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mr-3">
+                                            <i class="fas fa-file-circle-exclamation text-purple-400"></i>
+                                        </div>
+                                        <h2 class="text-xl font-semibold">Unsupported File Format</h2>
+                                    </div>
+                                    <p class="text-white/70 mb-4">The file you uploaded is not in a format we can process.</p>
+                                    
+                                    <div class="space-y-3 mt-6">
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Use supported audio formats: .mp3, .wav, .m4a</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Use supported video formats: .mp4, .mov, .mkv</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Convert your file to a supported format and try again</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                            {% else %}
+                                <div class="mb-6">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center mr-3">
+                                            <i class="fas fa-triangle-exclamation text-red-400"></i>
+                                        </div>
+                                        <h2 class="text-xl font-semibold">Error Details</h2>
+                                    </div>
+                                    <p class="text-white/70 mb-4">{{ error }}</p>
+                                    
+                                    <div class="space-y-3 mt-6">
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Try refreshing the page</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Check your internet connection</p>
+                                        </div>
+                                        <div class="flex items-start">
+                                            <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                                <i class="fas fa-check text-blue-400 text-xs"></i>
+                                            </div>
+                                            <p class="text-white/80">Try again later or contact with support</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        
+                        {% else %}
+                            <div class="mb-6">
+                                <div class="flex items-center mb-4">
+                                    <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mr-3">
+                                        <i class="fas fa-file-upload text-blue-400"></i>
+                                    </div>
+                                    <h2 class="text-xl font-semibold">File Selection Required</h2>
+                                </div>
+                                <p class="text-white/70 mb-4">We need a valid media file to generate subtitles.</p>
+                                
+                                <div class="space-y-3 mt-6">
+                                    <div class="flex items-start">
+                                        <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                            <i class="fas fa-check text-blue-400 text-xs"></i>
+                                        </div>
+                                        <p class="text-white/80">Select an audio or video file to upload</p>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                            <i class="fas fa-check text-blue-400 text-xs"></i>
+                                        </div>
+                                        <p class="text-white/80">Make sure the file isn't empty or corrupted</p>
+                                    </div>
+                                    <div class="flex items-start">
+                                        <div class="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center mr-3 mt-0.5">
+                                            <i class="fas fa-check text-blue-400 text-xs"></i>
+                                        </div>
+                                        <p class="text-white/80">Use supported formats like .mp3, .wav, .mp4, or .mov</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap gap-4 mt-8">
+                            <a href="javascript:history.back()" class="py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all btn-glow inline-flex items-center gap-2">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Go Back</span>
+                            </a>
+                            <a href="/v1/dashboard/{{ user_id }}" class="py-3 px-6 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all inline-flex items-center gap-2">
+                                <i class="fas fa-arrow-left"></i>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="https://api.whatsapp.com/send?phone=+201069854790&text=Error" class="py-3 px-6 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all inline-flex items-center gap-2">
+                                <i class="fab fa-whatsapp"></i>
+                                <span>Get Help</span>
+                            </a>
+                        </div>
+                        
+                        <!-- Social Links -->
+                        <div class="mt-8 pt-6 border-t border-white/10">
+                            <div class="flex items-center gap-4">
+                                <span class="text-white/50 text-sm">Follow us:</span>
+                                <a href="http://instagram.com/adel_mahmoud10/" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
+                                    <i class="fab fa-instagram text-white/80"></i>
+                                </a>
+                                <a href="https://twitter.com/Adel_MAhmoud100?s=09" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
+                                    <i class="fab fa-x-twitter text-white/80"></i>
+                                </a>
+                                <a href="https://www.facebook.com/profile.php?id=100013266852973" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
+                                    <i class="fab fa-facebook text-white/80"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script src="/static/js/common.js"></script>
 </body>
 </html>

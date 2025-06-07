@@ -329,7 +329,7 @@
     <!-- Footer -->
     <footer class="bg-gray-900 py-8">
         <div class="container mx-auto px-4 text-center">
-            <p class="text-gray-400 mb-4">SubTranscribe &copy; 2024 All Rights Reserved. Designed by <span class="font-bold text-gray-300">ADEL MAHMOUD</span></p>
+            © <span id="current-year">2024</span> SubTranscribe. All rights reserved.
             <div class="flex justify-center space-x-4">
                 <a href="mailto:adelam578568@gmail.com" class="text-gray-500 hover:text-white transition-colors"><i class="fas fa-envelope text-xl"></i></a>
                 <a href="http://instagram.com/adel_mahmoud10/" class="text-gray-500 hover:text-pink-500 transition-colors"><i class="fab fa-instagram text-xl"></i></a>
@@ -344,6 +344,12 @@
         </div>
     </footer>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current year in footer
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+        });
+    </script>
     <script>
         // Mobile menu toggle
         document.getElementById('mobile-menu-button').addEventListener('click', function() {

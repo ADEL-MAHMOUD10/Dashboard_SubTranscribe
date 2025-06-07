@@ -250,6 +250,41 @@
                                         </button>
                                     </div>
                                 </div>
+                                
+                                <!-- Password Strength Indicator -->
+                                <div class="mt-2 mb-4">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-xs text-white/70">Password Strength</span>
+                                        <span id="passwordStrengthText" class="text-xs text-white/70">None</span>
+                                    </div>
+                                    <div class="w-full bg-gray-700/50 rounded-full h-2">
+                                        <div id="passwordStrengthBar" class="h-2 rounded-full bg-red-500/50" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Password Requirements -->
+                                <div class="text-xs text-white/70 space-y-1 mb-4">
+                                    <div id="req-length" class="flex items-center">
+                                        <i class="fas fa-times-circle mr-2 text-red-400"></i>
+                                        <span>At least 8 characters long</span>
+                                    </div>
+                                    <div id="req-uppercase" class="flex items-center">
+                                        <i class="fas fa-times-circle mr-2 text-red-400"></i>
+                                        <span>Contains uppercase letter</span>
+                                    </div>
+                                    <div id="req-lowercase" class="flex items-center">
+                                        <i class="fas fa-times-circle mr-2 text-red-400"></i>
+                                        <span>Contains lowercase letter</span>
+                                    </div>
+                                    <div id="req-number" class="flex items-center">
+                                        <i class="fas fa-times-circle mr-2 text-red-400"></i>
+                                        <span>Contains number</span>
+                                    </div>
+                                    <div id="req-special" class="flex items-center">
+                                        <i class="fas fa-times-circle mr-2 text-red-400"></i>
+                                        <span>Contains special character</span>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- Confirm Password Field -->
@@ -357,6 +392,98 @@
                     ? '<i class="fas fa-eye"></i>' 
                     : '<i class="fas fa-eye-slash"></i>';
             });
+            
+            // Password strength checker
+            const passwordStrengthBar = document.getElementById('passwordStrengthBar');
+            const passwordStrengthText = document.getElementById('passwordStrengthText');
+            
+            // Password requirement elements
+            const reqLength = document.getElementById('req-length');
+            const reqUppercase = document.getElementById('req-uppercase');
+            const reqLowercase = document.getElementById('req-lowercase');
+            const reqNumber = document.getElementById('req-number');
+            const reqSpecial = document.getElementById('req-special');
+            
+            // Check password strength on input
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                let strength = 0;
+                let requirementsMet = 0;
+                
+                // Check requirements
+                const hasLength = password.length >= 8;
+                const hasUppercase = /[A-Z]/.test(password);
+                const hasLowercase = /[a-z]/.test(password);
+                const hasNumber = /[0-9]/.test(password);
+                const hasSpecial = /[^A-Za-z0-9]/.test(password);
+                
+                // Update requirement indicators
+                updateRequirement(reqLength, hasLength);
+                updateRequirement(reqUppercase, hasUppercase);
+                updateRequirement(reqLowercase, hasLowercase);
+                updateRequirement(reqNumber, hasNumber);
+                updateRequirement(reqSpecial, hasSpecial);
+                
+                // Calculate strength
+                if (hasLength) { strength += 20; requirementsMet++; }
+                if (hasUppercase) { strength += 20; requirementsMet++; }
+                if (hasLowercase) { strength += 20; requirementsMet++; }
+                if (hasNumber) { strength += 20; requirementsMet++; }
+                if (hasSpecial) { strength += 20; requirementsMet++; }
+                
+                // Update strength bar
+                passwordStrengthBar.style.width = strength + '%';
+                
+                // Update color based on strength
+                if (strength < 40) {
+                    passwordStrengthBar.className = 'h-2 rounded-full bg-red-500';
+                    passwordStrengthText.textContent = 'Weak';
+                    passwordStrengthText.className = 'text-xs text-red-400';
+                } else if (strength < 80) {
+                    passwordStrengthBar.className = 'h-2 rounded-full bg-orange-500';
+                    passwordStrengthText.textContent = 'Medium';
+                    passwordStrengthText.className = 'text-xs text-orange-400';
+                } else {
+                    passwordStrengthBar.className = 'h-2 rounded-full bg-green-500';
+                    passwordStrengthText.textContent = 'Strong';
+                    passwordStrengthText.className = 'text-xs text-green-400';
+                }
+                
+                // Check if passwords match
+                if (confirmPasswordInput.value) {
+                    checkPasswordsMatch();
+                }
+            });
+            
+            // Check if passwords match
+            confirmPasswordInput.addEventListener('input', checkPasswordsMatch);
+            
+            function checkPasswordsMatch() {
+                const submitButton = document.querySelector('button[type="submit"]');
+                
+                if (passwordInput.value && confirmPasswordInput.value) {
+                    if (passwordInput.value === confirmPasswordInput.value) {
+                        confirmPasswordInput.classList.remove('border-red-500');
+                        confirmPasswordInput.classList.add('border-green-500');
+                        submitButton.disabled = false;
+                    } else {
+                        confirmPasswordInput.classList.remove('border-green-500');
+                        confirmPasswordInput.classList.add('border-red-500');
+                        submitButton.disabled = true;
+                    }
+                }
+            }
+            
+            function updateRequirement(element, isMet) {
+                if (isMet) {
+                    element.querySelector('i').className = 'fas fa-check-circle mr-2 text-green-400';
+                } else {
+                    element.querySelector('i').className = 'fas fa-times-circle mr-2 text-red-400';
+                }
+            }
+            
+            // Disable submit button initially
+            document.querySelector('button[type="submit"]').disabled = true;
         });
     </script>
 </body>

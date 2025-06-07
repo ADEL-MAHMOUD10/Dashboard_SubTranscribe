@@ -341,13 +341,13 @@ span:hover {
 /* Social links in footer */
 .social-links {
     display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
+    justify-content: center;
+    gap: 1.5rem;
 }
 
 .social-link {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.7);

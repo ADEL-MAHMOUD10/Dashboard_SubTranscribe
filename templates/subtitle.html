@@ -221,7 +221,7 @@
                         </div>
                         <div>
                             <p class="text-white/70 mb-1">File Size:</p>
-                            <p class="font-semibold">{{ file_size }} MB</p>
+                            <p class="font-semibold">{{ file_size }}</p>
                         </div>
                         <div>
                             <p class="text-white/70 mb-1">File User:</p>
@@ -353,7 +353,7 @@
                 <!-- Back to Dashboard -->
                 <div class="mt-8 text-center" data-aos="fade-up" data-aos-delay="500">
                     <div class="flex justify-center items-center space-x-4">
-                        <a href="/" class="text-primary-400 hover:text-primary-300 transition-colors inline-flex items-center gap-1">
+                        <a href="/v1/dashboard/{{ user_id }}" class="text-primary-400 hover:text-primary-300 transition-colors inline-flex items-center gap-1">
                             <i class="fas fa-arrow-left text-xs"></i>
                             <span>Back to Dashboard</span>
                         </a>
@@ -370,7 +370,7 @@
     <!-- Footer -->
     <footer class="py-8 mt-16 relative z-0 glass">
         <div class="container mx-auto px-4 text-center">
-            <p class="text-white/50">&copy; 2023 SubTranscribe. All rights reserved.</p>
+            © <span id="current-year">2024</span> SubTranscribe. All rights reserved.
         </div>
     </footer>
 
@@ -422,6 +422,9 @@
             const formatCards = document.querySelectorAll('.format-card');
             const formatRadios = document.querySelectorAll('input[name="format"]');
             
+            // Set current year in footer
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+
             formatCards.forEach(card => {
                 card.addEventListener('click', function() {
                     // Remove selected class from all cards

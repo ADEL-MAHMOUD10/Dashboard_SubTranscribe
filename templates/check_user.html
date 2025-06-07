@@ -102,8 +102,48 @@
             },
         }
     </script>
+    <!-- Custom styles for this page -->
+    <style>
+        @media (min-height: 768px) {
+            .full-height-card {
+                min-height: 600px;
+                height: 100%;
+            }
+            
+            .full-height-container {
+                min-height: 100vh;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .left-side-panel {
+                height: 100%;
+                min-height: 600px;
+            }
+        }
+        
+        /* Fix for all screen sizes */
+        .flex-1-auto {
+            flex: 1 1 auto;
+        }
+        
+        /* Additional height fixes */
+        html, body {
+            height: 100%;
+        }
+        
+        body > .container {
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            height: 100%;
+        }
+    </style>
 </head>
-<body class="min-h-screen m-0 p-0 flex items-center justify-center">
+<body class="min-h-screen m-0 p-0 flex items-center justify-center h-full">
     <!-- Interactive Particles Background -->
     <div id="particles-background" class="particles-container"></div>
     
@@ -113,11 +153,11 @@
     <div class="shape floating" style="width:25vw; height:25vw; max-width:350px; max-height:350px; top:40%; left:10%; animation-delay: 1s;"></div>
 
     <!-- Find Account Container -->
-    <div class="container mx-auto px-4 py-8 relative z-10">
-        <div class="max-w-5xl mx-auto glass-card overflow-hidden rounded-2xl shadow-2xl">
-            <div class="flex flex-col md:flex-row">
+    <div class="container mx-auto px-4 py-8 relative z-10 full-height-container h-full">
+        <div class="max-w-5xl mx-auto glass-card overflow-hidden rounded-2xl shadow-2xl full-height-card h-full">
+            <div class="flex flex-col md:flex-row h-full">
                 <!-- Left Side - Animated Illustration -->
-                <div class="md:w-1/2 relative overflow-hidden hidden md:block bg-gradient-to-br from-purple-900 to-blue-900">
+                <div class="md:w-1/2 relative overflow-hidden hidden md:block bg-gradient-to-br from-purple-900 to-blue-900 min-h-full left-side-panel flex-1-auto">
                     <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 z-10"></div>
                     
                     <!-- Animated SVG Elements -->
@@ -175,7 +215,7 @@
                 </div>
                 
                 <!-- Right Side - Find Account Form -->
-                <div class="md:w-1/2 p-8 md:p-12">
+                <div class="md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
                     <div class="max-w-md mx-auto">
                         <!-- Logo (mobile only) -->
                         <div class="text-center mb-8 md:hidden">
@@ -206,30 +246,32 @@
                                     >
                                 </div>
                             </div>
-                            
-                            <!-- Flash Messages -->
-                            {% with messages = get_flashed_messages(with_categories=true) %}
-                                {% if messages %}
-                                    {% for category, message in messages %}
-                                        {% if category == 'danger' %}
-                                            <div class="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg">
-                                                <p>{{ message }}</p>
-                                            </div>
-                                        {% elif category == 'success' %}
-                                            <div class="bg-green-500/20 border border-green-500/50 text-green-200 px-4 py-3 rounded-lg">
-                                                <p>{{ message }}</p>
-                                            </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                            {% endwith %}
-                            
+                            <div class="">
+                                {% with messages = get_flashed_messages(with_categories=true) %}
+                                    {% if messages %}
+                                        {% for category, message in messages %}
+                                            {% if category == 'danger' %}
+                                                <div class="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg mb-2">
+                                                    <p>{{ message }}</p>
+                                                </div>
+                                            {% elif category == 'success' %}
+                                                <div class="bg-green-500/20 border border-green-500/50 text-green-200 px-4 py-3 rounded-lg mb-2">
+                                                    <p>{{ message }}</p>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+
                             <!-- Submit Button -->
                             <button 
                                 type="submit" 
                                 class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg btn-glow mt-4"
                             >
-                                Send Reset Link
+
+                                <span>Check User</span>
+                                <i class="fas fa-arrow-right animate-arrow" style="margin-left: 5px; text-align: center; vertical-align: middle;"></i>
                             </button>
                         </form>
                         

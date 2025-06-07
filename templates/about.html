@@ -522,7 +522,7 @@
             </div>
             
             <div class="border-t border-white/10 mt-8 pt-8 text-center">
-                <p class="text-white/50">&copy; 2023 SubTranscribe. All rights reserved.</p>
+                © <span id="current-year">2024</span> SubTranscribe. All rights reserved.
             </div>
         </div>
     </footer>
@@ -538,6 +538,12 @@
             mobileMenuButton.addEventListener('click', function() {
                 mobileMenu.classList.toggle('hidden');
             });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current year in footer
+            document.getElementById('current-year').textContent = new Date().getFullYear();
         });
     </script>
 </body>

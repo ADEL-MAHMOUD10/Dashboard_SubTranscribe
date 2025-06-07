@@ -220,7 +220,7 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                    <p class="mb-0">SubTranscribe &copy; 2024 All Rights Reserved</p>
+                    © <span id="current-year">2024</span> SubTranscribe. All rights reserved.
                 </div>
                 <div class="col-md-6">
                     <div class="social-links text-center text-md-end">
@@ -393,6 +393,12 @@
                 }, 3000);
             });
         }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current year in footer
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+        });
     </script>
 </body>
 </html>

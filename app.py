@@ -69,7 +69,7 @@ app = Flask(__name__)
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["200 per hour"],
+    default_limits=["500 per hour"],
     storage_uri= REDIS_URI
 )
 
@@ -303,16 +303,10 @@ def upload_or_link():
         return redirect(url_for('login'))
 
     user = users_collection.find_one({'user_id': user_id})
-
     upload_id = session.get('upload_id')
     if request.method == 'POST':
         link = request.form.get('link')  # Get the link from the form
-        if link:
-            # Ensure we have an upload ID for progress tracking
-            if not upload_id:
-                upload_id = str(uuid.uuid4())
-                session['upload_id'] = upload_id
-            
+        if link: 
             transcript_id = transcribe_from_link(upload_id, link)  # Transcribe from the provided link
             if isinstance(transcript_id, str):  # If it's a valid transcript ID (not an error template)
                 return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
@@ -320,10 +314,6 @@ def upload_or_link():
         
         file = request.files['file']  # Get the uploaded file
         if file and allowed_file(file.filename):
-            # Ensure we have an upload ID for progress tracking
-            if not upload_id:
-                upload_id = str(uuid.uuid4())
-                session['upload_id'] = upload_id
                 
             audio_stream = file
             file_size = request.content_length  # Get file size in bytes
@@ -777,7 +767,9 @@ def transcribe_from_link(upload_id, link):
 @app.route('/v1/<user_id>')
 def main_user(user_id):
     if 'user_id' in session:
-        return render_template('index.html')
+        upload_id = str(uuid.uuid4())
+        session['upload_id'] = upload_id
+        return render_template('index.html',upload_id=upload_id)
     return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -787,7 +779,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         Email = request.form['email']
-        confirm_password = request.form['confirm_password']
+        confirm_password = request.form['c_password']
         user_id = str(uuid.uuid4())
 
         if password != confirm_password:
@@ -797,21 +789,15 @@ def register():
         existing_user = users_collection.find_one({'username': username})
         existing_email = users_collection.find_one({'Email': Email})
         
-        if existing_user and existing_email:
-            flash('Username and Email already exists', 'danger')
-            return redirect(url_for('login'))
+        if existing_user or existing_email:
+            flash('User already exists', 'danger')
+            return redirect(url_for('register'))
         
-        if existing_user:
-            flash('Username already exists', 'danger')
-            return redirect(url_for('register'))
-        if existing_email:
-            flash('Email already exists', 'danger')
-            return redirect(url_for('register'))
         hashed_password = generate_password_hash(password)
         users_collection.insert_one({'Email': Email,'username': username, 'password': hashed_password ,"user_id":user_id})
         session['user_id'] = user_id
         session['username'] = username  # Store username in session
-        flash('Successfully log in! You can now download all your subtitles files', 'success')
+        flash('Successfully registered! Welcome to Subtranscribe', 'success')
         return redirect(url_for('login'))
 
     return render_template('register.html')
@@ -841,14 +827,12 @@ def cookies():
     return render_template('cookies.html')
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("30 per hour")
+@limiter.limit("100 per hour")
 def login():
     session.permanent = True
     if 'user_id' in session:
         user = users_collection.find_one({'user_id': session['user_id']})
         if user:
-            upload_id = str(uuid.uuid4())
-            session['upload_id'] = upload_id
             return redirect(url_for('main_user', user_id=session['user_id']))
         else:
             session.clear()
@@ -881,7 +865,7 @@ def logout():
 
 
 @app.route('/check_user', methods=['GET', 'POST'])
-@limiter.limit("5 per hour")
+@limiter.limit("50 per hour")
 def check_user():
     if request.method == 'POST':
         Email = request.form['email']
@@ -891,7 +875,6 @@ def check_user():
             otp_collection.insert_one({'User': Email, 'OTP': otp,'created_at': datetime.now()})
             
             send_email(Email, otp)
-            
             flash(f'OTP has been sent to {Email}', 'success')
             return render_template('reset.html', email=Email)
         flash('User not found.', 'danger')
@@ -899,26 +882,51 @@ def check_user():
     return render_template('check_user.html')
         
 @app.route('/reset_password', methods=['POST'])
-@limiter.limit("5 per hour")
+@limiter.limit("50 per hour")
 def reset_password():
     email = request.form['email']
     user_otp = request.form['OTP']
-    new_password = request.form['c_password']
+    password = request.form['password']
+    confirm_password = request.form['c_password']
     
-    saved_otp = otp_collection.find_one({'User': email, 'OTP': int(user_otp)})
-    if saved_otp:
-        created_at = saved_otp['created_at']
-        if datetime.now() - created_at > timedelta(seconds=60):
+    # Check if passwords match
+    if password != confirm_password:
+        flash('Passwords do not match.', 'danger')
+        return render_template('reset.html', email=email)
+    
+    # Find OTP in database
+    try:
+        saved_otp = otp_collection.find_one({'User': email, 'OTP': int(user_otp)})
+        
+        # Check if OTP exists
+        if saved_otp:
+            # Check if OTP has expired (60 seconds)
+            created_at = saved_otp['created_at']
+            if datetime.now() - created_at > timedelta(seconds=60):
+                otp_collection.delete_one({'User': email, 'OTP': int(user_otp)})
+                flash('OTP has expired.', 'danger')
+                return render_template('check_user.html')
+            
+            # Update password
+            hashed_password = generate_password_hash(password)
+            result = users_collection.update_one({'Email': email}, {'$set': {'password': hashed_password}})
+            
+            # Remove used OTP
             otp_collection.delete_one({'User': email, 'OTP': int(user_otp)})
-            flash('OTP has expired.', 'danger')
-            return render_template('check_user.html')
-        hashed_password = generate_password_hash(new_password)
-        users_collection.update_one({'Email': email}, {'$set': {'password': hashed_password}})
-        flash('Password updated successfully.', 'success')
-        return redirect(url_for('login'))
-    else:
-        flash('Invalid OTP.', 'danger')
-        return redirect(url_for('check_user'))
+            
+            if result.modified_count > 0:
+                flash('Password updated successfully.', 'success')
+                return redirect(url_for('login'))
+            else:
+                flash('User not found.', 'danger')
+                return render_template('check_user.html')
+        else:
+            flash('Invalid OTP.', 'danger')
+            return redirect(url_for('check_user'))
+            
+    except Exception as e:
+        flash(f'An error occurred: {str(e)}', 'danger')
+        return render_template('reset.html', email=email)
     
 def send_email(to_address, otp):
     smtp_server = 'smtp.gmail.com'
@@ -1114,13 +1122,13 @@ def share_subtitle(transcript_id):
     get_filename = files_collection.find_one({'transcript_id': transcript_id})
     if get_filename:
         file_name = get_filename.get('file_name')
-        file_size = get_filename.get('file_size')/1000000  # convert to MB
+        file_size = f"{(get_filename.get('file_size')/1000000):.2f} MB"  # convert to MB
         upload_time = get_filename.get('upload_time')
         username = get_filename.get('username')
     return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=username,user_id=user_id) 
 
 @app.route('/v1/<user_id>/download/<transcript_id>', methods=['GET', 'POST'])
-def download_subtitle(user_id,transcript_id):
+def download_subtitle(user_id, transcript_id):
     """Handle subtitle download based on the transcript ID."""
     # Initialize variables with default values
     file_name = None
@@ -1128,42 +1136,103 @@ def download_subtitle(user_id,transcript_id):
     upload_time = None
     username = None
     user_id = session.get('user_id')
+    
     if request.method == 'POST':
-        file_format = request.form['format']  # Get the requested file format
-        headers = {"authorization": TOKEN_THREE}
-        url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}/{file_format}"
+        try:
+            file_format = request.form['format']  # Get the requested file format
+            headers = {"authorization": TOKEN_THREE}
+            url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}/{file_format}"
 
-        response = requests.get(url, headers=headers)  # Request the subtitle file
+            # Add debug logging
+            print(f"Requesting subtitle from: {url}")
+            
+            response = requests.get(url, headers=headers)  # Request the subtitle file
+            
+            # Debug response
+            print(f"Response status: {response.status_code}")
+            if response.status_code != 200:
+                print(f"Error response: {response.text}")
 
-        if response.status_code == 200:
-            timesub = datetime.now().strftime("%Y%m%d_%H%M%S")  # Generate a timestamp for the subtitle file
-            subtitle_file = f"subtitle_{timesub}.{file_format}"  # Create the subtitle filename
-            with open(subtitle_file, 'w') as f:
-                f.write(response.text)  # Write the subtitle text to the file
-            subtitle_path = Create_subtitle_to_db(subtitle_file)
-            return redirect(url_for('serve_file', filename=subtitle_file))  # Redirect to serve the file
-        else:
-            return render_template("error.html")  # Render error page if request fails
+            if response.status_code == 200:
+                timesub = datetime.now().strftime("%Y%m%d_%H%M%S")  # Generate a timestamp for the subtitle file
+                subtitle_file = f"subtitle_{timesub}.{file_format}"  # Create the subtitle filename
+                
+                # Ensure directory exists
+                os.makedirs(os.path.dirname(os.path.join(os.getcwd(), subtitle_file)), exist_ok=True)
+                
+                # Write the file with proper encoding
+                with open(subtitle_file, 'w', encoding='utf-8') as f:
+                    f.write(response.text)  # Write the subtitle text to the file
+                
+                # Store in database
+                subtitle_path = Create_subtitle_to_db(subtitle_file)
+                
+                # Check if file was created successfully
+                if os.path.exists(os.path.join(os.getcwd(), subtitle_file)):
+                    return redirect(url_for('serve_file', filename=subtitle_file))  # Redirect to serve the file
+                else:
+                    print("File was not created successfully")
+                    return render_template("error.html", error="File creation failed")
+            elif response.status_code == 400:
+                # Check if transcript exists or is still processing
+                check_url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}"
+                check_response = requests.get(check_url, headers=headers)
+                
+                if check_response.status_code == 200:
+                    transcript_data = check_response.json()
+                    status = transcript_data.get('status')
+                    
+                    if status == 'processing':
+                        return render_template("error.html", error="Transcript is still processing. Please try again later.")
+                    elif status == 'error':
+                        return render_template("error.html", error="There was an error processing your transcript.")
+                    else:
+                        return render_template("error.html", error=f"Transcript status: {status}. Cannot download at this time.")
+                        
+                return render_template("error.html", error="Bad request. The transcript might not be ready yet.")
+            else:
+                print(f"Error response: {response.status_code}")
+                return render_template("error.html", error=f"Error {response.status_code}: Could not retrieve subtitle file.")
+        except Exception as e:
+            print(f"Exception during download: {str(e)}")
+            return render_template("error.html", error=f"An error occurred: {str(e)}")
     
     # Get file info for GET request
     get_filename = files_collection.find_one({'transcript_id': transcript_id})
     if get_filename:
         file_name = get_filename.get('file_name')
-        file_size = get_filename.get('file_size')/1000000 # convert to MB
+        file_size = f"{(get_filename.get('file_size')/1000000):.2f} MB" # convert to MB
         upload_time = get_filename.get('upload_time')
         username = get_filename.get('username')
     
-    return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=username,user_id=user_id)  # Render the download page with the updated template
+    return render_template('subtitle.html', transcript_id=transcript_id, filename=file_name, file_size=file_size, upload_time=upload_time, username=username, user_id=user_id)  # Render the download page with the updated template
 
 @app.route('/serve/<filename>')
 def serve_file(filename):
     """Serve the subtitle file for download."""
-    file_path = os.path.join(os.getcwd(), filename)  # Use a full path for the file
-
-    if os.path.exists(file_path):  # Check if the file exists
-        response = send_file(file_path, as_attachment=True)  # Send the file as an attachment
-
-    return response  # Return the file response
+    try:
+        file_path = os.path.join(os.getcwd(), filename)  # Use a full path for the file
+        
+        if os.path.exists(file_path):  # Check if the file exists
+            response = send_file(file_path, as_attachment=True)  # Send the file as an attachment
+            
+            # Clean up the file after sending (optional)
+            # Uncomment if you want to delete files after they're served
+            # @after_this_request
+            # def remove_file(response):
+            #     try:
+            #         os.remove(file_path)
+            #     except Exception as e:
+            #         print(f"Error removing file: {str(e)}")
+            #     return response
+                
+            return response  # Return the file response
+        else:
+            print(f"File not found: {file_path}")
+            return render_template("error.html", error="File not found on server.")
+    except Exception as e:
+        print(f"Error serving file: {str(e)}")
+        return render_template("error.html", error=f"Error serving file: {str(e)}")
 
 @app.route('/progress_stream/<upload_id>')
 @cross_origin(supports_credentials=True)  # Allow CORS for this route
@@ -1193,7 +1262,7 @@ def progress_stream(upload_id):
                         if firebase_data:
                             current_progress = {
                                 "status": firebase_data.get("status", 0),
-                                "message": firebase_data.get("message", "Preparing..."),
+                                "message": firebase_data.get("message", "Ready to transcribe..."),
                                 "timestamp": firebase_data.get("timestamp", int(time.time()))
                             }
                     except Exception as e:
@@ -1277,4 +1346,4 @@ def robots():
 
 # Main entry point
 if __name__ == "__main__":
-    app.run(host="0.0.0.0",port=5000,debug=False,threaded=True)
+    app.run(host="0.0.0.0",port=5000,debug=True,threaded=True)

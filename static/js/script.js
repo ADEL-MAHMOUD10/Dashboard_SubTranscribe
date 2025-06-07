@@ -184,7 +184,7 @@ function fallbackToPolling(uploadId) {
     let consecutiveErrors = 0;
     let lastPercentage = 0;
     let noChangeCount = 0;
-    let pollInterval = 1000; // Start with 1 second polling
+    let pollInterval = 4000; // Start with 4 second polling
     
     // Show progress container immediately when starting polling
     showProgressContainer();
@@ -229,12 +229,12 @@ function fallbackToPolling(uploadId) {
                     // Exponential backoff with max 5 seconds
                     // Increase the polling interval using exponential backoff,
                     // but cap it at a maximum of 5 seconds to avoid excessive delays.
-                    pollInterval = Math.min(pollInterval * 1.5, 5000);
+                    pollInterval = Math.min(pollInterval * 1.5, 10000);
                 }
             } else {
                 // Reset counter and interval when progress changes
                 noChangeCount = 0;
-                pollInterval = 1000;
+                pollInterval = 4000;
                 lastPercentage = currentPercentage;
             }
             
@@ -809,7 +809,7 @@ function initFileUpload() {
                         if (!pollingActive) {
                             fallbackToPolling(uploadId);
                         }
-                    }, 1000);
+                    }, 10000);
                 }
                 
                 // Submit the form
@@ -854,7 +854,7 @@ function initFileUpload() {
                         if (!pollingActive) {
                             fallbackToPolling(uploadId);
                         }
-                    }, 1000);
+                    }, 10000);
                 }
                 
                 // Submit the form
@@ -907,7 +907,7 @@ function initFileUpload() {
         const progressError = document.querySelector('.progress-error');
         
         if (progressBar) progressBar.style.width = '0%';
-        if (progressMessage) progressMessage.textContent = 'Preparing...';
+        // if (progressMessage) progressMessage.textContent = 'Preparing...';
         if (progressContainer) progressContainer.classList.remove('hidden');
         if (progressError) progressError.classList.add('hidden');
     }
