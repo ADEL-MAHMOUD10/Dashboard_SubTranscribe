@@ -16,9 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize all app features
     initApp();
-    
-    // Start progress tracking for file uploads
-    initProgressTracking();
 });
 
 /**
@@ -31,396 +28,6 @@ function initApp() {
     initFileUpload();
     initSmoothScrolling();
     initScrollReveal();
-}
-
-/**
- * Progress Tracking System
- */
-let pollingActive = false;  // Define this globally
-let uploadProgressTimer = null;
-
-function initProgressTracking() {
-    try {
-        // Get upload ID from server
-        fetchUploadId().then(uploadId => {
-            if (!uploadId) {
-                console.warn('No upload ID available, progress tracking disabled');
-                return;
-            }
-
-            console.log("Setting up progress tracking for upload ID:", uploadId);
-
-            // Try Server-Sent Events first but don't show progress elements yet
-            setupEventSource(uploadId);
-            
-            // Set up a safety fallback in case SSE doesn't initialize properly
-            setTimeout(() => {
-                if (!pollingActive) {
-                    console.warn("SSE might not have started properly, enabling polling as backup");
-                    fallbackToPolling(uploadId);
-                }
-            }, 2000);
-        }).catch(error => {
-            console.error('Error fetching upload ID:', error);
-        });
-    } catch (error) {
-        console.error('Failed to initialize progress tracking:', error);
-    }
-}
-
-function setupEventSource(uploadId) {
-    if (!uploadId || uploadId === 'undefined' || uploadId === 'null') {
-        console.error('Invalid upload ID for SSE:', uploadId);
-        return;
-    }
-    
-    // Use Server-Sent Events for real-time updates
-    let eventSource;
-    let reconnectAttempts = 0;
-    const maxReconnects = 3;
-    let lastEventTime = Date.now();
-    let transcriptionStarted = false;
-    
-    async function createEventSource() {
-        try {
-            // Close any existing connection
-            if (eventSource) {
-                eventSource.close();
-            }
-            
-            // Force HTTPS in production, this helps with CORS
-            let baseUrl = window.location.protocol + '//' + window.location.host;
-            eventSource = await new EventSource(`${baseUrl}/progress_stream/${uploadId}`);
-            lastEventTime = Date.now();
-            
-            eventSource.onmessage = (event) => {
-                lastEventTime = Date.now();
-                reconnectAttempts = 0; // Reset reconnect counter on successful message
-                
-                try {
-                    const progress = JSON.parse(event.data);
-                    
-                    // Only show progress UI once we get real progress updates
-                    if (progress.status > 0 || 
-                        (progress.message && progress.message.toLowerCase().includes("upload"))) {
-                        transcriptionStarted = true;
-                        showProgressContainer(); // Ensure progress container is visible
-                    }
-                    
-                    if (transcriptionStarted) {
-                        updateProgressUI(progress);
-                    }
-                    
-                    console.log("SSE Update:", progress);
-                    
-                    // Close connection when complete but keep elements visible
-                    if (progress.status >= 100 && progress.message.includes("complete")) {
-                        console.log("Closing SSE connection - process complete");
-                        eventSource.close();
-                    }
-                } catch (e) {
-                    console.error("Error parsing SSE data:", e);
-                }
-            };
-            
-            eventSource.onerror = (e) => {
-                console.error('EventSource connection error', e);
-                
-                // Only try to reconnect a limited number of times
-                if (reconnectAttempts < maxReconnects) {
-                    reconnectAttempts++;
-                    console.log(`SSE reconnect attempt ${reconnectAttempts}/${maxReconnects}`);
-                    
-                    // Use exponential backoff for reconnection
-                    setTimeout(() => {
-                        createEventSource();
-                    }, Math.min(1000 * Math.pow(2, reconnectAttempts), 8000));
-                } else {
-                    eventSource.close();
-                    console.log("Maximum SSE reconnection attempts reached, falling back to polling");
-                    if (!pollingActive) {
-                        fallbackToPolling(uploadId);
-                    }
-                }
-            };
-        } catch (e) {
-            console.error('Failed to create EventSource:', e);
-            if (!pollingActive) {
-                fallbackToPolling(uploadId);
-            }
-            return;
-        }
-    }
-    
-    // Create initial EventSource connection
-    createEventSource();
-    
-    // Safety timeout - if no updates for 8 seconds during upload, fall back to polling
-    const checkInterval = setInterval(() => {
-        if (Date.now() - lastEventTime > 8000) {
-            console.warn("No SSE updates for 8 seconds, falling back to polling");
-            clearInterval(checkInterval);
-            
-            if (eventSource) {
-                eventSource.close();
-            }
-            
-            if (!pollingActive) {
-                fallbackToPolling(uploadId);
-            }
-        }
-    }, 8000); // Check every 8 seconds
-}
-
-function fallbackToPolling(uploadId) {
-    if (!uploadId || uploadId === 'undefined' || uploadId === 'null') {
-        console.error('Invalid upload ID for polling:', uploadId);
-        return;
-    }
-    
-    console.log("Activating fallback polling for upload ID:", uploadId);
-    pollingActive = true;
-    let transcriptionStarted = false;
-    let consecutiveErrors = 0;
-    let lastPercentage = 0;
-    let noChangeCount = 0;
-    let pollInterval = 4000; // Start with 4 second polling
-    
-    // Show progress container immediately when starting polling
-    showProgressContainer();
-    
-    // Clear any existing timer
-    if (uploadProgressTimer) {
-        clearInterval(uploadProgressTimer);
-    }
-    
-    // Function to perform the polling - this allows us to dynamically adjust the interval
-    const performPoll = async () => {
-        try {
-            // Force HTTPS in production, this helps with CORS
-            let baseUrl = window.location.protocol + '//' + window.location.host;
-            const response = await fetch(`${baseUrl}/progress/${uploadId}`, {
-                method: 'GET',
-                headers: { 
-                    'Accept': 'application/json',
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
-                },
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                throw new Error(`Progress fetch failed: ${response.status}`);
-            }
-
-            // Reset error counter on success
-            consecutiveErrors = 0;
-            
-            const progress = await response.json();
-            const currentPercentage = progress.status || 0;
-            
-            // Adjust polling frequency based on progress stage
-            if (currentPercentage === lastPercentage) {
-                noChangeCount++;
-                
-                // If no change for several polls, slow down polling
-                if (noChangeCount > 3) {
-                    // Exponential backoff with max 5 seconds
-                    // Increase the polling interval using exponential backoff,
-                    // but cap it at a maximum of 5 seconds to avoid excessive delays.
-                    pollInterval = Math.min(pollInterval * 1.5, 10000);
-                }
-            } else {
-                // Reset counter and interval when progress changes
-                noChangeCount = 0;
-                pollInterval = 4000;
-                lastPercentage = currentPercentage;
-            }
-            
-            // When progress is high, poll more frequently
-            if (currentPercentage >= 95) {
-                pollInterval = 800; // Faster polling at the end
-            }
-            
-            console.log("Poll Update:", progress, "Next poll in:", pollInterval + "ms");
-            
-            // Only show progress UI once we get real progress updates
-            if (progress.status > 0 || 
-                (progress.message && progress.message.toLowerCase().includes("upload"))) {
-                transcriptionStarted = true;
-            }
-            
-            if (transcriptionStarted) {
-                updateProgressUI(progress);
-            }
-            
-            // Clear interval when complete
-            if (progress.status >= 100 && progress.message.includes("complete")) {
-                clearTimeout(uploadProgressTimer);
-                pollingActive = false;
-            } else {
-                // Schedule next poll with dynamic interval
-                uploadProgressTimer = setTimeout(performPoll, pollInterval);
-            }
-        } catch (error) {
-            console.error('Error fetching progress:', error);
-            consecutiveErrors++;
-            
-            // If we get too many consecutive errors, show a message but keep trying
-            if (consecutiveErrors > 3) {
-                updateProgressMessage("Connection issue, retrying...", true);
-                // Increase poll interval on errors to avoid overwhelming server
-                pollInterval = Math.min(pollInterval * 1.5, 8000);
-            }
-            
-            // Schedule next poll even after error
-            uploadProgressTimer = setTimeout(performPoll, pollInterval);
-        }
-    };
-    
-    // Start polling immediately
-    performPoll();
-}
-
-// Make sure this function is available globally
-function showProgressContainer() {
-    const progressContainer = document.querySelector('.progress-container');
-    if (progressContainer) {
-        progressContainer.classList.remove('hidden');
-    }
-}
-
-/**
- * Fetch upload ID from server
- */
-async function fetchUploadId() {
-    try {
-        // Force HTTPS in production, this helps with CORS
-        let baseUrl = window.location.protocol + '//' + window.location.host;
-        const response = await fetch(`${baseUrl}/upload_id`, {
-            method: 'GET',
-            headers: { 
-                'Accept': 'text/plain',
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            },
-            credentials: 'include'
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to get upload ID: ${response.status}`);
-        }
-
-        const uploadId = await response.text();
-        return uploadId && uploadId !== 'undefined' && uploadId !== 'null' ? uploadId : null;
-    } catch (error) {
-        console.error('Error getting upload ID:', error);
-        return null;
-    }
-}
-
-/**
- * Update progress UI with latest status
- */
-function updateProgressUI(progressData) {
-    const progressBar = document.querySelector('.progress-bar');
-    const progressMessage = document.getElementById('progressMessage');
-    const uploadLoading = document.getElementById('upload-loading');
-    const linkLoading = document.getElementById('link-loading');
-    const progressContainer = document.querySelector('.progress-container');
-    
-    if (!progressBar || !progressMessage) return;
-    
-    // Make sure progress container is visible when we have real progress data
-    if (progressContainer && 
-        (progressData.status > 0 || (progressData.message && progressData.message.includes("Upload")))) {
-        progressContainer.classList.remove('hidden');
-    }
-    
-    // Keep both loading spinner and progress bar visible during transcription
-    if (progressData.message && 
-        (progressData.message.toLowerCase().includes("upload") || 
-         progressData.message.toLowerCase().includes("transcri") ||
-         progressData.message.toLowerCase().includes("extract") ||
-         progressData.message.toLowerCase().includes("transfer"))) {
-        
-        // Show the appropriate loading spinner based on which form was submitted
-        if (window.lastSubmittedForm === 'link') {
-            if (uploadLoading) uploadLoading.classList.add('hidden');
-            if (linkLoading) linkLoading.classList.remove('hidden');
-        } else {
-            if (linkLoading) linkLoading.classList.add('hidden');
-            if (uploadLoading) uploadLoading.classList.remove('hidden');
-        }
-    } else if (progressData.status >= 100) {
-        // Only hide spinners when complete
-        if (uploadLoading) uploadLoading.classList.add('hidden');
-        if (linkLoading) linkLoading.classList.add('hidden');
-    }
-    
-    // Check for error status (-1)
-    if (progressData.status === -1) {
-        // Connection problem but don't reset progress bar
-        updateProgressMessage(progressData.message || "Connection issue, retrying...", true);
-        return;
-    }
-    
-    // Explicitly ensure progress bar starts at 0 if status is low
-    if (progressData.status <= 5) {
-        progressBar.style.width = '0%';
-        progressBar.setAttribute('aria-valuenow', 0);
-    }
-    
-    // Get current progress from the bar
-    const currentWidth = parseFloat(progressBar.style.width || '0');
-    const newPercentage = typeof progressData.status === 'number' 
-        ? progressData.status 
-        : parseFloat(progressData.status) || 0;
-    
-    // Only update progress bar if new value is higher (prevents going backwards)
-    if (newPercentage >= currentWidth) {
-        // Add a subtle animation for smoother transitions
-        progressBar.style.transition = 'width 0.5s ease-in-out';
-        progressBar.style.width = `${newPercentage}%`;
-        progressBar.setAttribute('aria-valuenow', newPercentage);
-        
-        // Update message based on progress
-        if (newPercentage >= 100) {
-            updateProgressMessage('Transcription successfully completed');
-        } else {
-            updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
-        }
-    } else {
-        // If new value is lower, keep the message updated but don't reduce progress bar
-        updateProgressMessage(progressData.message || `Processing ${currentWidth.toFixed(1)}%`);
-    }
-}
-
-/**
- * Update progress message
- */
-function updateProgressMessage(message, isError = false) {
-    const progressMessage = document.getElementById('progressMessage');
-    const progressError = document.querySelector('.progress-error');
-    const errorMessage = progressError ? progressError.querySelector('.error-message') : null;
-    
-    if (!progressMessage) return;
-    
-    if (isError && progressError && errorMessage) {
-        // Show error message in the dedicated error container
-        progressMessage.style.display = 'none';
-        errorMessage.textContent = message;
-        progressError.classList.remove('hidden');
-    } else {
-        // Show normal progress message
-        progressMessage.style.display = '';
-        progressMessage.textContent = message;
-        if (progressError) {
-            progressError.classList.add('hidden');
-        }
-    }
 }
 
 /**
@@ -801,23 +408,13 @@ function initFileUpload() {
             // Get a fresh upload ID before submitting
             fetchUploadId().then(uploadId => {
                 if (uploadId) {
-                    // Set up progress tracking with the new ID
-                    setupEventSource(uploadId);
-                    
-                    // Safety net in case SSE doesn't work
-                    setTimeout(() => {
-                        if (!pollingActive) {
-                            fallbackToPolling(uploadId);
-                        }
-                    }, 10000);
+                    // Instead of submitting the form directly, use our custom upload function
+                    uploadFileWithProgress(uploadForm, uploadId);
                 }
-                
-                // Submit the form
-                this.submit();
             }).catch(error => {
                 console.error('Error fetching upload ID:', error);
-                // Submit anyway, even if we can't track progress
-                this.submit();
+                // Fallback to regular form submission if we can't get upload ID
+                uploadForm.submit();
             });
         });
     }
@@ -843,28 +440,79 @@ function initFileUpload() {
             const linkLoading = document.getElementById('link-loading');
             if (linkLoading) linkLoading.classList.remove('hidden');
             
-            // Get a fresh upload ID before submitting
-            fetchUploadId().then(uploadId => {
-                if (uploadId) {
-                    // Set up progress tracking with the new ID
-                    setupEventSource(uploadId);
-                    
-                    // Safety net in case SSE doesn't work
-                    setTimeout(() => {
-                        if (!pollingActive) {
-                            fallbackToPolling(uploadId);
-                        }
-                    }, 10000);
-                }
-                
-                // Submit the form
-                this.submit();
-            }).catch(error => {
-                console.error('Error fetching upload ID:', error);
-                // Submit anyway, even if we can't track progress
-                this.submit();
-            });
+            // Submit the form directly
+            this.submit();
         });
+    }
+    
+    /**
+     * Upload file with frontend progress tracking
+     * @param {HTMLFormElement} form - The form element containing the file input
+     * @param {string} uploadId - The upload ID for backend tracking (for transcription phase)
+     */
+    function uploadFileWithProgress(form, uploadId) {
+        const fileInput = form.querySelector('input[type="file"]');
+        if (!fileInput || !fileInput.files.length) return;
+        
+        const file = fileInput.files[0];
+        const formData = new FormData(form);
+        
+        // Show progress container
+        showProgressContainer();
+        
+        // Create and configure XMLHttpRequest
+        const xhr = new XMLHttpRequest();
+        
+        // Set up progress event for tracking real upload progress
+        xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable && event.total > 0) {
+                // Calculate actual upload percentage (0-100%)
+                const uploadPercentage = Math.round((event.loaded / event.total) * 100);
+                
+                // Log actual bytes for debugging
+                console.log(`Upload progress: ${uploadPercentage}% (${event.loaded}/${event.total} bytes)`);
+                
+                // Update UI with the actual percentage
+                updateProgressUI({
+                    status: uploadPercentage,
+                    message: `Uploading: ${uploadPercentage}% complete`
+                });
+            }
+        });
+        
+        // Handle state changes
+        xhr.addEventListener('readystatechange', () => {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    console.log('Upload complete, server processing');
+                    
+                    // Handle the response (redirect)
+                    if (xhr.responseURL) {
+                        window.location.href = xhr.responseURL;
+                    }
+                } else {
+                    // Error handling
+                    console.error('Upload failed with status:', xhr.status);
+                    updateProgressMessage('Upload failed. Please try again.', true);
+                }
+            }
+        });
+        
+        // Handle errors
+        xhr.addEventListener('error', () => {
+            console.error('Upload request failed');
+            updateProgressMessage('Upload failed. Please check your connection and try again.', true);
+        });
+        
+        // Handle abort
+        xhr.addEventListener('abort', () => {
+            console.log('Upload aborted');
+            updateProgressMessage('Upload was cancelled.', true);
+        });
+        
+        // Open and send the request
+        xhr.open('POST', form.action, true);
+        xhr.send(formData);
     }
     
     // Helper function to prevent default behavior
@@ -1044,4 +692,144 @@ function formatFileSize(bytes) {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+/**
+ * Update progress UI with latest status
+ */
+function updateProgressUI(progressData) {
+    const progressBar = document.querySelector('.progress-bar');
+    const progressMessage = document.getElementById('progressMessage');
+    const uploadLoading = document.getElementById('upload-loading');
+    const linkLoading = document.getElementById('link-loading');
+    const progressContainer = document.querySelector('.progress-container');
+    
+    if (!progressBar || !progressMessage) return;
+    
+    // Make sure progress container is visible when we have real progress data
+    if (progressContainer && 
+        (progressData.status > 0 || (progressData.message && progressData.message.includes("Upload")))) {
+        progressContainer.classList.remove('hidden');
+    }
+    
+    // Keep both loading spinner and progress bar visible during transcription
+    if (progressData.message && 
+        (progressData.message.toLowerCase().includes("upload") || 
+         progressData.message.toLowerCase().includes("transcri") ||
+         progressData.message.toLowerCase().includes("extract") ||
+         progressData.message.toLowerCase().includes("transfer"))) {
+        
+        // Show the appropriate loading spinner based on which form was submitted
+        if (window.lastSubmittedForm === 'link') {
+            if (uploadLoading) uploadLoading.classList.add('hidden');
+            if (linkLoading) linkLoading.classList.remove('hidden');
+        } else {
+            if (linkLoading) linkLoading.classList.add('hidden');
+            if (uploadLoading) uploadLoading.classList.remove('hidden');
+        }
+    } else if (progressData.status >= 100) {
+        // Only hide spinners when complete
+        if (uploadLoading) uploadLoading.classList.add('hidden');
+        if (linkLoading) linkLoading.classList.add('hidden');
+    }
+    
+    // Check for error status (-1)
+    if (progressData.status === -1) {
+        // Connection problem but don't reset progress bar
+        updateProgressMessage(progressData.message || "Connection issue, retrying...", true);
+        return;
+    }
+    
+    // Explicitly ensure progress bar starts at 0 if status is low
+    if (progressData.status <= 5) {
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', 0);
+    }
+    
+    // Get current progress from the bar
+    const currentWidth = parseFloat(progressBar.style.width || '0');
+    const newPercentage = typeof progressData.status === 'number' 
+        ? progressData.status 
+        : parseFloat(progressData.status) || 0;
+    
+    // Only update progress bar if new value is higher (prevents going backwards)
+    if (newPercentage >= currentWidth) {
+        // Add a subtle animation for smoother transitions
+        progressBar.style.transition = 'width 0.5s ease-in-out';
+        progressBar.style.width = `${newPercentage}%`;
+        progressBar.setAttribute('aria-valuenow', newPercentage);
+        
+        // Update message based on progress
+        if (newPercentage >= 100) {
+            updateProgressMessage('Transcription successfully completed');
+        } else {
+            updateProgressMessage(progressData.message || `Processing ${newPercentage.toFixed(1)}%`);
+        }
+    } else {
+        // If new value is lower, keep the message updated but don't reduce progress bar
+        updateProgressMessage(progressData.message || `Processing ${currentWidth.toFixed(1)}%`);
+    }
+}
+
+/**
+ * Update progress message
+ */
+function updateProgressMessage(message, isError = false) {
+    const progressMessage = document.getElementById('progressMessage');
+    const progressError = document.querySelector('.progress-error');
+    const errorMessage = progressError ? progressError.querySelector('.error-message') : null;
+    
+    if (!progressMessage) return;
+    
+    if (isError && progressError && errorMessage) {
+        // Show error message in the dedicated error container
+        progressMessage.style.display = 'none';
+        errorMessage.textContent = message;
+        progressError.classList.remove('hidden');
+    } else {
+        // Show normal progress message
+        progressMessage.style.display = '';
+        progressMessage.textContent = message;
+        if (progressError) {
+            progressError.classList.add('hidden');
+        }
+    }
+}
+
+// Make sure this function is available globally
+function showProgressContainer() {
+    const progressContainer = document.querySelector('.progress-container');
+    if (progressContainer) {
+        progressContainer.classList.remove('hidden');
+    }
+}
+
+/**
+ * Fetch upload ID from server
+ */
+async function fetchUploadId() {
+    try {
+        // Force HTTPS in production, this helps with CORS
+        let baseUrl = window.location.protocol + '//' + window.location.host;
+        const response = await fetch(`${baseUrl}/upload_id`, {
+            method: 'GET',
+            headers: { 
+                'Accept': 'text/plain',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            },
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to get upload ID: ${response.status}`);
+        }
+
+        const uploadId = await response.text();
+        return uploadId && uploadId !== 'undefined' && uploadId !== 'null' ? uploadId : null;
+    } catch (error) {
+        console.error('Error getting upload ID:', error);
+        return null;
+    }
 }

@@ -1,10 +1,9 @@
-assemblyai==0.32.0
-fastapi==0.115.4
 ffmpeg==1.4
 ffmpeg_python==0.2.0
 firebase_admin==6.5.0
 Flask==3.0.3
 Flask_Cors==5.0.0
+Flask-SocketIO==5.5.1
 pydantic==2.9.2
 pymongo==4.10.1
 python-dotenv==1.0.1
@@ -22,6 +21,7 @@ requests-toolbelt
 aiohttp
 gevent
 greenlet
+eventlet>=0.30.0
 flask[async]
 Flask-Limiter
 redis>=3.0

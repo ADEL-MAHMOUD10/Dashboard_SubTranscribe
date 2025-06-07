@@ -106,10 +106,6 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
-upload_progress = {}
-
-upload_progress_lock = threading.Lock()
-
 # Set up Firebase connection
 cred = credentials.Certificate(firebase_credentials)
 firebase_admin.initialize_app(cred, {
@@ -117,103 +113,6 @@ firebase_admin.initialize_app(cred, {
 })
 
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current time
-
-# Create an async function for Firebase updates
-async def async_update_firebase(upload_id, progress_percentage, message):
-    ref = db.reference(f'/UID/{upload_id}')
-    await ref.update_async({
-        "status": progress_percentage,
-        "message": message
-    })
-
-def update_progress_bar(upload_id, progress_percentage, message):
-    """Update the progress bar in the Firebase database."""
-    # First update local dictionary
-    with upload_progress_lock:
-        upload_progress[upload_id] = {"status": progress_percentage, "message": message}
-    
-    try:
-        # Batch updates to Firebase to reduce overhead
-        # Only update Firebase every 5% change or for important status changes
-        should_update_firebase = False
-        
-        # Check if this is an important status message (start, completion, error)
-        important_status = (
-            progress_percentage == 0 or
-            progress_percentage == 100 or 
-            progress_percentage in [10, 25, 50, 75, 90, 95, 98] or
-            "error" in message.lower() or
-            "complete" in message.lower() or
-            "fail" in message.lower()
-        )
-        
-        # Get the last update if it exists
-        ref = db.reference(f'/UID/{upload_id}')
-        last_update = ref.get()
-        
-        if last_update:
-            last_percentage = last_update.get("status", 0)
-            # Update if percentage change is significant (>= 5%) or it's an important message
-            if abs(progress_percentage - last_percentage) >= 5 or important_status:
-                should_update_firebase = True
-        else:
-            # No previous update, so definitely update
-            should_update_firebase = True
-        
-        if should_update_firebase:
-            ref.update({
-                "status": progress_percentage,
-                "message": message,
-                "timestamp": int(time.time())
-            })
-            print(f"Firebase update: {progress_percentage}% - {message}")
-    except Exception as e:
-        print(f"Firebase update error: {e}")
-
-@app.route('/progress/<upload_id>', methods=['GET'])
-@cross_origin(supports_credentials=True)  # Allow CORS for this route
-def progress_status(upload_id):
-    """Get the progress status for a specific upload ID."""
-    try:
-        # Try to get progress from in-memory dict first (faster)
-        with upload_progress_lock:
-            progress = upload_progress.get(upload_id)
-        
-        # If not found in memory, try to get from Firebase
-        if not progress:
-            try:
-                ref = db.reference(f'/UID/{upload_id}')
-                firebase_data = ref.get()
-                
-                if firebase_data:
-                    progress = {
-                        "status": firebase_data.get("status", 0),
-                        "message": firebase_data.get("message", "Preparing..."),
-                        "timestamp": firebase_data.get("timestamp", int(time.time()))
-                    }
-                else:
-                    # No data found for this upload ID
-                    progress = {"status": 0, "message": "Waiting to start...", "timestamp": int(time.time())}
-            except Exception as e:
-                print(f"Firebase error: {e}")
-                progress = {"status": 0, "message": "Initializing...", "timestamp": int(time.time())}
-        
-        # Always return a valid JSON response
-        if not progress:
-            progress = {"status": 0, "message": "Waiting for process to begin...", "timestamp": int(time.time())}
-            
-        # Set proper headers to avoid caching
-        response = jsonify(progress)
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
-        
-        return response
-    
-    except Exception as e:
-        print(f"Error in progress_status: {e}")
-        return jsonify({"status": 0, "message": "Error retrieving progress", "error": str(e)}), 500
-
 
 @app.route('/upload_id', methods=['GET'])
 @cross_origin(supports_credentials=True)  # Allow CORS for this route
@@ -226,16 +125,6 @@ def progress_id():
             session.modified = True
         
         upload_id = session.get('upload_id')
-        
-        # Ensure Firebase has an entry for this ID
-        ref = db.reference(f'/UID/{upload_id}')
-        existing = ref.get()
-        if not existing:
-            ref.set({
-                "status": 0,
-                "message": "Initialized",
-                "timestamp": int(time.time())
-            })
         
         # Set cache control headers
         response = Response(upload_id)
@@ -304,150 +193,82 @@ def upload_or_link():
 
     user = users_collection.find_one({'user_id': user_id})
     upload_id = session.get('upload_id')
+    
+    # Initialize variables with default values
+    file_name = 'Unknown'
+    file_size = 'Unknown'
+    upload_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    username = user.get('username', 'Unknown') if user else 'Unknown'
+    
     if request.method == 'POST':
         link = request.form.get('link')  # Get the link from the form
         if link: 
             transcript_id = transcribe_from_link(upload_id, link)  # Transcribe from the provided link
             if isinstance(transcript_id, str):  # If it's a valid transcript ID (not an error template)
-                return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
-            return transcript_id  # This would be the error template
-        
-        file = request.files['file']  # Get the uploaded file
-        if file and allowed_file(file.filename):
-                
-            audio_stream = file
-            file_size = request.content_length  # Get file size in bytes
-            try:
-                transcript_id = upload_audio_to_assemblyai(upload_id, audio_stream, file_size)  # Upload directly using stream
-                                
-                username = user.get('username')  
-                if username:
+                try:
+                    # Store link information in database
                     files_collection.insert_one({
                         "username": username,
                         "user_id": user_id,
-                        "file_name": file.filename,
-                        "file_size": file_size,
+                        "file_name": "Link: " + link[:50] + ("..." if len(link) > 50 else ""),
+                        "file_size": 0,
                         "transcript_id": transcript_id,
-                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        "upload_time": upload_time,
+                        "link": link
                     })
-
-                response = redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
-                return response
-            except Exception:
-                return render_template("error.html")  # Display error page
+                except Exception as e:
+                    print(f"Error storing link data: {str(e)}")
+                
+                return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
+            return render_template('error.html', error='Link could not be processed')
+        
+        file = request.files['file']  # Get the uploaded file
+        if file and allowed_file(file.filename):
+            try:
+                file_name = file.filename
+                audio_stream = file
+                file_size = request.content_length  # Get file size in bytes
+                
+                transcript_id = upload_audio_to_assemblyai(upload_id, audio_stream, file_size)  # Upload directly using stream
+                
+                if transcript_id:
+                    try:
+                        # Store file information in database
+                        files_collection.insert_one({
+                            "username": username,
+                            "user_id": user_id,
+                            "file_name": file_name,
+                            "file_size": file_size,
+                            "transcript_id": transcript_id,
+                            "upload_time": upload_time
+                        })
+                    except Exception as e:
+                        print(f"Error storing file data: {str(e)}")
+                    
+                    return redirect(url_for('download_subtitle', user_id=user_id, transcript_id=transcript_id))
+                else:
+                    return render_template("error.html", error="Processing failed. Please try again.")
+            except Exception as e:
+                print(f"Upload error: {str(e)}")
+                return render_template("error.html", error=f"Upload error: {str(e)[:100]}")
         else:
-            return render_template("error.html")  # Render error page if file type is not allowed
+            return render_template("error.html", error="Invalid file type or no file provided")
     else:
         return redirect(url_for('login', user_id=session['user_id']))
 
-
-# Add this near the top of your upload functions to detect timeouts
-timeout_counter = {"count": 0}
-
-def reset_timeout_counter():
-    timeout_counter["count"] = 0
-
-def increment_timeout_counter():
-    timeout_counter["count"] += 1
-    # If we see many timeouts, log it
-    if timeout_counter["count"] > 5:
-        print(f"WARNING: Multiple timeouts detected ({timeout_counter['count']}). Connection may be unstable.")
 
 def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     
-    # Initial progress update
-    update_progress_bar(upload_id, 0, "Initializing audio processing...")
+    # Initialize variables with default values
+    file_name = 'Unknown'
+    upload_time = 'Unknown'
+    username = 'Unknown'
     
     try:
-        # Create a persistent progress record
-        ref = db.reference(f'/UID/{upload_id}')
-        ref.set({
-            "status": 0,
-            "message": "Preparing audio file...",
-            "timestamp": int(time.time()),
-            "file_size": file_size,
-            "uploaded_bytes": 0,
-            "completed": False
-        })
-        
-        # Update progress after initialization
-        update_progress_bar(upload_id, 10, "Audio file prepared for processing")
-        
-        # Create a separate thread for progress updates
-        progress_data = {"uploaded_size": 0, "running": True}
-        
-        def progress_updater():
-            """Dedicated thread for progress updates optimized for production"""
-            last_percentage = 10  # Start at 10%
-            last_update_time = time.time()
-            last_firebase_update = time.time()
-            update_interval = 1.5  # Frequent local updates (1.5 seconds)
-            firebase_interval = 4.0  # Less frequent Firebase updates (4 seconds)
-            
-            while progress_data["running"]:
-                # Check if thread should exit
-                if not progress_data["running"]:
-                    break
-            
-                current_time = time.time()
-                uploaded_size = progress_data["uploaded_size"]
-                # Scale progress from 10-90% for upload phase
-                progress_percentage = 10 + (uploaded_size / file_size) * 80
-                current_percentage = int(progress_percentage)
-                
-                # Update local cache more frequently
-                if current_time - last_update_time >= update_interval:
-                    # More professional messages based on progress stages
-                    if current_percentage < 25:
-                        prog_message = f"Transferring audio data: {current_percentage}% complete"
-                    elif current_percentage < 50:
-                        prog_message = f"Processing audio file: {current_percentage}% complete"
-                    elif current_percentage < 75:
-                        prog_message = f"Uploading audio content: {current_percentage}% complete"
-                    else:
-                        prog_message = f"Finalizing upload: {current_percentage}% complete"
-                    
-                    # Update local cache every update_interval
-                    with upload_progress_lock:
-                        upload_progress[upload_id] = {
-                            "status": progress_percentage,
-                            "message": prog_message,
-                            "timestamp": int(current_time)
-                        }
-                    
-                    last_update_time = current_time
-                    print(f"File progress updated: {progress_percentage:.1f}%")
-                
-                # Update Firebase less frequently to reduce API calls
-                if current_time - last_firebase_update >= firebase_interval:
-                    try:
-                        # Only update Firebase at 5% increments or significant changes
-                        if abs(current_percentage - last_percentage) >= 5:
-                            ref = db.reference(f'/UID/{upload_id}')
-                            ref.update({
-                                "status": progress_percentage,
-                                "message": prog_message,
-                                "timestamp": int(current_time),
-                                "uploaded_bytes": uploaded_size
-                            })
-                            last_percentage = current_percentage
-                            last_firebase_update = current_time
-                    except Exception as e:
-                        print(f"Firebase update failed: {e}")
-                
-                # Sleep to avoid excessive updates, but use a pattern that allows quicker exits
-                for _ in range(5):  # Break the sleep into smaller chunks
-                    if not progress_data["running"]:
-                        break
-                    time.sleep(0.2)  # 5 * 0.2 = 1.0 second total, but more responsive
-        
-        # Start the dedicated progress update thread
-        progress_thread = threading.Thread(target=progress_updater, daemon=True)
-        progress_thread.start()
-        
+        # Function to upload file in chunks
         def upload_chunks():
             """Generator function to upload file in smaller chunks."""
             total_uploaded = 0
@@ -463,7 +284,6 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                 
                 yield chunk
                 total_uploaded += len(chunk)
-                progress_data["uploaded_size"] = total_uploaded
         
         # Upload the file to AssemblyAI and get the URL
         try:
@@ -476,14 +296,9 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
             
             if response.status_code != 200:
                 raise RuntimeError(f"File upload failed with status code: {response.status_code}")
-        finally:
-            # Stop the progress updater thread
-            progress_data["running"] = False
-            # Give the thread a moment to send the final update
-            time.sleep(0.5)
-        
-        # Update progress after upload completes
-        update_progress_bar(upload_id, 90, "Upload complete. Initiating transcription process...")
+        except Exception as e:
+            print(f"Upload error: {str(e)}")
+            return None
         
         # Continue with transcription request
         upload_url = response.json()["upload_url"]
@@ -498,14 +313,12 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                                 timeout=60)  # Add timeout
         
         if response.status_code != 200:
-            update_progress_bar(upload_id, 0, "Transcription request could not be processed")
             return None
         
         transcript_id = response.json()["id"]
         polling_endpoint = f"{base_url}/transcript/{transcript_id}"
         
         # Poll for the transcription result with exponential backoff
-        update_progress_bar(upload_id, 95, "Transcription in progress...")
         poll_count = 0
         
         while poll_count < 30:  # Limit polling attempts
@@ -516,20 +329,13 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                 
                 if transcription_result['status'] == 'completed':
                     # Success path
-                    update_progress_bar(upload_id, 100, "Transcription successfully completed")
                     return transcript_id
                     
                 elif transcription_result['status'] == 'error':
                     error_msg = transcription_result.get('error', 'Unknown error')
-                    update_progress_bar(upload_id, 0, f"Transcription error: {error_msg}")
                     raise RuntimeError(f"Transcription failed: {error_msg}")
                     
                 else:
-                    # Update message to show it's still processing
-                    status = transcription_result['status']
-                    status_msg = f"Transcription in progress - Current status: {status.replace('_', ' ').title()}"
-                    update_progress_bar(upload_id, 98, status_msg)
-                    
                     # Exponential backoff with 30s max
                     wait_time = min(5 * (2 ** (poll_count // 5)), 30)
                     time.sleep(wait_time)
@@ -537,26 +343,14 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                     
             except Exception as e:
                 print(f"Error polling transcription status: {e}")
-                update_progress_bar(upload_id, 98, "Verifying transcription status...")
                 time.sleep(5)
                 poll_count += 1
         
         # If we get here, we've exceeded poll attempts
-        update_progress_bar(upload_id, 0, "Transcription process timed out. Please try again.")
         raise RuntimeError("Transcription status check timed out")
         
     except Exception as e:
-        error_message = str(e)
-        print(f"Upload error: {error_message}")
-        
-        # Check if we have significant progress before giving up
-        if progress_data.get("uploaded_size", 0) / file_size > 0.85:
-            # We're close to done, try to mark as high progress
-            update_progress_bar(upload_id, 95, f"Upload almost complete, finalizing process...")
-        else:
-            # Show proper error
-            update_progress_bar(upload_id, 0, f"Process error: {error_message[:50]}...")
-        
+        print(f"Upload error: {str(e)}")
         return None
 
 def convert_video_to_audio(video_path):
@@ -576,193 +370,95 @@ def transcribe_from_link(upload_id, link):
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     
-    # Initial progress update
-    update_progress_bar(upload_id, 0, "Initializing link extraction...")
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'quiet': True,
+        'no_warnings': True,
+        'extract_audio': True,
+        'skip_download': True,
+    }
     
     try:
-        # Create a persistent progress record
-        ref = db.reference(f'/UID/{upload_id}')
-        ref.set({
-            "status": 0,
-            "message": "Initializing link processing...",
-            "timestamp": int(time.time()),
-            "link": link,
-            "completed": False
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(link, download=False)
+            audio_url = info_dict.get('url', None)
+            try:
+                response = requests.head(audio_url)
+                total_size = int(response.headers.get('content-length', 0))
+            except:
+                total_size = 0
+    except Exception as e:
+        print(f"Error extracting audio URL: {str(e)}")
+        return render_template('error.html', error=f"Could not process link: {str(e)}")
+    
+    try:
+        # Request transcription from AssemblyAI using the link
+        data = {
+            "audio_url": audio_url
+        }
+        
+        response = requests.post(f"{base_url}/transcript", 
+                                json=data, 
+                                headers=headers,
+                                timeout=60)  # Add timeout
+        
+        if response.status_code != 200:
+            return None
+        
+        transcript_id = response.json()["id"]
+        polling_endpoint = f"{base_url}/transcript/{transcript_id}"
+        
+        # Initialize variables with default values
+        upload_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        username = session.get('username')
+        user_id = session.get('user_id')
+        
+        # Store link information in database
+        files_collection.insert_one({
+            "username": username,
+            "user_id": user_id,
+            "file_name": link,
+            "file_size": total_size,
+            "transcript_id": transcript_id,
+            "upload_time": upload_time,
+            "link": link
         })
+
+        # Poll for the transcription result
+        poll_count = 0
         
-        # Update progress after initialization
-        update_progress_bar(upload_id, 10, "Audio source successfully identified")
-        
-        # Create a separate thread for progress updates
-        progress_data = {"current_status": 10, "running": True}
-        
-        def progress_updater():
-            """Dedicated thread for progress updates optimized for production"""
-            progress_stages = [
-                {"status": 15, "message": "Initiating transfer to transcription service..."},
-                {"status": 30, "message": "Downloading content from source..."},
-                {"status": 45, "message": "Preparing audio for processing..."},
-                {"status": 60, "message": "Content downloaded successfully..."},
-                {"status": 75, "message": "Processing audio for transcription..."},
-            ]
-            
-            stage_index = 0
-            last_percentage = 10
-            last_update_time = time.time()
-            last_firebase_update = time.time()
-            update_interval = 1.5  # Frequent local updates (1.5 seconds)
-            firebase_interval = 4.0  # Less frequent Firebase updates (4 seconds)
-            
-            # Simulate progress through stages
-            while progress_data["running"] and stage_index < len(progress_stages):
-                # Check if thread should exit
-                if not progress_data["running"]:
-                    break
+        while poll_count < 30:  # Limit polling attempts
+            try:
+                transcription_result = requests.get(polling_endpoint, 
+                                                headers=headers, 
+                                                timeout=30).json()
                 
-                current_time = time.time()
-                current_stage = progress_stages[stage_index]
-                current_percentage = current_stage["status"]
-                current_message = current_stage["message"]
-                
-                # Update local cache more frequently
-                if current_time - last_update_time >= update_interval:
-                    # Update local progress tracker
-                    progress_data["current_status"] = current_percentage
+                if transcription_result['status'] == 'completed':
+                    # Success path
+                    return transcript_id
                     
-                    # Update local cache every update_interval
-                    with upload_progress_lock:
-                        upload_progress[upload_id] = {
-                            "status": current_percentage,
-                            "message": current_message,
-                            "timestamp": int(current_time)
-                        }
+                elif transcription_result['status'] == 'error':
+                    error_msg = transcription_result.get('error', 'Unknown error')
+                    return None
                     
-                    last_update_time = current_time
-                    print(f"Link progress updated: {current_percentage:.1f}%")
-                    
-                    # Move to next stage after a random delay (simulates real progress)
-                    if random.random() < 0.15:  # ~15% chance per update to advance stage
-                        stage_index += 1
-                
-                # Update Firebase less frequently to reduce API calls
-                if current_time - last_firebase_update >= firebase_interval:
-                    try:
-                        # Only update Firebase for significant changes
-                        if abs(current_percentage - last_percentage) >= 5:
-                            ref = db.reference(f'/UID/{upload_id}')
-                            ref.update({
-                                "status": current_percentage,
-                                "message": current_message,
-                                "timestamp": int(current_time)
-                            })
-                            last_percentage = current_percentage
-                            last_firebase_update = current_time
-                    except Exception as e:
-                        print(f"Firebase update failed: {e}")
-                
-                # Sleep with pattern that allows quicker exits
-                for _ in range(5):
-                    if not progress_data["running"]:
-                        break
-                    time.sleep(0.2)
-            
-            # Keep the thread running until explicitly stopped
-            while progress_data["running"]:
-                time.sleep(0.5)
-        
-        # Start the dedicated progress update thread
-        progress_thread = threading.Thread(target=progress_updater, daemon=True)
-        progress_thread.start()
-        
-        try:
-            # Request transcription from AssemblyAI using the link
-            data = {
-                "audio_url": link
-            }
-            
-            # Update progress as we send the link
-            update_progress_bar(upload_id, 90, "Upload complete. Initiating transcription process...")
-            
-            response = requests.post(f"{base_url}/transcript", 
-                                    json=data, 
-                                    headers=headers,
-                                    timeout=60)  # Add timeout
-            
-            if response.status_code != 200:
-                update_progress_bar(upload_id, 0, "Link could not be processed")
-                progress_data["running"] = False
-                time.sleep(0.5)  # Give thread time to clean up
-                return None
-            
-            transcript_id = response.json()["id"]
-            polling_endpoint = f"{base_url}/transcript/{transcript_id}"
-            
-            # Poll for the transcription result
-            update_progress_bar(upload_id, 95, "Transcription analysis in progress...")
-            poll_count = 0
-            
-            while poll_count < 30:  # Limit polling attempts
-                try:
-                    transcription_result = requests.get(polling_endpoint, 
-                                                    headers=headers, 
-                                                    timeout=30).json()
-                    
-                    if transcription_result['status'] == 'completed':
-                        # Success path
-                        update_progress_bar(upload_id, 100, "Transcription successfully completed")
-                        progress_data["running"] = False
-                        time.sleep(0.5)  # Give thread time to clean up
-                        return transcript_id
-                        
-                    elif transcription_result['status'] == 'error':
-                        error_msg = transcription_result.get('error', 'Unknown error')
-                        update_progress_bar(upload_id, 0, f"Transcription error: {error_msg}")
-                        progress_data["running"] = False
-                        time.sleep(0.5)  # Give thread time to clean up
-                        return None
-                        
-                    else:
-                        # Update message to show it's still processing
-                        status = transcription_result['status']
-                        update_progress_bar(upload_id, 98, f"Processing status: {status.replace('_', ' ').title()}")
-                        
-                        # Exponential backoff
-                        wait_time = min(5 * (2 ** (poll_count // 5)), 30)
-                        time.sleep(wait_time)
-                        poll_count += 1
-                        
-                except Exception as e:
-                    print(f"Error polling transcription status: {e}")
-                    time.sleep(5)
+                else:
+                    # Exponential backoff
+                    wait_time = min(5 * (2 ** (poll_count // 5)), 30)
+                    time.sleep(wait_time)
                     poll_count += 1
-            
-            # If we get here, we've exceeded poll attempts
-            update_progress_bar(upload_id, 0, "Transcription process timed out. Please try again.")
-            progress_data["running"] = False
-            time.sleep(0.5)  # Give thread time to clean up
-            return None
-            
-        except Exception as e:
-            error_message = str(e)
-            print(f"Link processing error: {error_message}")
-            update_progress_bar(upload_id, 0, f"Link error: {error_message[:50]}...")
-            progress_data["running"] = False
-            time.sleep(0.5)  # Give thread time to clean up
-            return None
-            
+                    
+            except Exception as e:
+                print(f"Error polling transcription status: {e}")
+                time.sleep(5)
+                poll_count += 1
+        
+        # If we get here, we've exceeded poll attempts
+        return None
+        
     except Exception as e:
         error_message = str(e)
-        print(f"Link setup error: {error_message}")
-        update_progress_bar(upload_id, 0, f"Setup error: {error_message[:50]}...")
+        print(f"Link processing error: {error_message}")
         return None
-
-# def upload_audio_to_gridfs(file_path):
-#     """Upload audio file to MongoDB using GridFS."""
-#     with open(file_path, "rb") as f:
-#         # Store the file in GridFS and return the file ID
-#         audio_id = fs.put(f, filename=os.path.basename(file_path), content_type='audio/video')
-
-#     return audio_id
 
 @app.route('/v1/<user_id>')
 def main_user(user_id):
@@ -1042,7 +738,7 @@ def user_dashboard():
     user_id = session.get('user_id')
     return redirect(url_for('dashboard', user_id=user_id))
 
-@app.route('/delete_file', methods=['POST'])
+@app.route('/delete_file', methods=['DELETE'])
 def delete_file():
     """delete a file from the dashboard"""
     user_id = session.get('user_id')
@@ -1096,10 +792,10 @@ def redirect_to_transcript(file_id):
 def share_subtitle(transcript_id):
     """Share the subtitle with others using the transcript ID."""
     # Initialize variables with default values
-    file_name = None
-    file_size = None
-    upload_time = None
-    username = None
+    file_name = 'Unknown'
+    file_size = 'Unknown'
+    upload_time = 'Unknown'
+    username = 'Unknown'
 
     user_id = session.get('user_id')
     if request.method == 'POST':
@@ -1121,7 +817,7 @@ def share_subtitle(transcript_id):
     # Get file info for GET request
     get_filename = files_collection.find_one({'transcript_id': transcript_id})
     if get_filename:
-        file_name = get_filename.get('file_name')
+        file_name = get_filename.get('file_name') 
         file_size = f"{(get_filename.get('file_size')/1000000):.2f} MB"  # convert to MB
         upload_time = get_filename.get('upload_time')
         username = get_filename.get('username')
@@ -1131,10 +827,11 @@ def share_subtitle(transcript_id):
 def download_subtitle(user_id, transcript_id):
     """Handle subtitle download based on the transcript ID."""
     # Initialize variables with default values
-    file_name = None
-    file_size = None
-    upload_time = None
-    username = None
+    file_name = 'Unknown'
+    file_size = 'Unknown'
+    upload_time = 'Unknown'
+    username = 'Unknown'
+
     user_id = session.get('user_id')
     
     if request.method == 'POST':
@@ -1233,91 +930,6 @@ def serve_file(filename):
     except Exception as e:
         print(f"Error serving file: {str(e)}")
         return render_template("error.html", error=f"Error serving file: {str(e)}")
-
-@app.route('/progress_stream/<upload_id>')
-@cross_origin(supports_credentials=True)  # Allow CORS for this route
-def progress_stream(upload_id):
-    """Stream progress updates using Server-Sent Events (SSE)."""
-    def generate():
-        try:
-            last_status = None
-            last_message = None
-            last_update_time = time.time()
-            update_interval = 1.0  # Minimum time between updates (seconds)
-            
-            while True:
-                # Get current progress data
-                current_progress = None
-                
-                # Try memory cache first (faster)
-                with upload_progress_lock:
-                    current_progress = upload_progress.get(upload_id)
-                
-                # If not in memory, try Firebase
-                if not current_progress:
-                    try:
-                        ref = db.reference(f'/UID/{upload_id}')
-                        firebase_data = ref.get()
-                        
-                        if firebase_data:
-                            current_progress = {
-                                "status": firebase_data.get("status", 0),
-                                "message": firebase_data.get("message", "Ready to transcribe..."),
-                                "timestamp": firebase_data.get("timestamp", int(time.time()))
-                            }
-                    except Exception as e:
-                        print(f"Firebase error in SSE: {e}")
-                        current_progress = {"status": 0, "message": "Connecting...", "timestamp": int(time.time())}
-                
-                # Always have a valid progress object
-                if not current_progress:
-                    current_progress = {"status": 0, "message": "Waiting to start...", "timestamp": int(time.time())}
-                
-                # Determine if we should send an update
-                current_time = time.time()
-                time_since_update = current_time - last_update_time
-                status_changed = last_status != current_progress.get("status")
-                message_changed = last_message != current_progress.get("message")
-                
-                # Send update if status/message changed or enough time has passed
-                if status_changed or message_changed or time_since_update >= update_interval:
-                    # Update tracking variables
-                    last_status = current_progress.get("status")
-                    last_message = current_progress.get("message")
-                    last_update_time = current_time
-                    
-                    # Increase update interval after initial progress to reduce overhead
-                    if last_status is not None and last_status > 10:
-                        update_interval = 2.0
-                    
-                    # Format as SSE data
-                    data = f"data: {json.dumps(current_progress)}\n\n"
-                    yield data
-                    
-                    # If process is complete, end the stream
-                    if current_progress.get("status") >= 100 and "complete" in current_progress.get("message", ""):
-                        print(f"SSE stream complete for {upload_id}")
-                        break
-                
-                # Short sleep to avoid tight loop
-                time.sleep(0.5)
-                
-        except GeneratorExit:
-            # Client disconnected
-            print(f"SSE client disconnected for {upload_id}")
-        except Exception as e:
-            print(f"Error in SSE stream: {e}")
-            # Send error to client
-            error_data = {"status": -1, "message": f"Connection error: {str(e)[:50]}...", "timestamp": int(time.time())}
-            yield f"data: {json.dumps(error_data)}\n\n"
-    
-    # Set up SSE response
-    response = Response(generate(), mimetype="text/event-stream")
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    response.headers['X-Accel-Buffering'] = 'no'  # Disable nginx buffering
-    return response
 
 @app.route('/health')
 def health_check():
