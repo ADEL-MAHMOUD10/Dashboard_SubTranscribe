@@ -19,7 +19,7 @@ def settings():
     if not user:
         return redirect(url_for('auth.login'))
     
-    return render_template('settings.html', user=user, user_id=user_id)
+    return render_template('settings.html', user=user)
 
 @setting_bp.route('/update_profile', methods=['POST'])
 def update_profile():
