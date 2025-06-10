@@ -4,32 +4,50 @@ This project is a web application built with Flask that allows users to upload a
 
 ## Features
 
-- **File Upload**: Users can easily upload audio or video files through the web interface.
-- **Transcription**: After uploading, users receive a Subtitle file of the uploaded media.
-- **Subtitle Format**: Now you can choose between **`SRT`** or **`VTT`** formats for your Subtitle file  
-- **Clean and Simple UI**: The website is designed with a minimal and responsive layout for better user interaction.
-- **Real-Time File Upload Alerts**: The JavaScript integration notifies users when a file is being uploaded.
-- **Alerts**: Users are notified about the upload process with real-time messages.
-- **File Management**: Uploaded files are automatically stored in the designated folder on the server.
-- **Flask Backend**: A lightweight backend using Flask for handling file uploads, transcriptions, and serving the webpage.
+- **Modern Dashboard Interface**: User-friendly dashboard to manage all your transcriptions
+- **File Upload**: Upload audio or video files through an intuitive drag-and-drop interface
+- **URL Processing**: Transcribe content directly from YouTube, Vimeo, or other media links
+- **Transcription**: Convert speech in audio/video to accurate text transcriptions
+- **Subtitle Generation**: Generate subtitle files in multiple formats
+- **Subtitle Format**: Choose between **`SRT`** or **`VTT`** formats for your subtitle files
+- **Real-Time Progress Tracking**: Monitor transcription progress with detailed status updates
+- **User Accounts**: Create accounts to save and manage your transcription history
+- **Customizable Settings**: Personalize your experience through the settings page
+- **File Management**: Easily view, download, and delete your transcription files
+- **Responsive Design**: Works seamlessly across desktop, tablet, and mobile devices
+
+## Pages
+
+- **Home/Landing Page**: Introduction to the service with main features
+- **Dashboard**: View and manage all your transcribed files
+- **Transcribe**: Upload new files or provide URLs for transcription
+- **Settings**: Customize your account preferences
+- **Subtitle Viewer**: View and edit generated subtitles
 
 ## How It Works
 
-1. **Homepage**: The main page provides a file upload form where users can select and upload audio or video files.
-2. **Transcription Process**: Once the file is uploaded, it will be processed, and a Subtitle file will be generated.
-3. **File Handling**: The subtitles for uploaded files are saved in the server's, and the Subtitle file is provided to the user for download.
+1. **Upload**: Upload audio/video files through the transcribe page or provide a URL
+2. **Processing**: The system processes the media and extracts the speech content
+3. **Transcription**: Advanced algorithms convert speech to text with high accuracy
+4. **Management**: Access your transcriptions through the dashboard interface
+5. **Download**: Download your transcription in various formats (text, SRT, VTT)
 
 ## Technologies Used
 
-- **Flask**: Python-based web framework for backend development.
-- **HTML5 & CSS3**: To build the structure and style of the website.
-- **JavaScript**: For client-side interactivity and alerts.
+- **Backend**: Flask (Python web framework)
+- **Frontend**: HTML5, CSS3, JavaScript, Bootstrap 5
+- **Database**: MongoDB for data storage
+- **UI Elements**: AOS for scroll animations, Font Awesome for icons
+- **AJAX**: Asynchronous file uploading with progress tracking
 
 ## Prerequisites
 - Python 3.7 or higher
 - Flask 2.0 or higher
+- MongoDB
+- Redis (upstash)
+- Assemblyai API
 
-## How to Use
+## Installation
 
 1. Clone this repository:
    ```bash
@@ -47,24 +65,47 @@ This project is a web application built with Flask that allows users to upload a
    python -m venv venv
    ```
 
-4. Activate the virtual environment and install dependencies:
+4. Activate the virtual environment:
    ```bash
-   source venv/bin/activate  # On Windows, use: venv\Scripts\activate
-   pip install flask
+   # On Windows
+   venv\Scripts\activate
+   
+   # On macOS/Linux
+   source venv/bin/activate
    ```
 
-4. Run the Flask app:
+5. Run the Flask app:
    ```bash
    python app.py
    ```
 
-5. Open your web browser and go to:
+6. Open your web browser and go to:
    ```
-   http://127.0.0.1:8000
+   http://127.0.0.1:5000
    ```
 
-6. Use the interface to upload files, which will be saved to the server's `uploads/` directory.
+## Project Structure
 
+```
+SubTranscribe/
+├── app.py              # Main application file
+├── module/             # Application modules
+│   ├── auth.py         # Authentication functions
+│   ├── config.py       # Configuration settings
+│   ├── setting.py      # User settings
+│   ├── subtitle.py     # Subtitle generation
+│   ├── transcribe.py   # Transcription logic
+│   └── reset_pass.py   # Password reset
+├── static/             # Static assets
+│   ├── css/            # CSS files
+│   ├── js/             # JavaScript files
+│   └── image/          # Images
+└── templates/          # HTML templates
+    ├── dashboard.html  # Dashboard page
+    ├── settings.html   # Settings page
+    ├── transcribe.html # Transcribe page
+    └── ...
+```
 
 ## Demo
 
@@ -72,7 +113,8 @@ A live demo of this site can be found [here](https://subtranscribe.koyeb.app/).
 
 ## Troubleshooting
 - If you encounter any issues, ensure that your Python environment is set up correctly with the required libraries.
-- make sure you install `requirements.txt`
+- Make sure MongoDB is properly installed and running
+- Check that all required packages from `requirements.txt` are installed
 
 ## License
 

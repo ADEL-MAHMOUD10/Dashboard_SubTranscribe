@@ -122,7 +122,7 @@
                     <p class="text-white/70 mb-0">Here's an overview of your activity</p>
                 </div>
                 <div class="ms-auto d-flex">
-                    <a href="{{ url_for('setting.settings', user_id='user_id') }}" class="btn btn-outline-light me-2">
+                    <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}" class="btn btn-outline-light me-2">
                         <i class="fas fa-cog me-2"></i>Settings
                     </a>
                     <a href="{{ url_for('main_user', user_id='user_id') }}" class="btn btn-primary-gradient">
