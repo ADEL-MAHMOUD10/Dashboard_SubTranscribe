@@ -44,7 +44,7 @@
                         <a class="nav-link" href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('transcribe.transcribe_page') }}">Transcribe</a>
+                        <a class="nav-link" href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}">Transcribe</a>
                     </li>
                     <li class="nav-item">
                         <a class="btn btn-primary-gradient ms-2 px-4" href="{{ url_for('auth.logout') }}">
