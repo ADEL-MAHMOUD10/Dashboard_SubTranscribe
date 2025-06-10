@@ -101,7 +101,7 @@
             <div id="mobile-menu" class="hidden md:hidden mt-4 pb-2">
                 <a href="/" class="block py-2 text-white hover:text-primary-light transition-colors">Home</a>
                 <a href="/about" class="block py-2 text-white hover:text-primary-light transition-colors">About</a>
-                <a href="/login" class="block py-2 text-white hover:text-primary-light transition-colors">Login</a>
+                <a href="{{ url_for('auth.login') }}" class="block py-2 text-white hover:text-primary-light transition-colors">Login</a>
             </div>
         </div>
     </nav>

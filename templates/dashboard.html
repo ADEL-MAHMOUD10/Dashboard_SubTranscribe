@@ -10,6 +10,45 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css">
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
+    <style>
+        /* Copy button styles */
+        .copy-btn {
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .copy-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Notification styles */
+        .notification-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: fadeInOut 3s ease;
+        }
+        .notification-toast.success {
+            background-color: rgba(46, 204, 113, 0.9);
+        }
+        .notification-toast.error {
+            background-color: rgba(231, 76, 60, 0.9);
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+    </style>
 </head>
 <body>
     <div id="particles-js"></div>
@@ -26,7 +65,7 @@
                 <a href="/" class="me-2">
                     <img src="/static/image/subtitle.ico" style="max-width: 30px;" alt="SubTranscribe Logo">
                 </a>
-                <a class="navbar-brand" href="/">SubTranscribe</a>
+                <a class="navbar-brand" href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}">SubTranscribe</a>
             </div>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -40,7 +79,10 @@
                         <a class="nav-link" href="/about">About</a>
                     </li>
                     <li class="nav-item">
-                        <a class="btn btn-primary-gradient ms-2 px-4" href="{{ url_for('logout') }}">
+                        <a class="nav-link" href="{{ url_for('transcribe.transcribe_page', user_id='user_id') }}">Transcribe</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary-gradient ms-2 px-4" href="{{ url_for('auth.logout') }}">
                             <i class="fas fa-sign-out-alt me-2"></i>Logout
                         </a>
                     </li>
@@ -79,8 +121,11 @@
                     <h4 class="mb-1">Welcome, <span class="text-primary-400">{{ username }}</span></h4>
                     <p class="text-white/70 mb-0">Here's an overview of your activity</p>
                 </div>
-                <div class="ms-auto">
-                    <a href="{{ url_for('main_user', user_id=session.get('user_id')) }}" class="btn btn-primary-gradient">
+                <div class="ms-auto d-flex">
+                    <a href="{{ url_for('setting.settings', user_id='user_id') }}" class="btn btn-outline-light me-2">
+                        <i class="fas fa-cog me-2"></i>Settings
+                    </a>
+                    <a href="{{ url_for('main_user', user_id='user_id') }}" class="btn btn-primary-gradient">
                         <i class="fas fa-plus me-2"></i>New Upload
                     </a>
                 </div>
@@ -136,7 +181,7 @@
                     </div>
                     <h6>No files uploaded yet</h6>
                     <p class="text-white/70 mb-4">Upload your first file to get started</p>
-                    <a href="{{ url_for('main_user', user_id=session.get('user_id')) }}" class="btn btn-primary-gradient">
+                    <a href="{{ url_for('main_user', user_id='user_id') }}" class="btn btn-primary-gradient">
                         <i class="fas fa-plus me-2"></i>Upload Now
                     </a>
                 </div>
@@ -148,7 +193,7 @@
                                 <th>File Name</th>
                                 <th>File Size</th>
                                 <th>Uploaded On</th>
-                                <th class="text-center">Download</th>
+                                <th class="text-center">Actions</th>
                                 <th class="text-center">Delete</th>
                             </tr>
                         </thead>
@@ -194,9 +239,18 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    <a href="{{ url_for('redirect_to_transcript', file_id=file._id) }}" class="btn btn-sm btn-primary-gradient px-3">
-                                        <i class="fas fa-download me-1"></i> Download
-                                    </a>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <a href="{{ url_for('subtitle.redirect_to_transcript', file_id=file._id) }}" class="btn btn-sm btn-primary-gradient px-3">
+                                            <i class="fas fa-download me-1"></i> Download
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-light copy-btn" 
+                                                data-bs-toggle="tooltip" title="Copy File ID" 
+                                                onclick="copyToClipboard('{{ file.transcript_id }}')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Hidden span containing the file ID for copy functionality -->
+                                    <span class="d-none">{{ file.transcript_id }}</span>
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn-delete" data-file-id="{{ file._id }}" onclick="deleteFile(this)">
@@ -255,6 +309,12 @@
                 once: true
             });
             
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
             // Calculate total files and size
             const fileList = document.querySelectorAll('#file-list tr');
             const totalFilesElement = document.getElementById('total-files');
@@ -287,17 +347,21 @@
                 gradient.addColorStop(0, 'rgba(116, 58, 213, 0.7)');
                 gradient.addColorStop(1, 'rgba(86, 43, 158, 0.1)');
                 
-                const userActivityChart = new Chart(ctx, {
-                    type: 'bar',
+                new Chart(ctx, {
+                    type: 'line',
                     data: {
                         labels: months,
                         datasets: [{
-                            label: 'Uploads Per Month',
+                            label: 'Files Uploaded',
                             data: uploads,
                             backgroundColor: gradient,
-                            borderColor: 'rgba(116, 58, 213, 1)',
-                            borderWidth: 1,
-                            borderRadius: 5
+                            borderColor: '#743ad5',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#743ad5',
+                            pointBorderColor: '#fff',
+                            pointRadius: 4,
+                            tension: 0.3,
+                            fill: true
                         }]
                     },
                     options: {
@@ -306,6 +370,21 @@
                         plugins: {
                             legend: {
                                 display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                padding: 10,
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                displayColors: false,
+                                callbacks: {
+                                    title: function(tooltipItems) {
+                                        return tooltipItems[0].label;
+                                    },
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + context.raw + ' files';
+                                    }
+                                }
                             }
                         },
                         scales: {
@@ -321,11 +400,12 @@
                             y: {
                                 beginAtZero: true,
                                 grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
+                                    color: 'rgba(255, 255, 255, 0.1)',
+                                    drawBorder: false
                                 },
                                 ticks: {
                                     color: 'rgba(255, 255, 255, 0.7)',
-                                    precision: 0
+                                    stepSize: 1
                                 }
                             }
                         }
@@ -349,51 +429,88 @@
         function deleteFile(button) {
             const fileId = button.getAttribute('data-file-id');
             
-            // Add confirmation
-            if (!confirm('Are you sure you want to delete this file?')) {
-                return;
+            if (confirm('Are you sure you want to delete this file?')) {
+                fetch('/delete_file', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ file_id: fileId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the row from the table
+                        const row = button.closest('tr');
+                        row.remove();
+                        
+                        // Update total files count
+                        const totalFilesElement = document.getElementById('total-files');
+                        const currentCount = parseInt(totalFilesElement.textContent);
+                        totalFilesElement.textContent = currentCount - 1;
+                        
+                        // Show success notification
+                        showNotification('File deleted successfully', 'success');
+                    } else {
+                        showNotification('Error deleting file: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('An error occurred while deleting the file', 'error');
+                });
             }
-
-            fetch('/delete_file', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ file_id: fileId }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                const notification = document.getElementById('notification');
-                notification.textContent = data.success ? data.message : data.message;
-                notification.className = data.success ? 'notification-toast success' : 'notification-toast error';
-                notification.style.display = 'block';
-                notification.style.opacity = '1';
+        }
+        
+        // Function to show notification
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification-toast ' + type;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Function to copy file ID to clipboard
+        function copyToClipboard(text) {
+            // Use the modern Clipboard API if available
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        showNotification('ID copied to clipboard', 'success');
+                    })
+                    .catch(err => {
+                        console.error('Could not copy text: ', err);
+                        showNotification('Failed to copy ID', 'error');
+                    });
+            } else {
+                // Fallback for older browsers
+                const input = document.createElement('input');
+                input.style.position = 'fixed';
+                input.style.opacity = '0';
+                input.value = text;
+                document.body.appendChild(input);
                 
-                setTimeout(() => {
-                    notification.style.opacity = '0';
-                    setTimeout(() => {
-                        notification.style.display = 'none';
-                        if (data.success) {
-                            location.reload();
-                        }
-                    }, 300);
-                }, 2000);
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                const notification = document.getElementById('notification');
-                notification.textContent = "An error occurred. Please try again.";
-                notification.className = 'notification-toast error';
-                notification.style.display = 'block';
-                notification.style.opacity = '1';
+                // Select and copy the text
+                input.select();
+                try {
+                    const success = document.execCommand('copy');
+                    if (success) {
+                        showNotification('ID copied to clipboard', 'success');
+                    } else {
+                        showNotification('Failed to copy ID', 'error');
+                    }
+                } catch (err) {
+                    console.error('Could not copy text: ', err);
+                    showNotification('Failed to copy ID', 'error');
+                }
                 
-                setTimeout(() => {
-                    notification.style.opacity = '0';
-                    setTimeout(() => {
-                        notification.style.display = 'none';
-                    }, 300);
-                }, 2000);
-            });
+                // Remove the temporary input
+                document.body.removeChild(input);
+            }
         }
     </script>
     <script>

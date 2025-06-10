@@ -191,7 +191,7 @@
                         <p class="text-white/70 mb-6">Sign in to your account</p>
                         
                         <!-- Login Form -->
-                        <form action="{{ url_for('login') }}" method="POST" class="space-y-5">
+                        <form action="{{ url_for('auth.login') }}" method="POST" class="space-y-5">
                             <!-- Email Field -->
                             <div>
                                 <label for="email" class="block text-sm font-medium text-white mb-2">Email or Username</label>
@@ -214,7 +214,7 @@
                             <div>
                                 <div class="flex items-center justify-between mb-2">
                                     <label for="password" class="block text-sm font-medium text-white">Password</label>
-                                    <a href="{{ url_for('check_user') }}" class="text-sm text-primary-400 hover:text-primary-300">Forgot password?</a>
+                                    <a href="{{ url_for('reset_pass.check_user') }}" class="text-sm text-primary-400 hover:text-primary-300">Forgot password?</a>
                                 </div>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -270,7 +270,7 @@
                         <div class="mt-6 text-center">
                             <p class="text-white/70">
                                 Don't have an account? 
-                                <a href="{{ url_for('register') }}" class="text-primary-400 hover:text-primary-300 font-medium">
+                                <a href="{{ url_for('auth.register') }}" class="text-primary-400 hover:text-primary-300 font-medium">
                                     Sign Up
                                 </a>
                             </p>

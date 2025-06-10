@@ -25,3 +25,4 @@ eventlet>=0.30.0
 flask[async]
 Flask-Limiter
 redis>=3.0
+flask_caching

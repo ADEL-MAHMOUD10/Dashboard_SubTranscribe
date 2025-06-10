@@ -188,15 +188,19 @@
                         <p class="text-white/70 mb-6">Enter your new password below</p>
                         
                         <!-- Reset Password Form -->
-                        <form action="{{ url_for('reset_password') }}" method="POST" class="space-y-5">
+                        <form action="{{ url_for('reset_pass.reset_password') }}" method="POST" class="space-y-5">
                             <!-- New Password Field -->
                             <div>
-                                <label for="email" class="block text-sm font-medium text-white mt-2">Email</label>
+                                <label for="email" class="block text-sm font-medium text-white mt-2">Email / Username</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <i class="fas fa-envelope text-white/50"></i>
                                     </div>
-                                    <input type="text" name="email" value="{{ email }}" class="form-input block w-full pl-10 pr-10 py-3 rounded-lg bg-transparent border-white/30" readonly>
+                                    {% if email %}
+                                        <input type="text" name="email" value="{{ email }}" class="form-input block w-full pl-10 pr-10 py-3 rounded-lg bg-transparent border-white/30" readonly>
+                                    {% else %}
+                                        <input type="text" name="email" value="{{ username }}" class="form-input block w-full pl-10 pr-10 py-3 rounded-lg bg-transparent border-white/30" readonly>
+                                    {% endif %}
                                 </div>
                                 <label for="OTP" class="block text-sm font-medium text-white mt-2">OTP</label>
                                 <div class="relative">
@@ -326,7 +330,7 @@
                         
                         <!-- Back to Login -->
                         <div class="mt-6 text-center">
-                            <a href="{{ url_for('login') }}" class="text-primary-400 hover:text-primary-300 transition-colors inline-flex items-center gap-1">
+                            <a href="{{ url_for('auth.login') }}" class="text-primary-400 hover:text-primary-300 transition-colors inline-flex items-center gap-1">
                                 <i class="fas fa-arrow-left text-xs"></i>
                                 <span>Back to Login</span>
                             </a>
