@@ -38,7 +38,7 @@ load_dotenv()
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["500 per hour"],
+    default_limits=["700 per hour"],
     storage_uri= REDIS_URI
 )
 

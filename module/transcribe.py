@@ -1,5 +1,5 @@
 from flask import Blueprint , session, redirect, url_for , request, render_template
-from module.config import users_collection, files_collection, TOKEN_THREE,cache
+from module.config import users_collection, files_collection, TOKEN_THREE,cache, limiter
 from datetime import datetime 
 import requests
 import time
@@ -9,6 +9,7 @@ import os
 
 transcribe_bp = Blueprint('transcribe', __name__)
 
+@limiter.exempt
 @transcribe_bp.route('/transcribe/<user_id>')
 def transcribe_page(user_id):
     """Render the transcribe page."""
@@ -28,6 +29,7 @@ def generate_error_id():
     error_id = str(uuid.uuid4())
     return error_id
 
+@limiter.exempt
 @transcribe_bp.route('/v1', methods=['POST'])
 def upload_or_link():
     """Handle file uploads or links for transcription."""
