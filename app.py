@@ -13,7 +13,7 @@ from collections import defaultdict
 from module.setting import *
 from module.auth import *
 from module.subtitle import *
-from module.config import app ,users_collection ,files_collection 
+from module.config import *
 from module.transcribe import *
 from module.reset_pass import *
 import os
@@ -167,7 +167,7 @@ def delete_file():
             if file:
                 file_id = file['transcript_id']
                 delete_result = files_collection.delete_one({'transcript_id': file_id})
-                cache.delete(f"dashboard_{session['user_id']}")
+                # cache.delete(f"dashboard_{session['user_id']}")
                 
                 if delete_result.deleted_count > 0:
                     return jsonify({"success": True, "message": "File deleted successfully"})
@@ -198,12 +198,12 @@ def delete_file():
 @app.route('/sitemap.xml')
 def sitemap():
     """Serve the sitemap.xml file."""
-    return send_file('sitemap.xml', mimetype='application/xml')
+    return send_file(os.path.join(os.path.dirname(__file__), 'sitemap.xml'), mimetype='application/xml')
 
 @app.route('/robots.txt')
 def robots():
     """Serve the robots.txt file."""
-    return send_file('robots.txt', mimetype='text/plain')
+    return send_file(os.path.join(os.path.dirname(__file__), 'robots.txt'), mimetype='text/plain')
 
 # Add a dedicated error route to help with debugging
 @app.route('/error/<error_id>')

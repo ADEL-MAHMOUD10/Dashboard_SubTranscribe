@@ -1,6 +1,6 @@
 from flask import Blueprint ,request ,redirect,url_for ,flash,session ,render_template 
 from module.config import users_collection 
-from module.config import limiter
+# from module.config import limiter
 from werkzeug.security import check_password_hash, generate_password_hash
 import uuid
 
@@ -36,7 +36,7 @@ def register():
     return render_template('register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
-@limiter.limit("100 per hour")
+# @limiter.limit("100 per hour")
 def login():
     session.permanent = True
     if 'user_id' in session:

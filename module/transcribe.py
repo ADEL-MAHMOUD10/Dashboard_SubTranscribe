@@ -1,5 +1,5 @@
 from flask import Blueprint , session, redirect, url_for , request, render_template
-from module.config import users_collection, files_collection, TOKEN_THREE,cache, limiter
+from module.config import users_collection, files_collection, TOKEN_THREE
 from datetime import datetime 
 import requests
 import time
@@ -9,7 +9,7 @@ import os
 
 transcribe_bp = Blueprint('transcribe', __name__)
 
-@limiter.exempt
+# @limiter.exempt
 @transcribe_bp.route('/transcribe/<user_id>')
 def transcribe_page(user_id):
     """Render the transcribe page."""
@@ -29,7 +29,7 @@ def generate_error_id():
     error_id = str(uuid.uuid4())
     return error_id
 
-@limiter.exempt
+# @limiter.exempt
 @transcribe_bp.route('/v1', methods=['POST'])
 def upload_or_link():
     """Handle file uploads or links for transcription."""
@@ -158,7 +158,7 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         
         if response.status_code != 200:
             return None
-        cache.delete(f"dashboard_{session['user_id']}")
+        # cache.delete(f"dashboard_{session['user_id']}")
         
         transcript_id = response.json()["id"]
         polling_endpoint = f"{base_url}/transcript/{transcript_id}"
@@ -278,7 +278,7 @@ def transcribe_from_link(upload_id, link):
             "upload_time": upload_time,
             "link": link
         })
-        cache.delete(f"dashboard_{session['user_id']}")
+        # cache.delete(f"dashboard_{session['user_id']}")yyy
         # Poll for the transcription result
         poll_count = 0
         

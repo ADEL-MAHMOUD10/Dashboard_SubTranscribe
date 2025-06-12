@@ -1,6 +1,6 @@
 from collections import defaultdict
 from flask import Blueprint , session , request  ,render_template ,url_for ,redirect ,flash ,send_file
-from module.config import TOKEN_THREE ,files_collection ,users_collection ,cache, limiter
+from module.config import TOKEN_THREE ,files_collection ,users_collection 
 from datetime import datetime
 from bson import ObjectId
 import requests
@@ -8,7 +8,7 @@ import os
 
 subtitle_bp = Blueprint('subtitle', __name__)
 
-@limiter.exempt
+# @limiter.exempt
 @subtitle_bp.route('/user_dashboard')
 def user_dashboard():
     # Retrieve the user_id from the session
@@ -20,23 +20,23 @@ def user_dashboard():
     user_id = session.get('user_id')
     return redirect(url_for('subtitle.dashboard', user_id=user_id))
 
-@limiter.exempt
-@subtitle_bp.route('/test-cache')
-def test_cache():
-    cache.set('mykey', 'hello cache', timeout=60)
-    value = cache.get('mykey')
-    return f"Cached value is: {value}"
+# @limiter.exempt
+# @subtitle_bp.route('/test-cache')
+# def test_cache():
+#     cache.set('mykey', 'hello cache', timeout=60)
+#     value = cache.get('mykey')
+#     return f"Cached value is: {value}"
 
-@limiter.exempt
-def make_cache_key():
-    user_id = session.get('user_id')
-    if user_id:
-        return f"dashboard_{user_id}"
-    return None 
+# @limiter.exempt
+# def make_cache_key():
+#     user_id = session.get('user_id')
+#     if user_id:
+#         return f"dashboard_{user_id}"
+#     return None 
 
-@limiter.exempt
+# @limiter.exempt
 @subtitle_bp.route('/v1/dashboard/<user_id>')
-@cache.cached(timeout=60, key_prefix=make_cache_key)
+# @cache.cached(timeout=60, key_prefix=make_cache_key)
 def dashboard(user_id):
     # Retrieve the user from the database by user_id
     user = users_collection.find_one({'user_id': user_id})
@@ -63,7 +63,7 @@ def dashboard(user_id):
 
     return render_template('dashboard.html', username=user['username'], files=files, months=months, uploads=uploads)
 
-@limiter.exempt
+# @limiter.exempt
 def calculate_monthly_activity(files):
     """calculates monthly activity"""
     monthly_activity = defaultdict(int)
@@ -85,7 +85,7 @@ def calculate_monthly_activity(files):
 
     return list(monthly_data.keys()), list(monthly_data.values())
 
-@limiter.exempt
+# @limiter.exempt
 @subtitle_bp.route('/share/<transcript_id>', methods=['GET', 'POST'])
 def share_subtitle(transcript_id):
     """Share the subtitle with others using the transcript ID."""
@@ -121,7 +121,7 @@ def share_subtitle(transcript_id):
         username = get_filename.get('username')
     return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=username,user_id=user_id) 
 
-@limiter.exempt
+# @limiter.exempt
 @subtitle_bp.route('/v1/<user_id>/download/<transcript_id>', methods=['GET', 'POST'])
 def download_subtitle(user_id, transcript_id):
     """Handle subtitle download based on the transcript ID."""
@@ -204,7 +204,7 @@ def download_subtitle(user_id, transcript_id):
     
     return render_template('subtitle.html', transcript_id=transcript_id, filename=file_name, file_size=file_size, upload_time=upload_time, username=username, user_id=user_id)  # Render the download page with the updated template
 
-@limiter.exempt
+# @limiter.exempt
 @subtitle_bp.route('/serve/<filename>')
 def serve_file(filename):
     """Serve the subtitle file for download."""
@@ -231,7 +231,7 @@ def serve_file(filename):
         print(f"Error serving file: {str(e)}")
         return render_template("error.html", error=f"Error serving file: {str(e)}")
 
-@limiter.exempt
+# @limiter.exempt
 @subtitle_bp.route('/redirect/<file_id>')
 def redirect_to_transcript(file_id):
     """Redirect to the subtitle download page based on the transcript ID."""

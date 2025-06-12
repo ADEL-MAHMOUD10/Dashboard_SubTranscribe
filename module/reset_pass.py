@@ -1,5 +1,5 @@
 from flask import Blueprint , request ,redirect ,flash , render_template, url_for
-from module.config import users_collection ,otp_collection ,limiter ,EMAIL_PASSWORD ,EMAIL_USER
+from module.config import users_collection ,otp_collection  ,EMAIL_PASSWORD ,EMAIL_USER
 from werkzeug.security import generate_password_hash
 from datetime import datetime ,timedelta
 from email.mime.multipart import MIMEMultipart
@@ -11,7 +11,7 @@ import random
 reset_pass_bp = Blueprint('reset_pass', __name__)
 
 @reset_pass_bp.route('/check_user', methods=['GET', 'POST'])
-@limiter.limit("60 per hour")
+# @limiter.limit("60 per hour")
 def check_user():
     if request.method == 'POST':
         Email = request.form['email']
@@ -28,7 +28,7 @@ def check_user():
     return render_template('check_user.html')
         
 @reset_pass_bp.route('/reset_password', methods=['POST'])
-@limiter.limit("60 per hour")
+# @limiter.limit("60 per hour")
 def reset_password():
     email = request.form['email']
     user_otp = request.form['OTP']
