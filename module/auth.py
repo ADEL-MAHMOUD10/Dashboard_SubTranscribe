@@ -26,7 +26,7 @@ def register():
             flash('User already exists', 'danger')
             return redirect(url_for('auth.register'))
         
-        hashed_password = generate_password_hash(password)
+        hashed_password = generate_password_hash(password, method='scrypt', salt_length=16)
         users_collection.insert_one({'Email': Email,'username': username, 'password': hashed_password ,"user_id":user_id})
         session['user_id'] = user_id
         session['username'] = username  # Store username in session
