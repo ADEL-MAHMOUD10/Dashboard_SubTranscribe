@@ -10,7 +10,7 @@ python-dotenv==1.0.1
 Requests==2.32.3
 tqdm==4.66.5
 Werkzeug==3.1.0
-yt_dlp==2024.10.22
+yt_dlp==2025.6.9
 DateTime
 python-dateutil
 dnspython

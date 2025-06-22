@@ -1,4 +1,4 @@
-from flask import Blueprint , session, redirect, url_for , request, render_template
+from flask import Blueprint , session, redirect, url_for , request, render_template, flash
 from module.config import users_collection, files_collection, TOKEN_THREE
 from datetime import datetime 
 import requests
@@ -115,19 +115,12 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         # Function to upload file in chunks
         def upload_chunks():
             """Generator function to upload file in smaller chunks."""
-            total_uploaded = 0
-            
-            # Use small enough chunks for regular progress updates but large enough for efficiency
-            # 150KB is a good balance for most connections
-            chunk_size = 150000  
-            
             while True:
-                chunk = audio_file.read(chunk_size)
+                chunk = audio_file.read()
                 if not chunk:
                     break
                 
                 yield chunk
-                total_uploaded += len(chunk)
         
         # Upload the file to AssemblyAI and get the URL
         try:
@@ -141,7 +134,6 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
             if response.status_code != 200:
                 raise RuntimeError(f"File upload failed with status code: {response.status_code}")
         except Exception as e:
-            print(f"Upload error: {str(e)}")
             return None
         
         # Continue with transcription request
@@ -187,7 +179,6 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                     poll_count += 1
                     
             except Exception as e:
-                print(f"Error polling transcription status: {e}")
                 time.sleep(5)
                 poll_count += 1
         
@@ -195,7 +186,6 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         raise RuntimeError("Transcription status check timed out")
         
     except Exception as e:
-        print(f"Upload error: {str(e)}")
         return None
 
 # def convert_video_to_audio(video_path):
@@ -214,32 +204,65 @@ def transcribe_from_link(upload_id, link):
     """Process a video/audio link for transcription with optimized progress tracking."""
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
+    file_uuid = str(uuid.uuid4())
+    filename = f"temp_{file_uuid}"
     
+    # Ensure temp directory exists
+    temp_dir = os.path.join(os.getcwd(), 'temp')
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    file_path = os.path.join(temp_dir, filename)
+    # The actual file will have .mp3 extension after yt-dlp processing
+    file_path_mp3 = f"{file_path}.mp3"
     ydl_opts = {
         'format': 'bestaudio/best',
+        'outtmpl': file_path,
         'quiet': True,
-        'no_warnings': True,
-        'extract_audio': True,
-        'skip_download': True,
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
     }
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(link, download=False)
             audio_url = info_dict.get('url', None)
-            try:
-                response = requests.head(audio_url)
-                total_size = int(response.headers.get('content-length', 0))
-            except:
-                total_size = 0
+            ydl.download([link])
+            # try:
+            #     response = requests.head(audio_url)
+            #     total_size = int(response.headers.get('content-length', 'Unknown'))
+            # except:
+            #     total_size = 'Unknown'
     except Exception as e:
-        print(f"Error extracting audio URL: {str(e)}")
-        return {'error': "Unable to process this media link. Please ensure it's from a supported platform and is publicly accessible."}
+        return flash("Unable to process this media link. Please ensure it's from a supported platform and is publicly accessible.")
     
+    # Step 2: Upload to AssemblyAI
+    try:
+        # Use the file with .mp3 extension
+        with open(file_path_mp3, 'rb') as f:
+            total_size = os.path.getsize(file_path_mp3)
+            upload_res = requests.post(
+                f"{base_url}/upload",
+                headers=headers,
+                files={'file': f}
+            )
+            upload_res.raise_for_status()
+            upload_url = upload_res.json().get('upload_url')
+    except Exception as e:
+        return flash(f"Failed to upload audio")
+    finally:
+        # Clean up both possible file paths
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        if os.path.exists(file_path_mp3):
+            os.remove(file_path_mp3)
+
     try:
         # Request transcription from AssemblyAI using the link
         data = {
-            "audio_url": audio_url
+            "audio_url": upload_url
         }
         
         response = requests.post(f"{base_url}/transcript", 
@@ -258,7 +281,7 @@ def transcribe_from_link(upload_id, link):
             elif response.status_code >= 500:
                 error_message = "Transcription service is temporarily unavailable. Please try again later."
                 
-            return {'error': error_message}
+            return flash(error_message)
         
         transcript_id = response.json()["id"]
         polling_endpoint = f"{base_url}/transcript/{transcript_id}"
@@ -294,7 +317,7 @@ def transcribe_from_link(upload_id, link):
                     
                 elif transcription_result['status'] == 'error':
                     error_msg = transcription_result.get('error', 'Unknown error')
-                    return {'error': f"Transcription failed: {error_msg}. Please try a different media file or format."}
+                    return flash(f"Transcription failed. Please try a different media file or format.")
                     
                 else:
                     # Exponential backoff
@@ -303,12 +326,11 @@ def transcribe_from_link(upload_id, link):
                     poll_count += 1
                     
             except Exception as e:
-                print(f"Error polling transcription status: {e}")
                 time.sleep(5)
                 poll_count += 1
         
         # If we get here, we've exceeded poll attempts
-        return {'error': "Transcription is taking longer than expected. Please try again or use a shorter media file."}
+        return flash("Transcription is taking longer than expected. Please try again or use a shorter media file.")
         
     except Exception as e:
         error_message = str(e)
