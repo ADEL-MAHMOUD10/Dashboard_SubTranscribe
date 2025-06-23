@@ -1,6 +1,6 @@
 from flask import Blueprint , session, redirect, url_for , request, render_template, flash
 from module.config import users_collection, files_collection, TOKEN_THREE
-from datetime import datetime 
+from datetime import datetime, timezone 
 import requests
 import time
 import yt_dlp 
@@ -43,7 +43,7 @@ def upload_or_link():
     # Initialize variables with default values
     file_name = 'Unknown'
     file_size = 'Unknown'
-    upload_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    upload_time = datetime.now(timezone.utc)  # Store time in UTC
     username = user.get('username', 'Unknown') if user else 'Unknown'
     
     err_id = generate_error_id()
@@ -287,7 +287,7 @@ def transcribe_from_link(upload_id, link):
         polling_endpoint = f"{base_url}/transcript/{transcript_id}"
         
         # Initialize variables with default values
-        upload_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        upload_time = datetime.now(timezone.utc)  # Store time in UTC
         username = session.get('username')
         user_id = session.get('user_id')
         

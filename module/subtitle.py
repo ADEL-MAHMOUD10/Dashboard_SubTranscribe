@@ -1,7 +1,7 @@
 from collections import defaultdict
 from flask import Blueprint , session , request  ,render_template ,url_for ,redirect ,flash ,send_file
 from module.config import TOKEN_THREE ,files_collection ,users_collection 
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 import requests
 import os 
@@ -50,11 +50,17 @@ def dashboard(user_id):
     # Convert the '_id' field to string before passing to template
     for file in files:
         file['_id'] = str(file['_id'])  # Convert ObjectId to string
+        
+        # Handle upload_time properly
         if 'upload_time' in file and file['upload_time']:
-            try:
-                file['upload_time'] = datetime.strptime(file['upload_time'], '%Y-%m-%d %H:%M:%S')
-            except (ValueError, TypeError):
-                file['upload_time'] = None
+            # If it's not a datetime object, try to convert it
+            if not isinstance(file['upload_time'], datetime):
+                try:
+                    # Try to convert from string if needed
+                    file['upload_time'] = datetime.strptime(str(file['upload_time']), '%Y-%m-%d %H:%M:%S')
+                except (ValueError, TypeError):
+                    # If conversion fails, set to None
+                    file['upload_time'] = None
         else:
             file['upload_time'] = None
 
@@ -118,6 +124,13 @@ def share_subtitle(transcript_id):
         file_name = get_filename.get('file_name') 
         file_size = f"{(get_filename.get('file_size')/1000000):.2f} MB"  # convert to MB
         upload_time = get_filename.get('upload_time')
+        # Try to convert upload_time to datetime if it's a string
+        if upload_time and isinstance(upload_time, str):
+            try:
+                upload_time = datetime.strptime(upload_time, '%Y-%m-%d %H:%M:%S')
+            except (ValueError, TypeError):
+                # Keep it as a string if conversion fails
+                pass
         username = get_filename.get('username')
     return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=username,user_id=user_id) 
 
@@ -200,6 +213,13 @@ def download_subtitle(user_id, transcript_id):
         file_name = get_filename.get('file_name')
         file_size = f"{(get_filename.get('file_size')/1000000):.2f} MB" # convert to MB
         upload_time = get_filename.get('upload_time')
+        # Try to convert upload_time to datetime if it's a string
+        if upload_time and isinstance(upload_time, str):
+            try:
+                upload_time = datetime.strptime(upload_time, '%Y-%m-%d %H:%M:%S')
+            except (ValueError, TypeError):
+                # Keep it as a string if conversion fails
+                pass
         username = get_filename.get('username')
     
     return render_template('subtitle.html', transcript_id=transcript_id, filename=file_name, file_size=file_size, upload_time=upload_time, username=username, user_id=user_id)  # Render the download page with the updated template

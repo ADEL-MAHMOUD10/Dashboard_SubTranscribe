@@ -186,6 +186,39 @@
                     <div class="progress-percentage" id="progressPercentage">0%</div>
                     <div class="progress-message" id="progressMessage">Preparing to process...</div>
                 </div>
+                
+                <!-- Status Animation -->
+                <div class="status-animation-container" id="statusAnimationContainer">
+                    <div class="status-steps">
+                        <div class="status-step" data-step="upload">
+                            <div class="status-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="status-label">Uploading</div>
+                            <div class="status-line"></div>
+                        </div>
+                        <div class="status-step" data-step="process">
+                            <div class="status-icon">
+                                <i class="fas fa-cogs"></i>
+                            </div>
+                            <div class="status-label">Processing</div>
+                            <div class="status-line"></div>
+                        </div>
+                        <div class="status-step" data-step="analyze">
+                            <div class="status-icon">
+                                <i class="fas fa-headphones"></i>
+                            </div>
+                            <div class="status-label">Analyzing</div>
+                            <div class="status-line"></div>
+                        </div>
+                        <div class="status-step" data-step="complete">
+                            <div class="status-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="status-label">Complete</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
