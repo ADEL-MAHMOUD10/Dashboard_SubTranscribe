@@ -11,6 +11,38 @@
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
     <style>
+        /* Responsive fixes */
+        @media (max-width: 768px) {
+            .container-fluid {
+                max-width: 100% !important;
+                padding-right: 0 !important;
+                padding-left: 0 !important;
+            }
+            
+            .table-responsive {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                overflow-x: hidden !important;
+            }
+            
+            .glass-card {
+                padding: 12px !important;
+                border-radius: 10px !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .row {
+                margin-right: 0 !important;
+                margin-left: 0 !important;
+            }
+            
+            .col, .col-md-6 {
+                padding-right: 5px !important;
+                padding-left: 5px !important;
+            }
+        }
+        
         /* Copy button styles */
         .copy-btn {
             transition: all 0.2s ease;
@@ -22,35 +54,79 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
         
-        /* Notification styles */
+        /* Dropdown styles */
+        .dropdown-item:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        /* Notification styles - Liquid Glass Effect */
         .notification-toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 16px 24px;
+            border-radius: 16px;
             color: white;
             font-weight: 500;
             z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            animation: fadeInOut 3s ease;
-        }
-        .notification-toast.success {
-            background-color: rgba(46, 204, 113, 0.9);
-        }
-        .notification-toast.error {
-            background-color: rgba(231, 76, 60, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            animation: liquidFadeInOut 3s ease;
+            min-width: 280px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
         }
         
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateY(20px); }
-            10% { opacity: 1; transform: translateY(0); }
-            90% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-20px); }
+        .notification-toast::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .notification-toast.success {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.7) 0%, rgba(26, 188, 156, 0.7) 100%);
+        }
+        
+        .notification-toast.error {
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.7) 0%, rgba(192, 57, 43, 0.7) 100%);
+        }
+        
+        .notification-toast::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.5);
+            animation: progressBar 3s linear;
+        }
+        
+        @keyframes progressBar {
+            0% { width: 100%; }
+            100% { width: 0%; }
+        }
+        
+        @keyframes liquidFadeInOut {
+            0% { opacity: 0; transform: translateY(20px) scale(0.9); filter: blur(5px); }
+            10% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+            90% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+            100% { opacity: 0; transform: translateY(-20px) scale(0.9); filter: blur(5px); }
         }
     </style>
 </head>
-<body>
+<body style="overflow-x: hidden; margin: 0; padding: 0; width: 100%; max-width: 100vw; box-sizing: border-box;">
     <div id="particles-js"></div>
     
     <!-- Background Shapes -->
@@ -60,7 +136,7 @@
     
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-glass mb-4">
-        <div class="container">
+        <div class="container-fluid" style="max-width: 90%; margin: 0 auto; padding-right: 0; padding-left: 0;">
             <div class="d-flex align-items-center">
                 <a href="/" class="me-2">
                     <img src="/static/image/subtitle.ico" style="max-width: 30px;" alt="SubTranscribe Logo">
@@ -91,7 +167,7 @@
         </div>
     </nav>
     
-    <div class="container relative z-10">
+    <div class="container-fluid relative z-10" style="max-width: 90%; margin: 0 auto; padding-right: 0; padding-left: 0;">
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -111,21 +187,19 @@
         
         <!-- Welcome Header -->
         <div class="glass-card mb-4 p-4" data-aos="fade-up">
-            <div class="d-flex align-items-center">
-                <div class="avatar-container me-4">
-                    <div class="avatar">
+            <div class="d-flex flex-column align-items-center">
+                <div class="text-center mb-3">
+                    <div class="avatar mx-auto mb-2">
                         <i class="fas fa-user"></i>
                     </div>
-                </div>
-                <div>
                     <h4 class="mb-1">Welcome, <span class="text-primary-400">{{ username }}</span></h4>
                     <p class="text-white/70 mb-0">Here's an overview of your activity</p>
                 </div>
-                <div class="ms-auto d-flex">
-                    <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}" class="btn btn-outline-light me-2">
+                <div class="w-100 d-flex flex-column align-items-center">
+                    <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}" class="btn btn-outline-light mb-2" style="width: 100%;">
                         <i class="fas fa-cog me-2"></i>Settings
                     </a>
-                    <a href="{{ url_for('main_user', user_id='user_id') }}" class="btn btn-primary-gradient">
+                    <a href="{{ url_for('main_user', user_id='user_id') }}" class="btn btn-primary-gradient" style="width: 100%;">
                         <i class="fas fa-plus me-2"></i>New Upload
                     </a>
                 </div>
@@ -170,11 +244,11 @@
             </div>
         </div>
         
-        <!-- Files Table -->
+                    <!-- Files Table -->
         <div class="glass-card p-4" data-aos="fade-up" data-aos-delay="400">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5><i class="fas fa-file-alt me-2"></i>Your Files</h5>
-                <div class="search-container">
+            <div class="d-flex flex-column align-items-center mb-4">
+                <h5 class="text-center mb-3"><i class="fas fa-file-alt me-2"></i>Your Files</h5>
+                <div class="search-container w-100" style="max-width: 500px;">
                     <div class="input-group">
                         <input type="text" id="file-search" class="form-control" placeholder="Search files..." aria-label="Search files">
                         <span class="input-group-text">
@@ -196,15 +270,15 @@
                     </a>
                 </div>
             {% else %}
-                <div class="table-responsive">
-                    <table class="table custom-table">
+                <div class="table-responsive" style="overflow-x: auto; width: 100%; max-width: 100%; margin: 0; padding: 0;">
+                    <table class="table custom-table" style="width: 100%;">
                         <thead>
                             <tr>
-                                <th>File Name</th>
-                                <th>File Size</th>
-                                <th>Uploaded On</th>
+                                <th style="width: 30%;">File Name</th>
+                                <th style="width: 15%;">File Size</th>
+                                <th style="width: 20%; text-align: center;">Uploaded On</th>
                                 <th class="text-center">Actions</th>
-                                <th class="text-center">Delete</th>
+                                <th class="text-center d-none d-md-table-cell">Delete</th>
                             </tr>
                         </thead>
                         <tbody id="file-list">
@@ -213,21 +287,21 @@
                                 <td class="file-name">
                                     {% if file.file_name and (file.file_name.startswith('http://') or file.file_name.startswith('https://')) %}
                                         <div class="d-flex align-items-center">
-                                            <div class="file-icon me-2">
+                                            <div class="file-icon me-2" style="color: #3498db; background-color: rgba(52, 152, 219, 0.1); padding: 8px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
                                                 <i class="fas fa-link"></i>
                                             </div>
-                                            <a href="{{ file.file_name }}" target="_blank" class="file-link text-truncate">{{ file.file_name }}</a>
+                                            <a href="{{ file.file_name }}" target="_blank" class="file-link" style="display: inline-block; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ file.file_name }}</a>
                                         </div>
                                     {% elif file.file_name %}
                                         <div class="d-flex align-items-center">
-                                            <div class="file-icon me-2">
+                                            <div class="file-icon me-2" style="color: #4de73c; background-color: rgba(66, 231, 60, 0.1); padding: 8px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
                                                 <i class="fas fa-file-audio"></i>
                                             </div>
-                                            <span class="text-truncate">{{ file.file_name }}</span>
+                                            <a href="{{ file.file_name }}" target="_blank" class="file-link" style="display: inline-block; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ file.file_name }}</a>
                                         </div>
                                     {% else %}
                                         <div class="d-flex align-items-center">
-                                            <div class="file-icon me-2">
+                                            <div class="file-icon me-2" style="color: #f33012bd; background-color: rgba(243, 22, 18, 0.1); padding: 8px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
                                                 <i class="fas fa-question-circle"></i>
                                             </div>
                                             <span>Unknown</span>
@@ -251,7 +325,8 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    <div class="d-flex justify-content-center gap-2">
+                                    <!-- Desktop View Actions -->
+                                    <div class="d-none d-md-flex justify-content-center gap-2">
                                         <a href="{{ url_for('subtitle.redirect_to_transcript', file_id=file._id) }}" class="btn btn-sm btn-primary-gradient px-3">
                                             <i class="fas fa-download me-1"></i> Download
                                         </a>
@@ -261,10 +336,36 @@
                                             <i class="fas fa-copy"></i>
                                         </button>
                                     </div>
+                                    
+                                    <!-- Mobile View Actions - Dropdown -->
+                                    <div class="d-md-none dropdown">
+                                        <button class="btn btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: transparent; border: none; color: rgba(255, 255, 255, 0.8);">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-dark" style="background: rgba(28, 28, 30, 0.75); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                                            <li>
+                                                <a class="dropdown-item d-flex align-items-center" href="{{ url_for('subtitle.redirect_to_transcript', file_id=file._id) }}" style="background: transparent; transition: all 0.2s ease;">
+                                                    <i class="fas fa-download me-2"></i> Download
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item d-flex align-items-center" href="#" onclick="copyToClipboard('{{ file.transcript_id }}'); return false;" style="background: transparent; transition: all 0.2s ease;">
+                                                    <i class="fas fa-copy me-2"></i> Copy ID
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider" style="border-color: rgba(255, 255, 255, 0.1);"></li>
+                                            <li>
+                                                <a class="dropdown-item d-flex align-items-center text-danger" href="#" data-file-id="{{ file._id }}" onclick="deleteFile(this); return false;" style="background: transparent; transition: all 0.2s ease;">
+                                                    <i class="fas fa-trash-alt me-2"></i> Delete
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    
                                     <!-- Hidden span containing the file ID for copy functionality -->
                                     <span class="d-none">{{ file.transcript_id }}</span>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center d-none d-md-table-cell">
                                     <button type="button" class="btn-delete" data-file-id="{{ file._id }}" onclick="deleteFile(this)">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
@@ -278,7 +379,47 @@
         </div>
         
         <!-- Notification -->
-        <div id="notification" class="notification-toast" style="display: none;"></div>
+        <div id="notification" class="notification-toast" style="display: none;">
+            <div class="notification-icon me-3">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="notification-content"></div>
+        </div>
+        
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background: rgba(28, 28, 30, 0.85); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+                    <div class="modal-header border-0" style="padding: 20px 25px;">
+                        <h5 class="modal-title" id="deleteConfirmModalLabel" style="font-weight: 500; color: #fff; font-size: 1.1rem; letter-spacing: 0.3px;">
+                            Delete File
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center py-4" style="padding: 0 25px 20px;">
+                        <div class="mb-4">
+                            <div class="alert-icon mb-4" style="position: relative;">
+                                <div style="width: 90px; height: 90px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.1), 0 8px 30px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.2);">
+                                    <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: #ff5e62; filter: drop-shadow(0 0 10px rgba(255, 94, 98, 0.5));"></i>
+                                </div>
+                            </div>
+                            <h5 style="font-size: 1.3rem; margin-bottom: 15px; color: #fff; font-weight: 500; letter-spacing: 0.3px;">Are you sure you want to delete this file?</h5>
+                            <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; line-height: 1.5; max-width: 85%; margin: 0 auto;">This action cannot be undone and all data will be permanently lost.</p>
+                        </div>
+                        <input type="hidden" id="fileToDelete" value="">
+                    </div>
+                    <div class="modal-footer border-0 justify-content-center" style="padding: 0 25px 25px;">
+                        <button type="button" class="btn px-4 py-2" data-bs-dismiss="modal" style="background: rgba(60, 60, 67, 0.15); color: #fff; border-radius: 14px; border: none; transition: all 0.2s ease; min-width: 120px; margin-right: 10px; font-weight: 500; letter-spacing: 0.3px;">
+                            Cancel
+                        </button>
+                        <button type="button" class="btn px-4 py-2" id="confirmDeleteBtn" style="background: rgba(255, 69, 58, 0.9); color: #fff; border: none; border-radius: 14px; transition: all 0.2s ease; min-width: 120px; font-weight: 600; letter-spacing: 0.3px;">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Footer -->
@@ -437,11 +578,25 @@
             }
         });
         
-        // Delete file function
+        // Delete file function - Show modal
         function deleteFile(button) {
             const fileId = button.getAttribute('data-file-id');
+            // Store the file ID in the modal
+            document.getElementById('fileToDelete').value = fileId;
             
-            if (confirm('Are you sure you want to delete this file?')) {
+            // Get file name for personalized message
+            const fileName = button.closest('tr').querySelector('.file-name').textContent.trim();
+            
+            // Show the modal
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            deleteModal.show();
+        }
+        
+        // Handle actual deletion when confirmed
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+                const fileId = document.getElementById('fileToDelete').value;
+                
                 fetch('/delete_file', {
                     method: 'DELETE',
                     headers: {
@@ -452,14 +607,27 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Remove the row from the table
-                        const row = button.closest('tr');
-                        row.remove();
+                        // Hide the modal
+                        const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                        deleteModal.hide();
+                        
+                        // Find and remove the row from the table
+                        const rows = document.querySelectorAll('#file-list tr');
+                        for (let row of rows) {
+                            const deleteBtn = row.querySelector('.btn-delete');
+                            if (deleteBtn && deleteBtn.getAttribute('data-file-id') === fileId) {
+                                row.remove();
+                                break;
+                            }
+                        }
                         
                         // Update total files count
                         const totalFilesElement = document.getElementById('total-files');
                         const currentCount = parseInt(totalFilesElement.textContent);
                         totalFilesElement.textContent = currentCount - 1;
+                        
+                        // Update total size if needed
+                        updateTotalSize();
                         
                         // Show success notification
                         showNotification('File deleted successfully', 'success');
@@ -471,8 +639,26 @@
                     console.error('Error:', error);
                     showNotification('An error occurred while deleting the file', 'error');
                 });
+            });
+            
+            // Function to recalculate total size
+            function updateTotalSize() {
+                const fileList = document.querySelectorAll('#file-list tr');
+                let totalSize = 0;
+                
+                fileList.forEach(row => {
+                    const fileSizeCell = row.cells[1];
+                    const fileSizeText = fileSizeCell.textContent.trim();
+                    const fileSize = parseFloat(fileSizeText.replace('MB', '').trim());
+                    
+                    if (!isNaN(fileSize) && fileSize > 0) {
+                        totalSize += fileSize;
+                    }
+                });
+                
+                document.getElementById('total-size').textContent = totalSize.toFixed(2) + ' MB';
             }
-        }
+        });
         
         // Function to show notification
         function showNotification(message, type) {

@@ -279,7 +279,7 @@ span:hover {
 
 /* Delete button */
 .btn-delete {
-    background: rgba(255, 59, 59, 0.15);
+    background: #ff00007f;
     border: none;
     color: rgba(255, 255, 255, 0.8);
     font-size: 1rem;
@@ -296,7 +296,7 @@ span:hover {
 
 .btn-delete:hover {
     background-color: rgba(255, 59, 59, 0.3);
-    color: rgba(255, 255, 255, 1);
+    color: rgb(255, 255, 255);
     transform: scale(1.1);
 }
 

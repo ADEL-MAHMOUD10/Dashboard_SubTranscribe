@@ -72,21 +72,19 @@
         
         <!-- Header -->
         <div class="glass-card mb-4 p-4" data-aos="fade-up">
-            <div class="d-flex align-items-center">
-                <div class="me-4">
-                    <div class="stats-icon">
+            <div class="d-flex flex-column align-items-center">
+                <div class="text-center mb-3">
+                    <div class="stats-icon mx-auto mb-2">
                         <i class="fas fa-microphone-alt"></i>
                     </div>
-                </div>
-                <div>
                     <h4 class="mb-1">Transcribe Media</h4>
                     <p class="text-white/70 mb-0">Convert audio and video to text with AI</p>
                 </div>
-                <div class="ms-auto d-flex">
-                    <a href="{{ url_for('setting.settings',user_id=session.get('user_id')) }}" class="btn btn-outline-light me-2">
+                <div class="w-100 d-flex flex-column align-items-center">
+                    <a href="{{ url_for('setting.settings',user_id=session.get('user_id')) }}" class="btn btn-outline-light mb-2" style="width: 100%;">
                         <i class="fas fa-cog me-2"></i>Settings
                     </a>
-                    <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}" class="btn btn-primary-gradient">
+                    <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}" class="btn btn-primary-gradient" style="width: 100%;">
                         <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                     </a>
                 </div>
@@ -133,7 +131,7 @@
                                     <i class="fas fa-file-audio" id="fileTypeIcon"></i>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <h6 class="mb-1" id="fileName">file.mp3</h6>
+                                    <p class="mb-1" id="fileName" style="font-size: medium; max-width: 80%;">file.mp3</p>
                                     <p class="mb-0 text-white/70" id="fileSize">0 MB</p>
                                 </div>
                                 <button type="button" class="btn btn-sm btn-danger-gradient" id="changeFileBtn">
@@ -142,8 +140,8 @@
                             </div>
                         </div>
                         
-                        <div class="mt-4 d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary-gradient" id="uploadBtn">
+                        <div class="mt-4 d-flex justify-content-center">
+                            <button type="submit" class="btn btn-primary-gradient" id="uploadBtn" style="width: 90%;">
                                 <i class="fas fa-cloud-upload-alt me-2"></i>Upload & Transcribe
                             </button>
                         </div>
@@ -167,8 +165,8 @@
                             </div>
                         </div>
                         
-                        <div class="mt-4 d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary-gradient" id="linkBtn">
+                        <div class="mt-4 d-flex justify-content-center">
+                            <button type="submit" class="btn btn-primary-gradient" id="linkBtn" style="width: 90%;">
                                 <i class="fas fa-external-link-alt me-2"></i>Process Link
                             </button>
                         </div>
@@ -271,7 +269,7 @@
             </div>
             
             <div class="text-center mt-4">
-                <a href="https://subtranscribe.koyeb.app/#faq" class="btn btn-outline-light">
+                <a href="https://subtranscribe.koyeb.app/#faq" class="btn btn-outline-light" style="width: 90%;">
                     <i class="fas fa-question-circle me-2"></i>Learn More
                 </a>
             </div>
