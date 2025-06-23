@@ -4,10 +4,9 @@
 html, body {
     overflow-x: hidden;
     width: 100%;
-    max-width: 100vw;
+    max-width: 100%;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
 }
 
 body {
@@ -15,7 +14,6 @@ body {
     font-family: 'Inter', system-ui, sans-serif;
     background-color: #020617;
     color: #e2e8f0;
-    /* position: relative; */
 }
 
 /* Interactive Particles Background */
@@ -25,7 +23,7 @@ body {
     left: 0;
     width: 100%;
     height: 100vh;
-    z-index: -10;
+    z-index: 0;
     overflow: hidden;
     pointer-events: none;
 }
@@ -47,10 +45,6 @@ body {
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    margin: 0;
 }
 
 .glass-card {
@@ -62,11 +56,6 @@ body {
     border-radius: 1rem;
     transition: all 0.3s ease;
     overflow: hidden;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    margin-left: 0;
-    margin-right: 0;
 }
 
 /* Shapes animation */
@@ -78,8 +67,6 @@ body {
     opacity: 0.2;
     pointer-events: none;
     z-index: -1;
-    overflow: hidden;
-    max-width: 100vw;
 }
 
 /* Floating animation */
@@ -179,39 +166,4 @@ body {
 
 .feature-card:hover {
     transform: translateY(-10px);
-}
-
-/* Responsive fixes for small screens */
-@media (max-width: 768px) {
-    html, body {
-        width: 100%;
-        max-width: 100vw;
-        overflow-x: hidden;
-    }
-    
-    .container, .container-fluid {
-        width: 100% !important;
-        max-width: 100% !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        overflow-x: hidden !important;
-    }
-    
-    .row {
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        width: 100% !important;
-    }
-    
-    .col, .col-md-6, .col-lg-4, [class*="col-"] {
-        padding-left: 5px !important;
-        padding-right: 5px !important;
-    }
-    
-    .glass-card {
-        border-radius: 10px !important;
-        margin-bottom: 10px !important;
-    }
-}
+} 

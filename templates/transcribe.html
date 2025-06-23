@@ -72,19 +72,21 @@
         
         <!-- Header -->
         <div class="glass-card mb-4 p-4" data-aos="fade-up">
-            <div class="d-flex flex-column align-items-center">
-                <div class="text-center mb-3">
-                    <div class="stats-icon mx-auto mb-2">
-                        <i class="fas fa-microphone-alt"></i>
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <div class="text-center">
+                        <div class="stats-icon mx-auto mb-2">
+                            <i class="fas fa-microphone-alt"></i>
+                        </div>
+                        <h4 class="mb-1">Transcribe Media</h4>
+                        <p class="text-white/70 mb-0">Convert audio and video to text with AI</p>
                     </div>
-                    <h4 class="mb-1">Transcribe Media</h4>
-                    <p class="text-white/70 mb-0">Convert audio and video to text with AI</p>
                 </div>
-                <div class="w-100 d-flex flex-column align-items-center">
-                    <a href="{{ url_for('setting.settings',user_id=session.get('user_id')) }}" class="btn btn-outline-light mb-2" style="width: 100%;">
+                <div class="col-md-6 d-flex flex-column align-items-center justify-content-center">
+                    <a href="{{ url_for('setting.settings',user_id=session.get('user_id')) }}" class="btn btn-outline-light mb-2 w-100 w-md-80">
                         <i class="fas fa-cog me-2"></i>Settings
                     </a>
-                    <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}" class="btn btn-primary-gradient" style="width: 100%;">
+                    <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}" class="btn btn-primary-gradient w-100 w-md-80">
                         <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                     </a>
                 </div>
