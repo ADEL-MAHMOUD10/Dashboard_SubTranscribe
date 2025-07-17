@@ -266,6 +266,25 @@
     font-size: 0.85rem;
 }
 
+.form-select {
+    background: rgba(30, 30, 50, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.form-select:focus {
+    background: rgba(40, 40, 70, 0.5);
+    border-color: rgba(116, 58, 213, 0.5);
+    box-shadow: 0 0 0 0.25rem rgba(116, 58, 213, 0.15);
+    color: white;
+    outline: none;
+}
+
 /* Notification styles */
 .notification-toast {
     position: fixed;

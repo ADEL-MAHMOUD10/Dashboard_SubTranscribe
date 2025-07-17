@@ -100,7 +100,19 @@ def upload_or_link():
     else:
         return redirect(url_for('auth.login', user_id=session['user_id']))
 
-
+def get_model():
+    model = request.form['model']
+    if model == 'slam-1':
+        return 'slam-1'
+    elif model == 'universal':
+        return 'universal'
+    elif model == 'voxtral-mini-2507':
+        return 'voxtral-mini-2507'
+    elif model == 'whisper-large-v3':
+        return 'whisper-large-v3'
+    else:
+        return 'universal'
+    
 def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
     headers = {"authorization": TOKEN_THREE}
@@ -140,8 +152,10 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         upload_url = response.json()["upload_url"]
         
         # Request transcription from AssemblyAI using the uploaded file URL
+        speech_model = get_model()
         data = {
-            "audio_url": upload_url
+            "audio_url": upload_url,
+            "speech_model": speech_model,
         }
         response = requests.post(f"{base_url}/transcript", 
                                 json=data, 
@@ -261,8 +275,10 @@ def transcribe_from_link(upload_id, link):
 
     try:
         # Request transcription from AssemblyAI using the link
+        speech_model = get_model()
         data = {
-            "audio_url": upload_url
+            "audio_url": upload_url,
+            "speech_model": speech_model,
         }
         
         response = requests.post(f"{base_url}/transcript", 
