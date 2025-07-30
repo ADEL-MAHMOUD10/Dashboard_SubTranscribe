@@ -211,6 +211,7 @@
                         <div class="glass-card p-4 mb-4">
                             <h5 class="mb-4"><i class="fas fa-bell me-2"></i>Notification Preferences</h5>
                             <form action="{{ url_for('setting.update_notifications') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <div class="mb-3">
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" {% if user.settings and user.settings.notifications and user.settings.notifications.email %}checked{% endif %}>

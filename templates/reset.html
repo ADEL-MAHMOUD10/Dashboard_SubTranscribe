@@ -190,7 +190,9 @@
                         <!-- Reset Password Form -->
                         <form action="{{ url_for('reset_pass.reset_password') }}" method="POST" class="space-y-5">
                             <!-- New Password Field -->
+                             
                             <div>
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <label for="email" class="block text-sm font-medium text-white mt-2">Email / Username</label>
                                 <div class="relative">
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

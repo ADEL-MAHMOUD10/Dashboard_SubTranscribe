@@ -5,6 +5,7 @@ from flask_caching import Cache
 # from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from datetime import timedelta  
+from flask_wtf.csrf import CSRFProtect
 from pymongo import MongoClient 
 import os 
 
@@ -17,6 +18,7 @@ SESSION_USERS = os.getenv('SESSION_ID')
 REDIS_UR = os.getenv("REDIS_URI")
 EMAIL_USER = os.getenv("STMP_USER")
 EMAIL_PASSWORD = os.getenv("STMP_PASSWORD")
+
 # Get the absolute paths to the templates and static directories
 template_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates'))
 static_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
@@ -49,6 +51,7 @@ app.config['DEBUG'] = False
 
 
 app.secret_key = SESSION_USERS
+csrf = CSRFProtect(app)
 
 # Set up MongoDB connection
 cluster = MongoClient(TOKEN_ONE)

@@ -52,10 +52,9 @@ def login():
 
         user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
         if user and check_password_hash(user['password'], password):
-            if 'user_id' in session:
-                flash('Successfully logged in!', 'success')
             session['user_id'] = user['user_id']  # Store user_id in session
             session['username'] = user['username']  # Store username in session
+            flash('Successfully logged in!', 'success')
             return redirect(url_for('main_user', user_id=user['user_id']))
         flash('Incorrect username or password', 'danger')
         return redirect(url_for('auth.login'))
