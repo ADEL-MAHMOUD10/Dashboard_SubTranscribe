@@ -278,6 +278,7 @@
                 <div class="mb-8">
                     <h2 class="text-2xl font-bold mb-4">Choose Format</h2>
                     <form action="" method="post" id="download-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <!-- SRT Format -->
                             <label class="format-card glass-card p-4 text-center selected cursor-pointer">
