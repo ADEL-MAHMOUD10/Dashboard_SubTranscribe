@@ -250,6 +250,7 @@
                         <div class="glass-card p-4 mb-4">
                             <h5 class="mb-4"><i class="fas fa-lock me-2"></i>Change Password</h5>
                             <form action="{{ url_for('setting.update_password') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <div class="mb-3">
                                     <label for="current_password" class="form-label">Current Password</label>
                                     <input type="password" class="form-control form-input" id="current_password" name="current_password" required>
@@ -300,6 +301,7 @@
                         <div class="glass-card p-4 mb-4">
                             <h5 class="mb-4"><i class="fas fa-sliders-h me-2"></i>Advanced Settings</h5>
                             <form action="{{ url_for('setting.update_advanced_settings') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <div class="mb-3">
                                     <label for="default_subtitle_format" class="form-label">Default Subtitle Format</label>
                                     <select class="form-select form-input" id="default_subtitle_format" name="default_subtitle_format">
@@ -344,6 +346,7 @@
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <form action="{{ url_for('setting.logout_all_devices') }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger">Logout All Devices</button>
                     </form>
                 </div>
@@ -366,6 +369,7 @@
                     </div>
                     <p>Are you sure you want to permanently delete your account? All your data will be lost.</p>
                     <form action="{{ url_for('setting.delete_account') }}" method="POST" id="deleteAccountForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label for="delete_confirmation" class="form-label">Type "DELETE" to confirm</label>
                             <input type="text" class="form-control form-input" id="delete_confirmation" name="delete_confirmation" required>
