@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Dashboard - SubTranscribe</title>
     <link rel="shortcut icon" href="/static/image/subtitle.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -186,7 +187,7 @@
                     <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}" class="btn btn-outline-light mb-2" style="width: 100%;">
                         <i class="fas fa-cog me-2"></i>Settings
                     </a>
-                    <a href="{{ url_for('main_user', user_id='user_id') }}" class="btn btn-primary-gradient" style="width: 100%;">
+                    <a href="{{ url_for('main_user', user_id=session.get('user_id')) }}" class="btn btn-primary-gradient" style="width: 100%;">
                         <i class="fas fa-plus me-2"></i>New Upload
                     </a>
                 </div>
@@ -237,7 +238,7 @@
                 <h5 class="text-center mb-3"><i class="fas fa-file-alt me-2"></i>Your Files</h5>
                 <div class="search-container w-100" style="max-width: 500px;">
                     <div class="input-group">
-                        <input type="text" id="file-search" class="form-control" placeholder="Search files..." aria-label="Search files">
+                        <input type="text" id="file-search" class="form-control" placeholder="Search by filename or file ID..." aria-label="Search files">
                         <span class="input-group-text">
                             <i class="fas fa-search"></i>
                         </span>
@@ -305,7 +306,7 @@
                                 <td>
                                     {% if file.upload_time %}
                                         <span class="utc-time" data-timestamp="{{ file.upload_time.strftime('%Y-%m-%dT%H:%M:%S') }}Z">
-                                            {{ file.upload_time.strftime('%b %d, %Y, %H:%M:%S') }}
+                                            {{ file.upload_time.strftime('%b %d, %Y, %H:%M') }}
                                         </span>
                                     {% else %}
                                         Unknown
@@ -352,6 +353,8 @@
                                     <!-- Hidden span containing the file ID for copy functionality -->
                                     <span class="d-none">{{ file.transcript_id }}</span>
                                 </td>
+
+                                <!-- Fix the Delete column (desktop view) with this: -->
                                 <td class="text-center d-none d-md-table-cell">
                                     <button type="button" class="btn-delete" data-file-id="{{ file._id }}" onclick="deleteFile(this)">
                                         <i class="fas fa-trash-alt"></i>
@@ -393,7 +396,6 @@
                             <h5 style="font-size: 1.3rem; margin-bottom: 15px; color: #fff; font-weight: 500; letter-spacing: 0.3px;">Are you sure you want to delete this file?</h5>
                             <p style="color: rgba(255, 255, 255, 0.7); font-size: 0.95rem; line-height: 1.5; max-width: 85%; margin: 0 auto;">This action cannot be undone and all data will be permanently lost.</p>
                         </div>
-                        <input type="hidden" id="fileToDelete" value="">
                     </div>
                     <div class="modal-footer border-0 justify-content-center" style="padding: 0 25px 25px;">
                         <button type="button" class="btn px-4 py-2" data-bs-dismiss="modal" style="background: rgba(60, 60, 67, 0.15); color: #fff; border-radius: 14px; border: none; transition: all 0.2s ease; min-width: 120px; margin-right: 10px; font-weight: 500; letter-spacing: 0.3px;">
@@ -403,6 +405,7 @@
                             Delete
                         </button>
                     </div>
+                    <input type="hidden" id="fileToDelete" value="">
                 </div>
             </div>
         </div>
@@ -579,19 +582,31 @@
             deleteModal.show();
         }
         
-        // Handle actual deletion when confirmed
+        // deletion confirmation handler
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
                 const fileId = document.getElementById('fileToDelete').value;
-                
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                // Disable the button during request
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
+
                 fetch('/delete_file', {
                     method: 'DELETE',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
                     },
                     body: JSON.stringify({ file_id: fileId })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         // Hide the modal
@@ -602,7 +617,10 @@
                         const rows = document.querySelectorAll('#file-list tr');
                         for (let row of rows) {
                             const deleteBtn = row.querySelector('.btn-delete');
-                            if (deleteBtn && deleteBtn.getAttribute('data-file-id') === fileId) {
+                            const dropdownDeleteBtn = row.querySelector('[data-file-id="' + fileId + '"]');
+                            
+                            if ((deleteBtn && deleteBtn.getAttribute('data-file-id') === fileId) || 
+                                (dropdownDeleteBtn && dropdownDeleteBtn.getAttribute('data-file-id') === fileId)) {
                                 row.remove();
                                 break;
                             }
@@ -611,23 +629,34 @@
                         // Update total files count
                         const totalFilesElement = document.getElementById('total-files');
                         const currentCount = parseInt(totalFilesElement.textContent);
-                        totalFilesElement.textContent = currentCount - 1;
+                        totalFilesElement.textContent = Math.max(0, currentCount - 1);
                         
-                        // Update total size if needed
+                        // Update total size
                         updateTotalSize();
+                        
+                        // Check if no files left and show empty state
+                        const remainingRows = document.querySelectorAll('#file-list tr').length;
+                        if (remainingRows === 0) {
+                            location.reload(); // Reload to show empty state
+                        }
                         
                         // Show success notification
                         showNotification('File deleted successfully', 'success');
                     } else {
-                        showNotification('Error deleting file: ' + data.message, 'error');
+                        showNotification('Error deleting file: ' + (data.message || 'Unknown error'), 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     showNotification('An error occurred while deleting the file', 'error');
+                })
+                .finally(() => {
+                    // Re-enable the button
+                    const confirmBtn = document.getElementById('confirmDeleteBtn');
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = 'Delete';
                 });
             });
-            
             // Function to recalculate total size
             function updateTotalSize() {
                 const fileList = document.querySelectorAll('#file-list tr');
@@ -647,12 +676,24 @@
             }
         });
         
-        // Function to show notification
+        // Enhanced notification function
         function showNotification(message, type) {
             const notification = document.getElementById('notification');
-            notification.textContent = message;
+            const notificationContent = notification.querySelector('.notification-content');
+            const notificationIcon = notification.querySelector('.notification-icon i');
+            
+            // Update content
+            notificationContent.textContent = message;
+            
+            // Update icon based on type
+            if (type === 'success') {
+                notificationIcon.className = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                notificationIcon.className = 'fas fa-exclamation-triangle';
+            }
+            
             notification.className = 'notification-toast ' + type;
-            notification.style.display = 'block';
+            notification.style.display = 'flex';
             
             setTimeout(() => {
                 notification.style.display = 'none';
@@ -698,22 +739,29 @@
             }
         }
         
-        // Search functionality for files table
+        // Enhanced search functionality for files table (searches by filename and file ID)
         document.getElementById('file-search').addEventListener('keyup', function() {
-            const searchTerm = this.value.toLowerCase();
+            const searchTerm = this.value.toLowerCase().trim();
             const tableRows = document.querySelectorAll('#file-list tr');
             
             tableRows.forEach(row => {
                 const fileName = row.querySelector('.file-name').textContent.toLowerCase();
-                if (fileName.includes(searchTerm)) {
+                // Get the transcript_id from the hidden span or copy button
+                const hiddenSpan = row.querySelector('span.d-none');
+                const transcriptId = hiddenSpan ? hiddenSpan.textContent.toLowerCase() : '';
+                
+                // Search in both filename and transcript ID
+                const matchesFileName = fileName.includes(searchTerm);
+                const matchesTranscriptId = transcriptId.includes(searchTerm);
+                
+                if (matchesFileName || matchesTranscriptId) {
                     row.style.display = '';
                 } else {
                     row.style.display = 'none';
                 }
             });
         });
-    </script>
-    <script>
+
         document.addEventListener('DOMContentLoaded', function() {
             // Set current year in footer
             document.getElementById('current-year').textContent = new Date().getFullYear();
@@ -737,24 +785,6 @@
                     }
                 }
             });
-            
-            // Search functionality for files table
-            const fileSearch = document.getElementById('file-search');
-            if (fileSearch) {
-                fileSearch.addEventListener('keyup', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    const tableRows = document.querySelectorAll('#file-list tr');
-                    
-                    tableRows.forEach(row => {
-                        const fileName = row.querySelector('.file-name').textContent.toLowerCase();
-                        if (fileName.includes(searchTerm)) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
-                        }
-                    });
-                });
-            }
         });
     </script>
 </body>
