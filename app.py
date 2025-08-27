@@ -152,33 +152,46 @@ def cookies():
 @app.route('/delete_file', methods=['DELETE'])
 def delete_file():
     """delete a file from the dashboard"""
-    user_id = session.get('user_id')
     
-    user_file = files_collection.find_one({'user_id': user_id})
-    if user_file:
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"success": False, "message": "User not authenticated"}), 401
+    
+    try:
         data = request.get_json()
+        if not data or 'file_id' not in data:
+            return jsonify({"success": False, "message": "file_id is required"}), 400
+            
         delete_file_id = data.get('file_id')
+        
+        # Convert file_id to ObjectId
         try:
             object_id = ObjectId(delete_file_id)
-            files = list(files_collection.find({'_id': object_id}))
+        except Exception:
+            return jsonify({"success": False, "message": "Invalid file ID format"}), 400
+        
+        # Find the file and verify ownership
+        file_doc = files_collection.find_one({'_id': object_id, 'user_id': user_id})
+        
+        if not file_doc:
+            return jsonify({"success": False, "message": "File not found or access denied"}), 404
+        
+        # Delete the file
+        delete_result = files_collection.delete_one({'_id': object_id, 'user_id': user_id})
+        
+        # Optional: Clear cache if needed
+        # cache.delete(f"dashboard_{user_id}")
+        
+        if delete_result.deleted_count > 0:
+            return jsonify({"success": True, "message": "File deleted successfully"}), 200
+        else:
+            return jsonify({"success": False, "message": "Error deleting file"}), 500
+            
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Error deleting file: {str(e)}")
+        return jsonify({"success": False, "message": "Internal server error"}), 500
 
-            for file in files:
-                file['transcript_id'] = str(file['transcript_id'])
-            if file:
-                file_id = file['transcript_id']
-                delete_result = files_collection.delete_one({'transcript_id': file_id})
-                # cache.delete(f"dashboard_{session['user_id']}")
-                
-                if delete_result.deleted_count > 0:
-                    return jsonify({"success": True, "message": "File deleted successfully"})
-                else:
-                    return jsonify({"success": False, "message": "Error deleting file"})
-            else:
-                return jsonify({"success": False, "message": "File not found"})
-        except Exception as e:
-            return jsonify({"success": False, "message": "Invalid file ID format"})
-    else:
-        return jsonify({"success": False, "message": "User not found"})
 
 # @app.route('/health')
 # def health_check():
