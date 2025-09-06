@@ -1,11 +1,13 @@
-from flask import Flask
+from venv import logger
+from flask import Flask , session 
 from flask_cors import CORS
 from flask_caching import Cache
 # from flask_limiter import Limiter
 # from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from datetime import timedelta  
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect , generate_csrf, validate_csrf
+
 from pymongo import MongoClient 
 import os 
 
@@ -69,3 +71,22 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+def create_app():
+    app = Flask(__name__)
+    csrf.init_app(app)
+    return app
+
+@app.after_request
+def set_csrf_cookie(response):
+    csrf_token = generate_csrf()
+    
+    response.set_cookie(
+        'csrf_token',
+        csrf_token,
+        httponly=True,
+        secure=True,
+        samesite='Strict'
+    )
+    
+    return response
