@@ -167,7 +167,7 @@
         <nav class="glass px-4 py-3">
             <div class="container mx-auto flex flex-wrap items-center justify-between">
                 <!-- Logo -->
-                <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}" class="flex items-center space-x-2">
+                <a href="{% if session.get('user_id') %}{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}{% else %}{{ url_for('auth.login') }}{% endif %}"class="flex items-center space-x-2">
                     <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg p-2">
                         <img src="/static/image/subtitle.ico" alt="SubTranscribe" class="w-full h-full object-contain">
                     </div>
@@ -198,6 +198,9 @@
                     {% else %}
                     <a href="{{ url_for('auth.login') }}" class="py-2 px-4 bg-white/10 hover:bg-green-500 text-white rounded-lg transition-all ml-2">
                         Sign In
+                    </a>
+                    <a href="{{ url_for('auth.register') }}" class="py-2 px-4 bg-white/10 hover:bg-red-500 text-white rounded-lg transition-all ml-2">
+                        Sign Up
                     </a>
                     {% endif %}
                 </div>
@@ -398,10 +401,17 @@
                             <i class="fas fa-arrow-left text-xs"></i>
                             <span>Back to Dashboard</span>
                         </a>
-                        <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}" class="py-2 px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all btn-glow inline-flex items-center space-x-2">
-                            <i class="fas fa-plus"></i>
-                            <span>Transcribe Another File</span>
-                        </a>
+                        {% if session.get('user_id') %}
+                            <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}" class="py-2 px-6 bg-gradient-to-r from-blue-500 to-purple-600 ...">
+                                <i class="fas fa-plus"></i>
+                                <span>Transcribe Another File</span>
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('auth.login') }}" class="py-2 px-6 bg-gradient-to-r from-blue-500 to-purple-600 ...">
+                                <i class="fas fa-plus"></i>
+                                <span>Sign in to Transcribe</span>
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

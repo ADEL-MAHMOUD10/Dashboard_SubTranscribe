@@ -99,9 +99,25 @@ def share_subtitle(transcript_id):
     file_name = 'Unknown'
     file_size = 'Unknown'
     upload_time = 'Unknown'
-    username = 'Unknown'
+    file_user = 'Unknown' 
 
-    user_id = session.get('user_id')
+    if request.method == 'GET':
+        # Get file info for GET request
+        get_filename = files_collection.find_one({'transcript_id': transcript_id})
+        if get_filename:
+            file_name = get_filename.get('file_name') 
+            file_user = get_filename.get('username') 
+            file_size = f"{(get_filename.get('file_size')/1000000):.2f} MB"  # convert to MB
+            upload_time = get_filename.get('upload_time')
+            # Try to convert upload_time to datetime if it's a string
+            if upload_time and isinstance(upload_time, str):
+                try:
+                    upload_time = datetime.strptime(upload_time, '%Y-%m-%d %H:%M:%S')
+                except (ValueError, TypeError):
+                    # Keep it as a string if conversion fails
+                    pass
+        return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=file_user) 
+
     if request.method == 'POST':
         file_format = request.form['format']  # Get the requested file format
         headers = {"authorization": TOKEN_THREE}
@@ -118,22 +134,6 @@ def share_subtitle(transcript_id):
         else:
             return render_template("error.html")  # Render error page if request fails
         
-    # Get file info for GET request
-    get_filename = files_collection.find_one({'transcript_id': transcript_id})
-    if get_filename:
-        file_name = get_filename.get('file_name') 
-        file_size = f"{(get_filename.get('file_size')/1000000):.2f} MB"  # convert to MB
-        upload_time = get_filename.get('upload_time')
-        # Try to convert upload_time to datetime if it's a string
-        if upload_time and isinstance(upload_time, str):
-            try:
-                upload_time = datetime.strptime(upload_time, '%Y-%m-%d %H:%M:%S')
-            except (ValueError, TypeError):
-                # Keep it as a string if conversion fails
-                pass
-        username = get_filename.get('username')
-    return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=username,user_id=user_id) 
-
 # @limiter.exempt
 @subtitle_bp.route('/v1/<user_id>/download/<transcript_id>', methods=['GET', 'POST'])
 def download_subtitle(user_id, transcript_id):
