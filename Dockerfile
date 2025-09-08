@@ -28,7 +28,7 @@ ENV PYTHONGC=aggressive
 COPY . .
 
 # Expose the port
-EXPOSE 8000
+EXPOSE 5000
 
 # Use gunicorn with gevent worker for better async handling (optimized for limited resources)
-CMD ["gunicorn", "--workers=1", "--threads=4", "--worker-class=gevent", "--worker-connections=500", "--max-requests=100", "--max-requests-jitter=20", "--timeout=900", "--graceful-timeout=300", "--keep-alive=120", "--log-level=info", "--bind=0.0.0.0:8000", "app:app"]
+CMD ["gunicorn", "--workers=1", "--threads=4", "--worker-class=gevent", "--worker-connections=500", "--max-requests=100", "--max-requests-jitter=20", "--timeout=900", "--graceful-timeout=300", "--keep-alive=120", "--log-level=info", "--bind=0.0.0.0:5000", "app:app"]
