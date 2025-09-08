@@ -208,6 +208,10 @@ def delete_file():
             #     except Exception as e:
 #         return f"error: {str(e)}"
 
+@app.route("/healthserver")
+def health_check():
+    return jsonify({"status": "ok"}), 200
+
 @app.route('/sitemap.xml')
 def sitemap():
     """Serve the sitemap.xml file."""
