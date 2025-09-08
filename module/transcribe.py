@@ -116,7 +116,8 @@ def get_model():
 def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
     headers = {"authorization": TOKEN_THREE}
-    base_url = "https://api.assemblyai.com/v2"
+    # change to eu endpoint
+    base_url = "https://api.eu.assemblyai.com/v2" 
     
     # Initialize variables with default values
     file_name = 'Unknown'
@@ -217,7 +218,7 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
 def transcribe_from_link(upload_id, link):
     """Process a video/audio link for transcription with optimized progress tracking."""
     headers = {"authorization": TOKEN_THREE}
-    base_url = "https://api.assemblyai.com/v2"
+    base_url = "https://api.eu.assemblyai.com/v2"
     file_uuid = str(uuid.uuid4())
     filename = f"temp_{file_uuid}"
     
