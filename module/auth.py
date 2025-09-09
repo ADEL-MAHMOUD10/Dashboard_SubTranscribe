@@ -1,5 +1,6 @@
 from flask import Blueprint ,request ,redirect,url_for ,flash,session ,render_template 
 from module.config import users_collection 
+from module.send_mail import send_email_welcome
 # from module.config import limiter
 from werkzeug.security import check_password_hash, generate_password_hash
 import uuid
@@ -30,6 +31,10 @@ def register():
         users_collection.insert_one({'Email': Email,'username': username, 'password': hashed_password ,"user_id":user_id})
         session['user_id'] = user_id
         session['username'] = username  # Store username in session
+        session['email'] = Email  # Store email in session
+
+        send_email_welcome(Email, username)
+        
         flash('Successfully registered! Welcome to Subtranscribe', 'success')
         return redirect(url_for('auth.login'))
 
@@ -55,7 +60,12 @@ def login():
             session['user_id'] = user['user_id']  # Store user_id in session
             session['username'] = user['username']  # Store username in session
             flash('Successfully logged in!', 'success')
-            return redirect(url_for('main_user', user_id=user['user_id']))
+            # if user and 'Email' in user:
+            #     send_email_welcome(user['Email'], user['username'])
+            #     return redirect(url_for('main_user', user_id=user['user_id']))
+            # else:
+            #     flash('No email found for this user', 'danger')
+            #     return redirect(url_for('main_user', user_id=user['user_id']))
         flash('Incorrect username or password', 'danger')
         return redirect(url_for('auth.login'))
 

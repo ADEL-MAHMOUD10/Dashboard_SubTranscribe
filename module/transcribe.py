@@ -1,5 +1,6 @@
 from flask import Blueprint , session, redirect, url_for , request, render_template, flash
 from module.config import users_collection, files_collection, TOKEN_THREE
+from module.send_mail import send_email_transcript
 from datetime import datetime, timezone 
 import requests
 import time
@@ -117,7 +118,7 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     """Upload audio file to AssemblyAI in chunks with progress tracking."""
     headers = {"authorization": TOKEN_THREE}
     # change to eu endpoint
-    base_url = "https://api.eu.assemblyai.com/v2" 
+    base_url = "https://api.assemblyai.com/v2" 
     
     # Initialize variables with default values
     file_name = 'Unknown'
@@ -126,10 +127,10 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     
     try:
         # Function to upload file in chunks
-        def upload_chunks():
+        def upload_chunks(chunk_size=5242880):  # 5MB chunks
             """Generator function to upload file in smaller chunks."""
             while True:
-                chunk = audio_file.read()
+                chunk = audio_file.read(chunk_size)
                 if not chunk:
                     break
                 
@@ -142,8 +143,8 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                                     headers=headers, 
                                     data=upload_chunks(), 
                                     stream=True,
-                                    timeout=300)  # 5 minute timeout
-            
+                                    timeout=120)  # 2 minute timeout
+
             if response.status_code != 200:
                 raise RuntimeError(f"File upload failed with status code: {response.status_code}")
         except Exception as e:
@@ -181,6 +182,15 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                 
                 if transcription_result['status'] == 'completed':
                     # Success path
+                    # email = session.get('email')
+                    # user_id = session.get('user_id')
+                    # username = session.get('username')
+                    # if email:
+                    #     send_email_transcript(email, username, user_id, transcript_id)
+                    # else:
+                    #     user = users_collection.find_one({'user_id': user_id})
+                    #     if user:
+                    #         send_email_transcript(user['Email'], username, user_id, transcript_id)
                     return transcript_id
                     
                 elif transcription_result['status'] == 'error':
@@ -201,7 +211,11 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         raise RuntimeError("Transcription status check timed out")
         
     except Exception as e:
-        return None
+        error_message = str(e)
+        print(f"File processing error: {error_message}")
+        return {'error': "An error occurred while processing your media. Please check the file and try again."}
+
+
 
 # def convert_video_to_audio(video_path):
 #     """Convert video file to audio using ffmpeg."""
@@ -218,7 +232,7 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
 def transcribe_from_link(upload_id, link):
     """Process a video/audio link for transcription with optimized progress tracking."""
     headers = {"authorization": TOKEN_THREE}
-    base_url = "https://api.eu.assemblyai.com/v2"
+    base_url = "https://api.assemblyai.com/v2"
     file_uuid = str(uuid.uuid4())
     filename = f"temp_{file_uuid}"
     
@@ -330,6 +344,15 @@ def transcribe_from_link(upload_id, link):
                 
                 if transcription_result['status'] == 'completed':
                     # Success path
+                    # email = session.get('email')
+                    # user_id = session.get('user_id')
+                    # username = session.get('username')
+                    # if email:
+                    #     send_email_transcript(email, username, user_id, transcript_id)
+                    # else:
+                    #     user = users_collection.find_one({'user_id': user_id})
+                    #     if user:
+                    #         send_email_transcript(user['Email'], username, user_id, transcript_id)
                     return transcript_id
                     
                 elif transcription_result['status'] == 'error':
@@ -338,7 +361,7 @@ def transcribe_from_link(upload_id, link):
                     
                 else:
                     # Exponential backoff
-                    wait_time = min(5 * (2 ** (poll_count // 5)), 30)
+                    wait_time = min(5 * (2 ** (poll_count // 5)), 60)
                     time.sleep(wait_time)
                     poll_count += 1
                     

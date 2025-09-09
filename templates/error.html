@@ -358,7 +358,7 @@
                                 <i class="fas fa-arrow-left"></i>
                                 <span>Go Back</span>
                             </a>
-                            <a href="/v1/" class="py-3 px-6 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all inline-flex items-center gap-2">
+                            <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}" class="py-3 px-6 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all inline-flex items-center gap-2">
                                 <i class="fas fa-tachometer-alt"></i>
                                 <span>Dashboard</span>
                             </a>
