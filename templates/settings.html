@@ -126,12 +126,11 @@
                                     <label for="username" class="form-label">Username</label>
                                     <input type="text" class="form-control form-input" id="username" name="username" value="{{ user.username }}">
                                 </div>
-                                <div class="mb-3">
-                                    <label for="email" class="form-label">Email Address</label>
-                                    <input type="email" class="form-control form-input" id="email" name="email" value="{{ user.Email }}" readonly>
-                                    <small class="form-text text-white/50">Email cannot be changed now</small>
+                                <div class="mb-4">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control form-input" id="email" name="email" value="{{ user.email }}">
+                                    <small class="form-text text-white/50">You can set your email address for password recovery</small>
                                 </div>
-
                                 <button type="submit" class="btn btn-primary-gradient">
                                     <i class="fas fa-save me-2"></i>Save Changes
                                 </button>
@@ -319,9 +318,12 @@
                         <div class="glass-card p-4">
                             <h5 class="mb-4"><i class="fas fa-download me-2"></i>Export Data</h5>
                             <p class="text-white/70 mb-4">Download all your data in JSON format</p>
-                            <a href="{{ url_for('setting.export_user_data') }}" class="btn btn-primary-gradient">
-                                <i class="fas fa-file-export me-2"></i>Export My Data
-                            </a>
+                            <form action="{{ url_for('setting.export_user_data') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-primary-gradient">
+                                    <i class="fas fa-file-export me-2"></i>Export My Data
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

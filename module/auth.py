@@ -65,7 +65,7 @@ def login():
             #     return redirect(url_for('main_user', user_id=user['user_id']))
             # else:
             #     flash('No email found for this user', 'danger')
-            #     return redirect(url_for('main_user', user_id=user['user_id']))
+            return redirect(url_for('main_user', user_id=user['user_id']))
         flash('Incorrect username or password', 'danger')
         return redirect(url_for('auth.login'))
 

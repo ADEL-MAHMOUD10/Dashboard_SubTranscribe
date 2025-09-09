@@ -1,8 +1,10 @@
-from flask import Blueprint , render_template, redirect, url_for, request, session, flash, jsonify
+from flask import Blueprint , render_template, redirect, url_for, request, session, flash, Response
 from werkzeug.security import check_password_hash, generate_password_hash
 from module.config import users_collection ,files_collection
 from bson import ObjectId
+from datetime import datetime
 import uuid
+import json
 
 setting_bp = Blueprint('setting', __name__)
 
@@ -29,22 +31,29 @@ def update_profile():
     
     user_id = session.get('user_id')
     username = request.form.get('username')
+    email = request.form.get('email')
     
     # Validate username
     if not username or len(username) < 3:
         flash('Username must be at least 3 characters long', 'danger')
         return redirect(url_for('setting.settings'))    
     
+    # Validate email
+    if not email or '@' not in email:
+        flash('Please enter a valid email address', 'danger')
+        return redirect(url_for('setting.settings'))
+    
+
     # Check if username is already exists by another user
-    existing_user = users_collection.find_one({'username': username, 'user_id': {'$ne': user_id}})
+    existing_user = users_collection.find_one({'$or': [{'username': username}, {'email': email}], 'user_id': {'$ne': user_id}})
     if existing_user:
-        flash('Username is already exists by another user', 'danger')
+        flash('Username or email is already exists by another user', 'danger')
         return redirect(url_for('setting.settings'))
     
     # Update user profile
     users_collection.update_one(
         {'user_id': user_id},
-        {'$set': {'username': username}}
+        {'$set': {'username': username, 'email': email}}
     )
     
     flash('Profile updated successfully', 'success')
@@ -209,7 +218,13 @@ def delete_account():
     flash('Your account has been permanently deleted', 'success')
     return redirect(url_for('home'))
 
-@setting_bp.route('/export_user_data')
+def custom_serializer(obj):
+    """Convert non-serializable types (like datetime) to string."""
+    if isinstance(obj, datetime):
+        return obj.isoformat()  # e.g. 2025-03-17T03:59:59
+    return str(obj) 
+
+@setting_bp.route('/export_user_data', methods=['POST'])
 def export_user_data():
     """Export all user data as JSON."""
     if 'user_id' not in session:
@@ -225,7 +240,7 @@ def export_user_data():
     
     # Remove sensitive information
     if '_id' in user:
-        user['_id'] = str(user['_id'])
+        del user['_id']
     if 'password' in user:
         del user['password']
     
@@ -234,17 +249,31 @@ def export_user_data():
     for file in user_files:
         if '_id' in file:
             file['_id'] = str(file['_id'])
+            del file['_id'] 
+    
+    # Remove user_id from user object (privacy)
+    if 'user_id' in user:
+        del user['user_id']
     
     # Combine data
     user_data = {
         'user': user,
         'files': user_files
     }
+
     username = user['username']
     dfile_name = f"{username}_data.json"
+
+    # Serialize with pretty format
+    json_data = json.dumps(user_data, indent=4, ensure_ascii=False,default=custom_serializer)
+
     # Create response
-    response = jsonify(user_data)
-    response.headers['Content-Disposition'] = f'attachment; filename={dfile_name}'
-    response.headers['Content-Type'] = 'application/json'
-    
+    response = Response(
+        json_data,
+        mimetype='application/json',
+        headers={
+            'Content-Disposition': f'attachment; filename={dfile_name}'
+        }
+    )
+
     return response
