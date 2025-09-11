@@ -1,5 +1,5 @@
 from venv import logger
-from flask import Flask , session 
+from flask import Flask , session , g
 from flask_cors import CORS
 from flask_caching import Cache
 # from flask_limiter import Limiter
@@ -7,8 +7,8 @@ from flask_caching import Cache
 from dotenv import load_dotenv
 from datetime import timedelta  
 from flask_wtf.csrf import CSRFProtect , generate_csrf, validate_csrf
-
 from pymongo import MongoClient 
+import secrets
 import os 
 
 
@@ -77,6 +77,11 @@ def create_app():
     csrf.init_app(app)
     return app
 
+@app.before_request
+def set_nonce():
+    # نولد nonce جديد لكل request
+    g.nonce = secrets.token_hex(16)
+
 @app.after_request
 def set_csrf_cookie(response):
     csrf_token = generate_csrf()
@@ -84,9 +89,62 @@ def set_csrf_cookie(response):
     response.set_cookie(
         'csrf_token',
         csrf_token,
-        httponly=True,
+        httponly=False,
         secure=True,
         samesite='Strict'
     )
-    
+    response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = "camera=(), microphone=(), geolocation=()"
+    # csp = {
+    #     "default-src": "'self'",
+    #     "script-src": [
+    #         "'self'",
+    #         f"'nonce-{g.nonce}'",
+    #         "https://cdn.tailwindcss.com",
+    #         "https://cdn.jsdelivr.net",
+    #         "https://cdnjs.cloudflare.com"
+    #     ],
+    #     "style-src": [
+    #         "'self'",
+    #         f"'nonce-{g.nonce}'",
+    #         "https://cdn.tailwindcss.com",
+    #         "https://cdn.jsdelivr.net",
+    #         "https://cdnjs.cloudflare.com",
+    #         "https://fonts.googleapis.com"
+    #     ],
+    #     "font-src": [
+    #         "'self'",
+    #         "https://cdn.tailwindcss.com",
+    #         "https://cdn.jsdelivr.net",
+    #         "https://cdnjs.cloudflare.com",
+    #         "https://fonts.gstatic.com"
+    #     ],
+    #     "img-src": [
+    #         "'self'",
+    #         "data:",
+    #         "https://cdn.tailwindcss.com",
+    #         "https://cdn.jsdelivr.net",
+    #         "https://cdnjs.cloudflare.com"
+    #     ],
+    #     "connect-src": [
+    #         "'self'",
+    #         "https://cdn.tailwindcss.com",
+    #         "https://fonts.googleapis.com",
+    #         "https://fonts.gstatic.com"
+    #     ]
+    # }
+    # csp_policy = "; ".join([f"{k} {' '.join(v) if isinstance(v, list) else v}" for k, v in csp.items()])
+    # response.headers["Content-Security-Policy"] = csp_policy
+
+    return response
+
+@app.after_request
+def add_cache_headers(response):
+    if 'text/html' in response.headers.get('Content-Type', ''):
+        response.headers['Cache-Control'] = 'no-store'
+    else:
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
     return response
