@@ -152,16 +152,20 @@ def download_subtitle(user_id, transcript_id):
             headers = {"authorization": TOKEN_THREE}
             url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}/{file_format}"
 
+            if file_format == 'paragraphs':
+                file_format = 'txt'
+            else:
+                file_format = file_format.lower()
             # Add debug logging
             # print(f"Requesting subtitle from: {url}")
-            
+
             response = requests.get(url, headers=headers)  # Request the subtitle file
             
             # Debug response
             # print(f"Response status: {response.status_code}")
 
             if response.status_code != 200:
-                return render_template("error.html", error="Error downloading subtitle file.")
+                return render_template("error.html", error="Error downloading subtitle file, sorry this file is not available yet.")
 
             if response.status_code == 200:
                 timesub = datetime.now().strftime("%Y%m%d_%H%M%S")  # Generate a timestamp for the subtitle file
@@ -169,7 +173,17 @@ def download_subtitle(user_id, transcript_id):
                 
                 # Ensure directory exists
                 os.makedirs(os.path.dirname(os.path.join(os.getcwd(), subtitle_file)), exist_ok=True)
-                
+                max_length_Word_in_line = 10
+                if file_format == 'txt':
+                    # Process text to limit words per line
+                    with open(subtitle_file, 'w', encoding='utf-8') as f:
+                        for paragraph in response.json().get('paragraphs', []):
+                            words = paragraph['text'].split()
+                            for i in range(0, len(words), max_length_Word_in_line):
+                                f.write(" ".join(words[i:i + max_length_Word_in_line]) + '\n')
+                    return redirect(url_for('subtitle.serve_file', filename=subtitle_file))
+                    
+
                 # Write the file with proper encoding
                 with open(subtitle_file, 'w', encoding='utf-8') as f:
                     f.write(response.text)  # Write the subtitle text to the file
