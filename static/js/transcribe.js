@@ -140,6 +140,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', form.action);
         
+        // Handle timeout
+        xhr.ontimeout = function() {
+            updateProgress(100, 'Upload timed out. Please try a smaller file or check your connection.', true);
+            showNotification('Upload timed out', 'error');
+        };
+
         // Track upload progress
         xhr.upload.addEventListener('progress', function(e) {
             if (e.lengthComputable) {
@@ -286,6 +292,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', form.action);
         
+        // Handle timeout
+        xhr.ontimeout = function() {
+            updateProgress(100, 'Upload timed out. Please try a smaller file or check your connection.', true);
+            showNotification('Upload timed out', 'error');
+        };
         // Handle response
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
