@@ -45,6 +45,7 @@ limiter = Limiter(
     key_func=get_remote_address,
     app=app,
     storage_uri=REDIS_UR if REDIS_UR else "memory://",
+    headers_enabled=True,
     default_limits=["1000 per hour", "100 per minute"]
 )
 

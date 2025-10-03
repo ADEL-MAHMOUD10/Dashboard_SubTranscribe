@@ -215,8 +215,12 @@ def delete_file():
             #     except Exception as e:
 #         return f"error: {str(e)}"
 
-@app.route("/healthserver")
+@app.route("/health")
 def health_check():
+    return jsonify({"status": "ok", "service": "SubTranscribe", "version": "1.0.0"}), 200
+
+@app.route("/healthserver")
+def health_check_legacy():
     return jsonify({"status": "ok"}), 200
 
 @app.route('/sitemap.xml')
