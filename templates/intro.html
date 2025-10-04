@@ -197,7 +197,7 @@
     <style>
         /* Simple overflow handling */
         html, body {
-            overflow-x: hidden;
+            overflow-x: hidden !important;
             width: 100%;
             margin: 0;
             padding: 0;
@@ -262,8 +262,11 @@
             font-family: 'Inter', system-ui, sans-serif;
             background-color: #020617;
             color: #e2e8f0;
-            overflow-x: hidden;
+            overflow-x: hidden !important;
             font-size: 0.95rem;
+        }
+        html{
+            overflow-x: hidden !important;
         }
         
         /* Make regular text smaller */

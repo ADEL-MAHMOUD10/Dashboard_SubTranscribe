@@ -9,7 +9,7 @@ html, body {
     padding: 0;
 }
 html{
-    overflow-y: hidden !important;
+    overflow-x: hidden !important;
 }
 body {
     min-height: 100vh;
