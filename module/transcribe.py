@@ -8,8 +8,12 @@ import yt_dlp
 import uuid 
 import os 
 import gc  # Added for explicit garbage collection
+import threading  # Added for upload protection
 from loguru import logger
 transcribe_bp = Blueprint('transcribe', __name__)
+
+# Thread-safe upload lock to prevent concurrent upload conflicts
+upload_semaphore = threading.Semaphore(value=10)  # Allow max 10 concurrent uploads
 
 # @limiter.exempt
 @transcribe_bp.route('/transcribe/<user_id>')
@@ -144,6 +148,16 @@ def get_model():
     
 def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
     """Upload audio file to AssemblyAI with enhanced memory cleanup."""
+    
+    # Use semaphore to prevent concurrent upload conflicts
+    try:
+        if not upload_semaphore.acquire(timeout=300):  # 5 minute timeout to acquire semaphore
+            logger.error("❌ Could not acquire upload semaphore - server too busy")
+            return {'error': "Server is currently busy processing other uploads. Please try again in a few minutes."}
+    except Exception as e:
+        logger.error(f"❌ Semaphore acquisition error: {e}")
+        return {'error': "Unable to process upload at this time. Please try again."}
+    
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2" 
     
@@ -184,7 +198,7 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                 cleanup_upload_memory(audio_file=audio_file)
                 
             except ImportError:
-                print("requests-toolbelt not available, falling back to standard upload")
+                logger.warning("requests-toolbelt not available, falling back to standard upload")
                 # Fallback to standard upload
                 file_content = audio_file.read()
                 files = {'file': (audio_file.filename, file_content, audio_file.mimetype)}
@@ -195,6 +209,10 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                     files=files,
                     timeout=600
                 )
+                
+                # IMMEDIATE CLEANUP: Clean up fallback upload memory
+                logger.info("🧹 Cleaning up fallback upload memory...")
+                cleanup_upload_memory(file_content=file_content, audio_file=audio_file)
         else:
             # Standard upload for smaller files
             file_content = audio_file.read()
@@ -311,15 +329,32 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         
     except Exception as e:
         error_message = str(e)
-        print(f"File processing error: {error_message}")
+        logger.error(f"File processing error: {error_message}")
         
         # CLEANUP ON ERROR: Ensure memory is freed even if something fails
         cleanup_upload_memory(file_content=file_content, audio_file=audio_file)
         
+        # Force garbage collection for emergency cleanup
+        gc.collect()
+        
         return {'error': f"An error occurred while processing your media: {error_message}"}
+    
+    finally:
+        # CRITICAL: Always release the semaphore to prevent deadlocks
+        upload_semaphore.release()
+        logger.info("🔓 Upload semaphore released")
 
 def transcribe_from_link(upload_id, link):
     """Process a video/audio link for transcription with enhanced memory cleanup."""
+    # Use semaphore to prevent concurrent upload conflicts
+    try:
+        if not upload_semaphore.acquire(timeout=300):  # 5 minute timeout to acquire semaphore
+            logger.error("❌ Could not acquire upload semaphore for link processing - server too busy")
+            return {'error': "Server is currently busy processing other uploads. Please try again in a few minutes."}
+    except Exception as e:
+        logger.error(f"❌ Semaphore acquisition error for link processing: {e}")
+        return {'error': "Unable to process link at this time. Please try again."}
+    
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     file_uuid = str(uuid.uuid4())
@@ -385,6 +420,8 @@ def transcribe_from_link(upload_id, link):
                         files={'file': (os.path.basename(file_path_mp3), file_content, 'audio/mpeg')},
                         timeout=600
                     )
+                    # IMMEDIATE CLEANUP: Clean up fallback upload memory
+                    cleanup_upload_memory(file_content=file_content)
             else:
                 # Standard upload for smaller files  
                 file_content = f.read()
@@ -407,11 +444,16 @@ def transcribe_from_link(upload_id, link):
         cleanup_upload_memory(file_content=file_content if 'file_content' in locals() else None)
         return {'error': "Failed to upload audio"}
     finally:
-        # Clean up both possible file paths
-        if os.path.exists(file_path):
-            os.remove(file_path)
-        if os.path.exists(file_path_mp3):
-            os.remove(file_path_mp3)
+        # Clean up both possible file paths with error handling
+        for temp_file in [file_path, file_path_mp3]:
+            try:
+                if os.path.exists(temp_file):
+                    os.remove(temp_file)
+                    logger.info(f"✅ Cleaned up temp file: {temp_file}")
+            except (OSError, PermissionError) as e:
+                logger.warning(f"⚠️ Could not remove temp file {temp_file}: {e}")
+                # Force garbage collection to free file handles
+                gc.collect()
 
     try:
         # Request transcription from AssemblyAI using the link
@@ -496,5 +538,20 @@ def transcribe_from_link(upload_id, link):
         
     except Exception as e:
         error_message = str(e)
-        # print(f"Link processing error: {error_message}")
+        logger.error(f"Link processing error: {error_message}")
+        
+        # Ensure temp files are cleaned up on any error
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            if os.path.exists(file_path_mp3):
+                os.remove(file_path_mp3)
+        except OSError:
+            pass  # Ignore file cleanup errors
+        
         return {'error': "An error occurred while processing your media. Please check the link and try again."}
+    
+    finally:
+        # CRITICAL: Always release the semaphore to prevent deadlocks for link processing
+        upload_semaphore.release()
+        logger.info("🔓 Upload semaphore released for link processing")
