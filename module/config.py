@@ -55,13 +55,16 @@ CORS(app,
      expose_headers=['Content-Type', 'X-CSRFToken', 'Cache-Control', 'X-Requested-With'],
      allow_headers=['Content-Type', 'X-CSRFToken', 'Authorization', 'Cache-Control', 'X-Requested-With'],
      methods=['GET', 'POST', 'OPTIONS'])
+# Upload and memory configuration  
+app.config['MAX_CONTENT_LENGTH'] = 1000 * 1024 * 1024  # 1GB upload limit for very large files
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
-app.config['DEBUG'] = False  
-
+app.config['DEBUG'] = False
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year cache for static files  
+# In module/config.py
 
 app.secret_key = SESSION_USERS
 csrf = CSRFProtect(app)

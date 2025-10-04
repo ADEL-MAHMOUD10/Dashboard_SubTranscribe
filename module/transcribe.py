@@ -7,7 +7,8 @@ import time
 import yt_dlp 
 import uuid 
 import os 
-
+import gc  # Added for explicit garbage collection
+from loguru import logger
 transcribe_bp = Blueprint('transcribe', __name__)
 
 # @limiter.exempt
@@ -29,6 +30,28 @@ def allowed_file(filename):
 def generate_error_id():
     error_id = str(uuid.uuid4())
     return error_id
+
+# Helper function to clean up memory after upload
+def cleanup_upload_memory(file_content=None, audio_file=None):
+    """Clean up memory after file upload to AssemblyAI."""
+    try:
+        # Close file handle if provided
+        if audio_file:
+            audio_file.close()
+        
+        # Clear file content from memory
+        if file_content:
+            del file_content
+            file_content = None
+        
+        # Force garbage collection to free memory immediately
+        gc.collect()
+        logger.info("✅ Memory cleaned up after upload")
+        # print("✅ Memory cleaned up after upload")
+        
+    except Exception as e:
+        logger.error(f"⚠️ Memory cleanup error: {e}")
+        # print(f"⚠️ Memory cleanup error: {e}")
 
 # @limiter.exempt
 @transcribe_bp.route('/v1', methods=['POST'])
@@ -65,7 +88,7 @@ def upload_or_link():
                 return redirect(url_for('subtitle.download_subtitle', user_id=user_id, transcript_id=result))
                 
             # Fallback error
-            # print("Unexpected result from transcribe_from_link:", result)
+            # print("Unexpected result from the transcribe_from_link:", result)
             return redirect(url_for('show_error', error_id=err_id, error='Link could not be processed. Please try a different link.'))
         
         file = request.files['file']  # Get the uploaded file
@@ -77,7 +100,11 @@ def upload_or_link():
                 
                 transcript_id = upload_audio_to_assemblyai(upload_id, audio_stream, file_size)  # Upload directly using stream
                 
-                if transcript_id:
+                # Check if transcript_id is a string (success) or dict (error)
+                if isinstance(transcript_id, dict) and 'error' in transcript_id:
+                    return redirect(url_for('show_error', error_id=err_id, error=transcript_id['error']))
+                
+                if transcript_id and isinstance(transcript_id, str):
                     try:
                         # Store file information in database
                         files_collection.insert_one({
@@ -116,28 +143,92 @@ def get_model():
         return 'universal'
     
 def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
-    """Upload audio file to AssemblyAI."""
+    """Upload audio file to AssemblyAI with enhanced memory cleanup."""
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2" 
     
-    # Initialize variables with default values
-    file_name = 'Unknown'
-    upload_time = 'Unknown'
-    username = 'Unknown'
+    file_content = None  # Initialize to track memory cleanup
     
     try:
-        # Reset file pointer to beginning
         audio_file.seek(0)
         
-        # Upload the file to AssemblyAI using files parameter
-        response = requests.post(f"{base_url}/upload", 
-                                headers=headers, 
-                                files={'file': audio_file},
-                                timeout=120)  # 2 minute timeout
-
-        if response.status_code != 200:
-            # print(f"Upload failed: {response.status_code} - {response.text}")
-            return None
+        # For files smaller than 100MB, read entirely
+        # For larger files, use streaming approach
+        if file_size and file_size > 100 * 1024 * 1024:  # 100MB threshold
+            logger.info(f"Large file detected: {file_size} bytes - using streaming upload")
+            # print(f"Large file detected: {file_size} bytes - using streaming upload")
+            
+            # Stream large files using requests-toolbelt MultipartEncoder
+            try:
+                from requests_toolbelt.multipart.encoder import MultipartEncoder
+                
+                multipart_data = MultipartEncoder(
+                    fields={
+                        'file': (audio_file.filename, audio_file, audio_file.mimetype or 'audio/mpeg')
+                    }
+                )
+                
+                headers_copy = headers.copy()
+                headers_copy['Content-Type'] = multipart_data.content_type
+                
+                response = requests.post(
+                    f"{base_url}/upload",
+                    headers=headers_copy,
+                    data=multipart_data,
+                    timeout=600  # 10 minutes for large files
+                )
+                
+                # IMMEDIATE CLEANUP: Clean up streaming data after upload
+                logger.info("🧹 Cleaning up streaming upload memory...")
+                # print("🧹 Cleaning up streaming upload memory...")
+                cleanup_upload_memory(audio_file=audio_file)
+                
+            except ImportError:
+                print("requests-toolbelt not available, falling back to standard upload")
+                # Fallback to standard upload
+                file_content = audio_file.read()
+                files = {'file': (audio_file.filename, file_content, audio_file.mimetype)}
+                
+                response = requests.post(
+                    f"{base_url}/upload", 
+                    headers=headers,
+                    files=files,
+                    timeout=600
+                )
+        else:
+            # Standard upload for smaller files
+            file_content = audio_file.read()
+            files = {'file': (audio_file.filename, file_content, audio_file.mimetype)}
+            
+            response = requests.post(
+                f"{base_url}/upload", 
+                headers=headers,
+                files=files,
+                timeout=300  # 5 minutes timeout
+            )
+        
+        # ENHANCED CLEANUP: After successful upload to AssemblyAI
+        if response.status_code in [200, 201]:
+            print("✅ AssemblyAI upload successful - cleaning up server memory")
+            cleanup_upload_memory(file_content=file_content, audio_file=audio_file)
+            file_content = None  # Reset variable
+        
+        if response.status_code not in [200, 201]:
+            error_msg = f"AssemblyAI Upload failed: {response.status_code}"
+            if response.text:
+                error_msg += f" - {response.text[:200]}"
+            print(error_msg)
+            
+            # Clean up memory even on upload failure
+            cleanup_upload_memory(file_content=file_content, audio_file=audio_file)
+            
+            # Specific error messages for common AssemblyAI issues
+            if response.status_code == 401:
+                return {'error': "Invalid API token. Please contact support."}
+            elif response.status_code == 413:
+                return {'error': "File is too large. Please try a smaller file."}
+            else:
+                return {'error': f"Upload failed: {response.status_code}"}
         
         # Continue with transcription request
         upload_url = response.json()["upload_url"]
@@ -148,15 +239,33 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
             "audio_url": upload_url,
             "speech_model": speech_model,
         }
+        
+        # INCREASE TIMEOUT: Better timeout based on file size - longer timeouts for large files
+        transcription_timeout = 300 if file_size and file_size > 100 * 1024 * 1024 else 120
+        
         response = requests.post(f"{base_url}/transcript", 
                                 json=data, 
                                 headers=headers,
-                                timeout=60)  # Add timeout
+                                timeout=transcription_timeout)
         
-        if response.status_code != 200:
-            # print(f"Transcription request failed: {response.status_code} - {response.text}")
-            return None
-        # cache.delete(f"dashboard_{session['user_id']}")
+        # IMPROVED ERROR HANDLING: Specific error messages
+        if response.status_code not in [200, 201]:
+            error_msg = f"AssemblyAI Transcription request failed: {response.status_code}"
+            if response.text:
+                error_msg += f" - {response.text[:200]}"
+            print(error_msg)
+            
+            # Specific error messages based on status code
+            if response.status_code == 401:
+                return {'error': "Invalid API token. Please contact support."}
+            elif response.status_code == 429:
+                return {'error': "Service is busy. Please try again with a smaller file or wait a few minutes."}
+            elif response.status_code == 413:
+                return {'error': "File is too large for transcription. AssemblyAI has limits on file sizes."}
+            elif response.status_code == 400:
+                return {'error': "Invalid audio format. Please ensure your file is a valid audio/video format."}
+            else:
+                return {'error': f"Transcription request failed: {response.status_code}"}
         
         transcript_id = response.json()["id"]
         polling_endpoint = f"{base_url}/transcript/{transcript_id}"
@@ -165,27 +274,22 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
         poll_count = 0
         
         while poll_count < 30:  # Limit polling attempts
+            response = None
             try:
-                transcription_result = requests.get(polling_endpoint, 
-                                                  headers=headers, 
-                                                  timeout=30).json()
+                response = requests.get(polling_endpoint, headers=headers, timeout=30)
+                transcription_result = response.json()
                 
                 if transcription_result['status'] == 'completed':
-                    # Success path
-                    # email = session.get('email')
-                    # user_id = session.get('user_id')
-                    # username = session.get('username')
-                    # if email:
-                    #     send_email_transcript(email, username, user_id, transcript_id)
-                    # else:
-                    #     user = users_collection.find_one({'user_id': user_id})
-                    #     if user:
-                    #         send_email_transcript(user['Email'], username, user_id, transcript_id)
+                    # FINAL CLEANUP: After successful transcription
+                    print("🎉 Transcription completed - final memory cleanup")
+                    gc.collect()
                     return transcript_id
                     
                 elif transcription_result['status'] == 'error':
                     error_msg = transcription_result.get('error', 'Unknown error')
-                    raise RuntimeError(f"Transcription failed: {error_msg}")
+                    print(f"AssemblyAI Transcription failed: {error_msg}")
+                    # FIXED: Return error dict instead of raising exception
+                    return {'error': f"Transcription failed: {error_msg}"}
                     
                 else:
                     # Exponential backoff with 30s max
@@ -194,33 +298,28 @@ def upload_audio_to_assemblyai(upload_id, audio_file, file_size):
                     poll_count += 1
                     
             except Exception as e:
+                print(f"Polling error: {str(e)}")
                 time.sleep(5)
                 poll_count += 1
+            
+            finally:
+                if response:
+                    response.close()
         
-        # If we get here, we've exceeded poll attempts
-        raise RuntimeError("Transcription status check timed out")
+        # FIXED: Return error dict instead of raising exception
+        return {'error': "Transcription timed out. Please try again with a shorter file."}
         
     except Exception as e:
         error_message = str(e)
-        # print(f"File processing error: {error_message}")
-        return {'error': "An error occurred while processing your media. Please check the file and try again."}
-
-
-
-# def convert_video_to_audio(video_path):
-#     """Convert video file to audio using ffmpeg."""
-#     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-#     audio_file_path = f'audio_{timestamp}.mp3'
-    
-#     try:
-#         ffmpeg.input(video_path).output(audio_file_path).run(overwrite_output=True)
-#         return audio_file_path
-#     except Exception as e:
-#         print(f"Error converting video to audio: {e}")
-#         return None
+        print(f"File processing error: {error_message}")
+        
+        # CLEANUP ON ERROR: Ensure memory is freed even if something fails
+        cleanup_upload_memory(file_content=file_content, audio_file=audio_file)
+        
+        return {'error': f"An error occurred while processing your media: {error_message}"}
 
 def transcribe_from_link(upload_id, link):
-    """Process a video/audio link for transcription with optimized progress tracking."""
+    """Process a video/audio link for transcription with enhanced memory cleanup."""
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     file_uuid = str(uuid.uuid4())
@@ -249,27 +348,63 @@ def transcribe_from_link(upload_id, link):
             info_dict = ydl.extract_info(link, download=False)
             audio_url = info_dict.get('url', None)
             ydl.download([link])
-            # try:
-            #     response = requests.head(audio_url)
-            #     total_size = int(response.headers.get('content-length', 'Unknown'))
-            # except:
-            #     total_size = 'Unknown'
     except Exception as e:
         return {'error': "Unable to process this media link. Please ensure it's from a supported platform and is publicly accessible."}
     
-    # Step 2: Upload to AssemblyAI
+    # Step 2: Upload to AssemblyAI with enhanced cleanup
     try:
-        # Use the file with .mp3 extension
+        # Upload in chunks to avoid memory issues with large files
+        total_size = os.path.getsize(file_path_mp3)
+        file_content = None  # Track file content for cleanup
+        
+        # Handle large file uploads with streaming
         with open(file_path_mp3, 'rb') as f:
-            total_size = os.path.getsize(file_path_mp3)
-            upload_res = requests.post(
-                f"{base_url}/upload",
-                headers=headers,
-                files={'file': f}
-            )
-            upload_res.raise_for_status()
-            upload_url = upload_res.json().get('upload_url')
+            if total_size > 100 * 1024 * 1024:  # Large file streaming
+                try:
+                    from requests_toolbelt.multipart.encoder import MultipartEncoder
+                    
+                    multipart_data = MultipartEncoder(
+                        fields={'file': (os.path.basename(file_path_mp3), f, 'audio/mpeg')}
+                    )
+                    
+                    headers_copy = headers.copy()
+                    headers_copy['Content-Type'] = multipart_data.content_type
+                    
+                    upload_res = requests.post(
+                        f"{base_url}/upload",
+                        headers=headers_copy,
+                        data=multipart_data,
+                        timeout=600  # 10 minutes for large files
+                    )
+                except ImportError:
+                    # Fallback for small/large files
+                    file_content = f.read()
+                    upload_res = requests.post(
+                        f"{base_url}/upload",
+                        headers=headers,
+                        files={'file': (os.path.basename(file_path_mp3), file_content, 'audio/mpeg')},
+                        timeout=600
+                    )
+            else:
+                # Standard upload for smaller files  
+                file_content = f.read()
+                upload_res = requests.post(
+                    f"{base_url}/upload",
+                    headers=headers,
+                    files={'file': (os.path.basename(file_path_mp3), file_content, 'audio/mpeg')},
+                    timeout=300
+                )
+        
+        upload_res.raise_for_status()
+        upload_url = upload_res.json().get('upload_url')
+        
+        # CLEANUP: After successful upload to AssemblyAI
+        print("✅ Link file uploaded to AssemblyAI - cleaning up server memory")
+        cleanup_upload_memory(file_content=file_content)
+        
     except Exception as e:
+        # Clean up on error
+        cleanup_upload_memory(file_content=file_content if 'file_content' in locals() else None)
         return {'error': "Failed to upload audio"}
     finally:
         # Clean up both possible file paths
@@ -289,7 +424,7 @@ def transcribe_from_link(upload_id, link):
         response = requests.post(f"{base_url}/transcript", 
                                 json=data, 
                                 headers=headers,
-                                timeout=60)  # Add timeout
+                                timeout=300)  # INCREASED: Better timeout for large file transcription
         
         if response.status_code != 200:
             error_message = "Media processing failed. Please ensure your link contains valid audio or video content."
@@ -322,31 +457,25 @@ def transcribe_from_link(upload_id, link):
             "upload_time": upload_time,
             "link": link
         })
-        # cache.delete(f"dashboard_{session['user_id']}")yyy
+        
         # Poll for the transcription result
         poll_count = 0
         
         while poll_count < 30:  # Limit polling attempts
+            response = None
             try:
-                transcription_result = requests.get(polling_endpoint, 
-                                                headers=headers, 
-                                                timeout=30).json()
+                response = requests.get(polling_endpoint, headers=headers, timeout=30)
+                transcription_result = response.json()
                 
                 if transcription_result['status'] == 'completed':
-                    # Success path
-                    # email = session.get('email')
-                    # user_id = session.get('user_id')
-                    # username = session.get('username')
-                    # if email:
-                    #     send_email_transcript(email, username, user_id, transcript_id)
-                    # else:
-                    #     user = users_collection.find_one({'user_id': user_id})
-                    #     if user:
-                    #         send_email_transcript(user['Email'], username, user_id, transcript_id)
+                    # FINAL CLEANUP: After successful transcription
+                    print("🎉 Link transcription completed - final cleanup")
+                    gc.collect()
                     return transcript_id
                     
                 elif transcription_result['status'] == 'error':
                     error_msg = transcription_result.get('error', 'Unknown error')
+                    # FIXED: Consistent error handling
                     return {'error': "Transcription failed. Please try a different media file or format."}
                     
                 else:
@@ -354,12 +483,15 @@ def transcribe_from_link(upload_id, link):
                     wait_time = min(5 * (2 ** (poll_count // 5)), 60)
                     time.sleep(wait_time)
                     poll_count += 1
-                    
+            
             except Exception as e:
                 time.sleep(5)
                 poll_count += 1
+            
+            finally:
+                if response:
+                    response.close()  
         
-        # If we get here, we've exceeded poll attempts
         return {'error': "Transcription is taking longer than expected. Please try again or use a shorter media file."}
         
     except Exception as e:
