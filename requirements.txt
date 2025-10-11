@@ -22,5 +22,4 @@ redis>=3.0
 Flask-WTF
 flask_caching
 loguru
-threading
 datetime
