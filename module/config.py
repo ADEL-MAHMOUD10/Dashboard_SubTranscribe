@@ -1,4 +1,4 @@
-from venv import logger
+# from venv import logger
 from flask import Flask , session , g
 from flask_cors import CORS
 from flask_caching import Cache
@@ -10,7 +10,6 @@ from flask_wtf.csrf import CSRFProtect , generate_csrf, validate_csrf
 from pymongo import MongoClient 
 import secrets
 import os 
-
 
 load_dotenv()
 
@@ -38,12 +37,12 @@ load_dotenv()
 
 # limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 
-CORS(app, 
-     supports_credentials=True, 
-     origins=['https://subtranscribe.koyeb.app'],
-     expose_headers=['Content-Type', 'X-CSRFToken', 'Cache-Control', 'X-Requested-With'],
-     allow_headers=['Content-Type', 'X-CSRFToken', 'Authorization', 'Cache-Control', 'X-Requested-With'],
-     methods=['GET', 'POST', 'OPTIONS'])
+# CORS(app, 
+#      supports_credentials=True, 
+#      origins=['*'],
+#      expose_headers=['Content-Type', 'X-CSRFToken', 'Cache-Control', 'X-Requested-With'],
+#      allow_headers=['Content-Type', 'X-CSRFToken', 'Authorization', 'Cache-Control', 'X-Requested-With'],
+#      methods=['GET', 'POST', 'OPTIONS'])
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
