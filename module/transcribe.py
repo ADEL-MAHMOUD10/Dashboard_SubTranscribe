@@ -13,7 +13,7 @@ from loguru import logger
 transcribe_bp = Blueprint('transcribe', __name__)
 
 # Thread-safe upload lock to prevent concurrent upload conflicts
-upload_semaphore = threading.Semaphore(value=10)  # Allow max 10 concurrent uploads
+upload_semaphore = threading.Semaphore(value=1)  # Allow max 1 concurrent uploads
 
 # @limiter.exempt
 @transcribe_bp.route('/transcribe/<user_id>')
