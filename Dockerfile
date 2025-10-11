@@ -51,7 +51,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt .
 
 RUN sed -i '/^DateTime$/d;/^Python-IO$/d' requirements.txt
-RUN pip install --upgrade pip==23.3.1 setuptools==68.2.2 wheel==0.41.2 && \
+RUN pip install --upgrade pip==25.2 setuptools==80.9.0 wheel==0.45.1 && \
     pip install --no-cache-dir --upgrade -r requirements.txt && \
     pip check
 
