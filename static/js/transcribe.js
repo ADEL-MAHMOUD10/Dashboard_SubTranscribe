@@ -69,17 +69,61 @@ document.addEventListener('DOMContentLoaded', function() {
     linkForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const linkInput = document.getElementById('linkInput');
-        if (linkInput.value.trim() !== '') {
-            uploadLink(this);
-        } else {
+        const url = linkInput.value.trim();
+        
+        if (url === '') {
             showNotification('Please enter a valid URL', 'error');
+            return;
         }
+        
+        // URL validation
+        if (!isValidUrl(url)) {
+            showNotification('Please enter a valid URL (must start with http:// or https://)', 'error');
+            return;
+        }
+        
+        // Check for supported domains
+        if (!isSupportedDomain(url)) {
+            showNotification('Please use supported video platforms (YouTube, Vimeo, etc.)', 'error');
+            return;
+        }
+        
+        uploadLink(this);
     });
     
     // Helper functions
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
+    }
+    
+    function isValidUrl(string) {
+        try {
+            const url = new URL(string);
+            return url.protocol === 'http:' || url.protocol === 'https:';
+        } catch (_) {
+            return false;
+        }
+    }
+    
+    function isSupportedDomain(url) {
+        const supportedDomains = [
+            'youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com',
+            'twitch.tv', 'facebook.com', 'instagram.com', 'x.com', 'tiktok.com',
+            'soundcloud.com', 'spotify.com', 'podcast.com','reddit.com','drive.google.com',
+            'https://assembly.ai/wildfires.mp3'
+        ];
+        
+        try {
+            const urlObj = new URL(url);
+            const hostname = urlObj.hostname.toLowerCase();
+            
+            return supportedDomains.some(domain => 
+                hostname === domain || hostname.endsWith('.' + domain)
+            );
+        } catch (_) {
+            return false;
+        }
     }
     
     function highlight() {
@@ -103,6 +147,27 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleFileSelect() {
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
+            
+            // File validation
+            const maxSize = 500 * 1024 * 1024; // 500MB
+            const allowedTypes = [
+                'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/m4a', 'audio/aac', 'audio/ogg',
+                'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'
+            ];
+            
+            // Check file size
+            if (file.size > maxSize) {
+                showNotification('File size must be less than 100MB', 'error');
+                fileInput.value = '';
+                return;
+            }
+            
+            // Check file type
+            if (!allowedTypes.includes(file.type)) {
+                showNotification('Please upload audio or video files only', 'error');
+                fileInput.value = '';
+                return;
+            }
             
             // Update file info
             fileName.textContent = file.name;
@@ -140,6 +205,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', form.action);
         
+        // Handle timeout
+        xhr.ontimeout = function() {
+            updateProgress(100, 'Upload timed out. Please try a smaller file or check your connection.', true);
+            showNotification('Upload timed out', 'error');
+        };
+
         // Track upload progress
         xhr.upload.addEventListener('progress', function(e) {
             if (e.lengthComputable) {
@@ -286,6 +357,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', form.action);
         
+        // Handle timeout
+        xhr.ontimeout = function() {
+            updateProgress(100, 'Upload timed out. Please try a smaller file or check your connection.', true);
+            showNotification('Upload timed out', 'error');
+        };
         // Handle response
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {
@@ -488,6 +564,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    function clearAllIntervals() {
+        if (window.currentProgressInterval) {
+            clearInterval(window.currentProgressInterval);
+            window.currentProgressInterval = null;
+        }
+        if (window.progressInterval) {
+            clearInterval(window.progressInterval);
+            window.progressInterval = null;
+        }
+        window.slowProgressStarted = false;
     }
     
     function showNotification(message, type) {

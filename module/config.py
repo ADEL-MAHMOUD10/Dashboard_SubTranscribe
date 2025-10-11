@@ -2,8 +2,8 @@
 from flask import Flask , session , g
 from flask_cors import CORS
 from flask_caching import Cache
-# from flask_limiter import Limiter
-# from flask_limiter.util import get_remote_address
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from datetime import timedelta  
 from flask_wtf.csrf import CSRFProtect , generate_csrf, validate_csrf
@@ -26,30 +26,42 @@ static_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-# Configure cache
+# Configure cache with fallback
+if REDIS_UR:
+    app.config['CACHE_TYPE'] = 'redis'
+    app.config['CACHE_REDIS_URL'] = REDIS_UR
+else:
+    app.config['CACHE_TYPE'] = 'simple'  # Fallback to simple cache
 
-# app.config['CACHE_TYPE'] = 'redis'
-# app.config['CACHE_REDIS_URL'] = REDIS_UR
+app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes default cache timeout
 
-# cache = Cache(app)
+cache = Cache(app)
 # set token 
 load_dotenv()
 
-# limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
+# Configure rate limiter
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    storage_uri=REDIS_UR if REDIS_UR else "memory://",
+    headers_enabled=True,
+    default_limits=["1000 per hour", "100 per minute"]
+)
 
-# CORS(app, 
-#      supports_credentials=True, 
-#      origins=['*'],
-#      expose_headers=['Content-Type', 'X-CSRFToken', 'Cache-Control', 'X-Requested-With'],
-#      allow_headers=['Content-Type', 'X-CSRFToken', 'Authorization', 'Cache-Control', 'X-Requested-With'],
-#      methods=['GET', 'POST', 'OPTIONS'])
+CORS(app, 
+     supports_credentials=True, 
+     origins=['https://subtranscribe.koyeb.app'],
+     expose_headers=['Content-Type', 'X-CSRFToken', 'Cache-Control', 'X-Requested-With'],
+     allow_headers=['Content-Type', 'X-CSRFToken', 'Authorization', 'Cache-Control', 'X-Requested-With'],
+     methods=['GET', 'POST', 'OPTIONS'])
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
-app.config['DEBUG'] = False  
-
+app.config['DEBUG'] = False
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year cache for static files  
+# In module/config.py
 
 app.secret_key = SESSION_USERS
 csrf = CSRFProtect(app)
@@ -75,6 +87,21 @@ def create_app():
     app = Flask(__name__)
     csrf.init_app(app)
     return app
+
+def clear_user_cache(user_id):
+    """Clear cache for a specific user"""
+    try:
+        cache.delete(f"dashboard_{user_id}")
+        cache.delete(f"user_{user_id}")
+    except Exception as e:
+        print(f"Error clearing cache for user {user_id}: {e}")
+
+def clear_all_cache():
+    """Clear all cache"""
+    try:
+        cache.clear()
+    except Exception as e:
+        print(f"Error clearing all cache: {e}")
 
 @app.before_request
 def set_nonce():

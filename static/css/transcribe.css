@@ -1,3 +1,9 @@
+html{
+    overflow-x: hidden !important;
+}
+body{
+    overflow-x: hidden !important;
+}
 /* Upload area styles */
 .upload-area {
     border: 2px dashed rgba(255, 255, 255, 0.2);

@@ -1,5 +1,28 @@
 # Ignore environment variable files
 .env
+.env.prod
+.env.local
+.env.production
+
+# Ignore nginx configuration files (contain sensitive info)
+nginx.conf
+nginx.prod.conf
+nginx.*.conf
+
+# Ignore SSL certificates and keys
+ssl/
+*.pem
+*.key
+*.crt
+*.cert
+
+# Ignore production deployment files
+deploy-prod.sh
+monitor-prod.sh
+env.prod.template
+
+# Ignore Docker production files
+docker-compose.prod.yml
 
 # Ignore Python cache files
 __pycache__/
@@ -11,7 +34,13 @@ __pycache__/
 
 # Ignore log files
 *.log
+logs/
 
 # Ignore system files
 .DS_Store
 Thumbs.db
+
+# Ignore temporary files
+temp/
+tmp/
+*.tmp

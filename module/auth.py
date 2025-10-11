@@ -1,12 +1,12 @@
 from flask import Blueprint ,request ,redirect,url_for ,flash,session ,render_template 
-from module.config import users_collection 
+from module.config import users_collection, limiter, cache 
 from module.send_mail import send_email_welcome
-# from module.config import limiter
 from werkzeug.security import check_password_hash, generate_password_hash
 import uuid
 
 auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@limiter.limit("10 per minute")
 def register():
     """register new user in db"""
     if request.method == 'POST':
@@ -41,7 +41,7 @@ def register():
     return render_template('register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
-# @limiter.limit("100 per hour")
+@limiter.limit("20 per minute")
 def login():
     session.permanent = True
     if 'user_id' in session:

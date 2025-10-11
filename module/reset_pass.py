@@ -1,5 +1,5 @@
 from flask import Blueprint , request ,redirect ,flash , render_template, url_for
-from module.config import users_collection ,otp_collection  ,EMAIL_PASSWORD ,EMAIL_USER
+from module.config import users_collection ,otp_collection  ,EMAIL_PASSWORD ,EMAIL_USER, limiter, cache
 from module.send_mail import send_email_reset
 from werkzeug.security import generate_password_hash
 from datetime import datetime ,timedelta
@@ -12,7 +12,7 @@ import random
 reset_pass_bp = Blueprint('reset_pass', __name__)
 
 @reset_pass_bp.route('/check_user', methods=['GET', 'POST'])
-# @limiter.limit("60 per hour")
+@limiter.limit("5 per minute")
 def check_user():
     if request.method == 'POST':
         Email = request.form['email']
@@ -28,7 +28,7 @@ def check_user():
     return render_template('check_user.html')
         
 @reset_pass_bp.route('/reset_password', methods=['POST'])
-# @limiter.limit("60 per hour")
+@limiter.limit("5 per minute")
 def reset_password():
     email = request.form['email']
     user_otp = request.form['OTP']
@@ -56,6 +56,11 @@ def reset_password():
             # Update password
             hashed_password = generate_password_hash(password)
             result = users_collection.update_one({'Email': email}, {'$set': {'password': hashed_password}})
+            
+            # Clear user cache after password reset
+            user = users_collection.find_one({'Email': email})
+            if user and 'user_id' in user:
+                cache.delete(f"user_{user['user_id']}")
             
             # Remove used OTP
             otp_collection.delete_one({'User': email, 'OTP': int(user_otp)})

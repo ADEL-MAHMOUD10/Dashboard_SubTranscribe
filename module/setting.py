@@ -1,6 +1,6 @@
 from flask import Blueprint , render_template, redirect, url_for, request, session, flash, Response
 from werkzeug.security import check_password_hash, generate_password_hash
-from module.config import users_collection ,files_collection
+from module.config import users_collection ,files_collection, limiter, cache
 from bson import ObjectId
 from datetime import datetime
 import uuid
@@ -10,6 +10,7 @@ setting_bp = Blueprint('setting', __name__)
 
 # User Settings Routes
 @setting_bp.route('/settings')
+@cache.cached(timeout=300)  # Cache for 5 minutes
 def settings():
     """Render the settings page."""
     if 'user_id' not in session:
@@ -56,10 +57,14 @@ def update_profile():
         {'$set': {'username': username, 'email': email}}
     )
     
+    # Clear user cache after profile update
+    cache.delete(f"user_{user_id}")
+    
     flash('Profile updated successfully', 'success')
     return redirect(url_for('setting.settings'))
 
 @setting_bp.route('/update_appearance', methods=['POST'])
+@limiter.limit("5 per minute")
 def update_appearance():
     """Update user appearance settings."""
     if 'user_id' not in session:
@@ -84,6 +89,7 @@ def update_appearance():
     return redirect(url_for('setting.settings'))
 
 @setting_bp.route('/update_notifications', methods=['POST'])
+@limiter.limit("5 per minute")
 def update_notifications():
     """Update user notification preferences."""
     if 'user_id' not in session:
@@ -110,6 +116,7 @@ def update_notifications():
     return redirect(url_for('setting.settings'))
 
 @setting_bp.route('/update_password', methods=['POST'])
+@limiter.limit("5 per minute")
 def update_password():
     """Update user password."""
     if 'user_id' not in session:
@@ -171,6 +178,7 @@ def update_advanced_settings():
     return redirect(url_for('setting.settings'))
 
 @setting_bp.route('/logout_all_devices', methods=['POST'])
+@limiter.limit("3 per hour")
 def logout_all_devices():
     """Logout from all devices by invalidating the user's session."""
     if 'user_id' not in session:
@@ -194,6 +202,7 @@ def logout_all_devices():
     return redirect(url_for('auth.login'))
 
 @setting_bp.route('/delete_account', methods=['POST'])
+@limiter.limit("1 per hour")
 def delete_account():
     """Delete user account and all associated data."""
     if 'user_id' not in session:
@@ -225,6 +234,7 @@ def custom_serializer(obj):
     return str(obj) 
 
 @setting_bp.route('/export_user_data', methods=['POST'])
+@limiter.limit("3 per hour")
 def export_user_data():
     """Export all user data as JSON."""
     if 'user_id' not in session:

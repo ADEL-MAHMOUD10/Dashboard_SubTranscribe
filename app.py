@@ -55,6 +55,7 @@ current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get the current t
 
 @app.route('/upload_id', methods=['GET'])
 @cross_origin(supports_credentials=True)  # Allow CORS for this route
+@limiter.limit("30 per minute")
 def progress_id():
     """Create a new upload ID."""
     try:
@@ -94,6 +95,7 @@ def progress_id():
 #     collection.insert_one(post)  
 
 @app.route('/about')
+@cache.cached(timeout=3600)  # Cache for 1 hour
 def about():
     """Render the about page."""
     return render_template('about.html')
@@ -126,6 +128,7 @@ def main_user(user_id):
     return redirect(url_for('auth.login'))
 
 @app.route('/')
+@cache.cached(timeout=1800)  # Cache for 30 minutes
 def home():
     """Render the intro page."""
     if 'user_id' in session:
@@ -135,21 +138,25 @@ def home():
     return render_template('intro.html')
 
 @app.route('/privacy')
+@cache.cached(timeout=3600)  # Cache for 1 hour
 def privacy():
     """Render the privacy policy page."""
     return render_template('privacy.html')
 
 @app.route('/terms')
+@cache.cached(timeout=3600)  # Cache for 1 hour
 def terms():
     """Render the terms of service page."""
     return render_template('terms.html')
     
 @app.route('/cookies')
+@cache.cached(timeout=3600)  # Cache for 1 hour
 def cookies():
     """Render the cookie policy page."""
     return render_template('cookies.html')
 
 @app.route('/delete_file', methods=['DELETE'])
+@limiter.limit("10 per minute")
 def delete_file():
     """delete a file from the dashboard"""
     
@@ -179,8 +186,8 @@ def delete_file():
         # Delete the file
         delete_result = files_collection.delete_one({'_id': object_id, 'user_id': user_id})
         
-        # Optional: Clear cache if needed
-        # cache.delete(f"dashboard_{user_id}")
+        # Clear cache for this user's dashboard
+        cache.delete(f"dashboard_{user_id}")
         
         if delete_result.deleted_count > 0:
             return jsonify({"success": True, "message": "File deleted successfully"}), 200
@@ -208,8 +215,12 @@ def delete_file():
             #     except Exception as e:
 #         return f"error: {str(e)}"
 
-@app.route("/healthserver")
+@app.route("/health")
 def health_check():
+    return jsonify({"status": "ok", "service": "SubTranscribe", "version": "1.0.0"}), 200
+
+@app.route("/healthserver")
+def health_check_legacy():
     return jsonify({"status": "ok"}), 200
 
 @app.route('/sitemap.xml')
