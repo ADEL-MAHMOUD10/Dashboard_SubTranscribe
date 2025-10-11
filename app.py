@@ -221,7 +221,7 @@ def health_check():
 
 @app.route("/healthserver")
 def health_check_legacy():
-    return jsonify({"status": "ok"}), 200
+    return jsonify({"status": "ok","timestamp":datetime.now().strftime("%Y-%m-%d %H:%M:%S")}), 200
 
 @app.route('/sitemap.xml')
 def sitemap():
@@ -254,5 +254,5 @@ def test_error():
 import multiprocessing
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    app.run(host="127.0.0.1",port=8000,debug=False,threaded=True)
+    app.run(host="127.0.0.1",port=5000,debug=False,threaded=True)
     

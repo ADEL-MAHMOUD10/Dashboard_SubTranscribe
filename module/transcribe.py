@@ -7,6 +7,9 @@ import time
 import yt_dlp 
 import uuid 
 import os 
+import threading
+import gc
+from loguru import logger
 
 transcribe_bp = Blueprint('transcribe', __name__)
 
