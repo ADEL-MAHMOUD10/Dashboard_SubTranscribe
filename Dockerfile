@@ -1,4 +1,8 @@
 # Multi-stage build for optimized production image
+
+# -------------------------
+# Builder stage
+# -------------------------
 FROM python:3.13-slim as builder
 
 # Set build arguments
@@ -45,12 +49,16 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy and install Python dependencies with security updates
 COPY requirements.txt .
+
+RUN sed -i '/^DateTime$/d;/^Python-IO$/d' requirements.txt
 RUN pip install --upgrade pip==23.3.1 setuptools==68.2.2 wheel==0.41.2 && \
     pip install --no-cache-dir --upgrade -r requirements.txt && \
     pip check
 
+# -------------------------
 # Production stage
-FROM python:3.11-slim as production
+# -------------------------
+FROM python:3.13-slim as production
 
 # Set build arguments for production
 ARG BUILD_DATE
@@ -110,7 +118,7 @@ RUN mkdir -p /app/temp /app/logs /app/uploads /app/cache && \
 USER appuser
 
 # Expose port
-EXPOSE 8000
+EXPOSE 5000
 
 # Add comprehensive health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
@@ -133,10 +141,9 @@ CMD ["gunicorn", \
      "--log-level=info", \
      "--access-logfile=-", \
      "--error-logfile=-", \
-     "--bind=0.0.0.0:8000", \
+     "--bind=0.0.0.0:5000", \
      "--preload", \
      "--worker-tmp-dir=/dev/shm", \
      "--forwarded-allow-ips=*", \
      "--proxy-allow-from=*", \
      "app:app"]
-
