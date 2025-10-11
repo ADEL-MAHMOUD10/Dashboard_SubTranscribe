@@ -1,5 +1,61 @@
+# Multi-stage build for optimized production image
 
-# ------------------------
+# -------------------------
+# Builder stage
+# -------------------------
+FROM python:3.13-slim as builder
+
+# Set build arguments
+ARG DEBIAN_FRONTEND=noninteractive
+ARG PIP_NO_CACHE_DIR=1
+ARG PIP_DISABLE_PIP_VERSION_CHECK=1
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION
+
+# Add labels for better image management
+LABEL maintainer="SubTranscribe Team" \
+      version="${VERSION}" \
+      description="SubTranscribe AI Transcription Service" \
+      build-date="${BUILD_DATE}" \
+      vcs-ref="${VCS_REF}"
+
+# Install system dependencies for building
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        gcc \
+        g++ \
+        libffi-dev \
+        libssl-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        zlib1g-dev \
+        libjpeg-dev \
+        libpng-dev \
+        libfreetype6-dev \
+        liblcms2-dev \
+        libwebp-dev \
+        libharfbuzz-dev \
+        libfribidi-dev \
+        libxcb1-dev \
+        pkg-config \
+        && rm -rf /var/lib/apt/lists/* \
+        && apt-get clean
+
+# Create virtual environment with specific Python version
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy and install Python dependencies with security updates
+COPY requirements.txt .
+
+RUN sed -i '/^DateTime$/d;/^Python-IO$/d' requirements.txt
+RUN pip install --upgrade pip==23.3.1 setuptools==68.2.2 wheel==0.41.2 && \
+    pip install --no-cache-dir --upgrade -r requirements.txt && \
+    pip check
+
+# -------------------------
 # Production stage
 # -------------------------
 FROM python:3.13-slim as production
