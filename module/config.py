@@ -26,7 +26,6 @@ static_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
-# Configure cache with fallback
 if REDIS_UR:
     app.config['CACHE_TYPE'] = 'redis'
     app.config['CACHE_REDIS_URL'] = REDIS_UR
