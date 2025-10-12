@@ -12,7 +12,7 @@ import random
 reset_pass_bp = Blueprint('reset_pass', __name__)
 
 @reset_pass_bp.route('/check_user', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("3 per minute")
 def check_user():
     if request.method == 'POST':
         Email = request.form['email']
