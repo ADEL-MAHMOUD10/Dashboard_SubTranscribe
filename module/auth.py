@@ -17,9 +17,9 @@ EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # 
 def register():
     """register new user in db"""
     if request.method == 'POST':
-        username = request.form.get('username').strip()
-        password = request.form.get('password')
-        Email = request.form.get('email').strip().lower()
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        Email = request.form.get('email', '').strip()
         confirm_password = request.form.get('c_password')
         user_id = str(uuid.uuid4())
 
@@ -57,9 +57,16 @@ def register():
             flash('Successfully registered! Welcome to Subtranscribe', 'success')
             return redirect(url_for('auth.login'))
                 
-        except DuplicateKeyError:
-            flash('Username or Email already exists (race condition)', 'danger')
+        except DuplicateKeyError as e:
+            error_msg = str(e)
+            if 'username' in error_msg:
+                flash('Username already exists', 'danger')
+            elif 'Email' in error_msg:
+                flash('Email already registered', 'danger')
+            else:
+                flash('Username or Email already exists', 'danger')
             return redirect(url_for('auth.register'))
+        
         except Exception as e:
             flash(f'An error occurred, try again later.', 'danger')
             logger.error(f"Error during registration: {e}")
@@ -77,25 +84,34 @@ def login():
             return redirect(url_for('main_user', user_id=session['user_id']))
         else:
             session.clear()
+            flash('Session expired, please log in again', 'warning')
     if request.method == 'POST':
     
-        identifier = request.form['email'].strip().lower()  
-        password = request.form['password']
-
-        user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
-        if user and check_password_hash(user['password'], password):
-            session['user_id'] = user['user_id']  # Store user_id in session
-            session['username'] = user['username']  # Store username in session
-            flash('Successfully logged in!', 'success')
-            # if user and 'Email' in user:
-            #     send_email_welcome(user['Email'], user['username'])
-            #     return redirect(url_for('main_user', user_id=user['user_id']))
-            # else:
-            #     flash('No email found for this user', 'danger')
-            return redirect(url_for('main_user', user_id=user['user_id']))
-        flash('Incorrect username or password', 'danger')
-        return redirect(url_for('auth.login'))
-
+        identifier = request.form['email'].strip()
+        password = request.form.get('password', '')
+        if not identifier or not password:
+            flash('Please enter both username/email and password', 'danger')
+            return redirect(url_for('auth.login'))
+        try:
+            user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
+            if user and check_password_hash(user['password'], password):
+                session['user_id'] = user['user_id']  # Store user_id in session
+                session['username'] = user['username']  # Store username in session
+                flash('Successfully logged in!', 'success')
+                # if user and 'Email' in user:
+                #     send_email_welcome(user['Email'], user['username'])
+                #     return redirect(url_for('main_user', user_id=user['user_id']))
+                # else:
+                #     flash('No email found for this user', 'danger')
+                return redirect(url_for('main_user', user_id=user['user_id']))
+            else:
+                logger.warning(f"Failed login attempt for identifier: {identifier}")
+                flash('Incorrect username or password', 'danger')
+                return redirect(url_for('auth.login'))
+        except Exception as e:
+            logger.error(f"Error during login for identifier {identifier}: {e}")
+            flash('An error occurred, please try again later', 'danger')
+            return redirect(url_for('auth.login'))
     return render_template('login.html')
 
 @auth_bp.route('/logout', methods=['GET', 'POST'])
