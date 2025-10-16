@@ -14,7 +14,6 @@ EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # 
 
 # User Settings Routes
 @setting_bp.route('/settings')
-@cache.cached(timeout=300)  # Cache for 5 minutes
 def settings():
     """Render the settings page."""
     if 'user_id' not in session:
@@ -35,8 +34,8 @@ def update_profile():
         return redirect(url_for('auth.login'))
     
     user_id = session.get('user_id')
-    username = request.form.get('username')
-    email = request.form.get('email')
+    username = request.form.get('username','').strip()
+    email = request.form.get('email','').strip().lower()
     
     # Validate username
     if not username or len(username) < 3:
@@ -50,7 +49,13 @@ def update_profile():
     
 
     # Check if username is already exists by another user
-    existing_user = users_collection.find_one({'$or': [{'username': username}, {'email': email}], 'user_id': {'$ne': user_id}})
+    existing_user = users_collection.find_one({
+        '$and': [
+            {'user_id': {'$ne': user_id}},
+            {'$or': [{'username': username}, {'Email': email}]}
+        ]
+    })
+
     if existing_user:
         flash('Username or email is already exists by another user', 'danger')
         return redirect(url_for('setting.settings'))
@@ -58,7 +63,7 @@ def update_profile():
     # Update user profile
     users_collection.update_one(
         {'user_id': user_id},
-        {'$set': {'username': username, 'email': email}}
+        {'$set': {'username': username, 'Email': email}}
     )
     
     # Clear user cache after profile update
@@ -127,9 +132,9 @@ def update_password():
         return redirect(url_for('auth.login'))
     
     user_id = session.get('user_id')
-    current_password = request.form.get('current_password')
-    new_password = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
+    current_password = request.form.get('current_password','')
+    new_password = request.form.get('new_password','')
+    confirm_password = request.form.get('confirm_password','')
     
     # Get user from database
     user = users_collection.find_one({'user_id': user_id})
@@ -152,7 +157,7 @@ def update_password():
         return redirect(url_for('setting.settings'))
     
     # Update password
-    changed_password = generate_password_hash(new_password)
+    changed_password = generate_password_hash(new_password, method='scrypt', salt_length=16)
     users_collection.update_one(
         {'user_id': user_id},
         {'$set': {'password': changed_password}}
@@ -262,7 +267,6 @@ def export_user_data():
     user_files = list(files_collection.find({'user_id': user_id}))
     for file in user_files:
         if '_id' in file:
-            file['_id'] = str(file['_id'])
             del file['_id'] 
     
     # Remove user_id from user object (privacy)

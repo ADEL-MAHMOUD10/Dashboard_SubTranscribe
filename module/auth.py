@@ -119,6 +119,8 @@ def logout():
     if request.method == 'GET':
         session.pop('user_id',None)
         session.pop('username',None)
+        session.pop('email',None)
         session.clear()
+        cache.clear()
         flash('Successfully logged out!', 'success')
     return redirect(url_for('auth.login'))
