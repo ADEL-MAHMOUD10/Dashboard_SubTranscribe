@@ -5,8 +5,12 @@ from bson import ObjectId
 from datetime import datetime
 import uuid
 import json
+import re
 
 setting_bp = Blueprint('setting', __name__)
+
+
+EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # powerful 
 
 # User Settings Routes
 @setting_bp.route('/settings')
@@ -40,7 +44,7 @@ def update_profile():
         return redirect(url_for('setting.settings'))    
     
     # Validate email
-    if not email or '@' not in email:
+    if not email or not EMAIL_REGEX.match(email):
         flash('Please enter a valid email address', 'danger')
         return redirect(url_for('setting.settings'))
     

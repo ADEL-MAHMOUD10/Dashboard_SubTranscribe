@@ -66,10 +66,10 @@ app.secret_key = SESSION_USERS
 csrf = CSRFProtect(app)
 
 # Set up MongoDB connection
+# dbase = cluster["Datedb"]  # Specify the database name
+# # fs = gridfs.GridFS(dbase)  # Create a GridFS instance for file storage
+# progress_collection = dbase['progress']  #(Collection)
 cluster = MongoClient(TOKEN_ONE)
-dbase = cluster["Datedb"]  # Specify the database name
-# fs = gridfs.GridFS(dbase)  # Create a GridFS instance for file storage
-progress_collection = dbase['progress']  #(Collection)
 
 dbs = cluster["User_DB"]  # Database name
 users_collection = dbs["users"]  # Users collection
@@ -81,6 +81,9 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+users_collection.create_index("username", unique=True)
+users_collection.create_index("Email", unique=True)
 
 def create_app():
     app = Flask(__name__)

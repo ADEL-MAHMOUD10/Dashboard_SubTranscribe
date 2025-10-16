@@ -2,41 +2,68 @@ from flask import Blueprint ,request ,redirect,url_for ,flash,session ,render_te
 from module.config import users_collection, limiter, cache 
 from module.send_mail import send_email_welcome
 from werkzeug.security import check_password_hash, generate_password_hash
+from pymongo.errors import DuplicateKeyError
+from loguru import logger
 import uuid
+import re
 
 auth_bp = Blueprint('auth', __name__)
+
+EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # powerful 
+# EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+") # simple regex for email validation not used now
+
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def register():
     """register new user in db"""
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        Email = request.form['email']
-        confirm_password = request.form['c_password']
+        username = request.form.get('username').strip()
+        password = request.form.get('password')
+        Email = request.form.get('email').strip().lower()
+        confirm_password = request.form.get('c_password')
         user_id = str(uuid.uuid4())
 
-        if password != confirm_password:
-            flash('Passwords do not match', 'danger')
-            return redirect(url_for('auth.register'))    
+        try:
+            if password != confirm_password:
+                flash('Passwords do not match', 'danger')
+                return redirect(url_for('auth.register'))    
+            
+            if len(password) < 8:
+                flash('Password must be at least 8 characters long', 'danger')
+                return redirect(url_for('auth.register'))
+            if not username or len(username) < 4:
+                flash('Username must be at least 4 characters long', 'danger')
+                return redirect(url_for('auth.register'))
+            if not Email or not EMAIL_REGEX.match(Email):
+                flash('Invalid email address', 'danger')
+                return redirect(url_for('auth.register'))
+            
+            hashed_password = generate_password_hash(password, method='scrypt', salt_length=16)
+            users_collection.insert_one({
+                'Email': Email,
+                'username': username,
+                'password': hashed_password ,
+                "user_id":user_id
+                })
+            session['user_id'] = user_id
+            session['username'] = username  # Store username in session
+            session['email'] = Email  # Store email in session
 
-        existing_user = users_collection.find_one({'username': username})
-        existing_email = users_collection.find_one({'Email': Email})
-        
-        if existing_user or existing_email:
-            flash('User already exists', 'danger')
+            try:
+                send_email_welcome(Email, username)
+            except Exception as e:
+                logger.error(f"Error sending welcome email to {Email}: {e}")
+                        
+            flash('Successfully registered! Welcome to Subtranscribe', 'success')
+            return redirect(url_for('auth.login'))
+                
+        except DuplicateKeyError:
+            flash('Username or Email already exists (race condition)', 'danger')
             return redirect(url_for('auth.register'))
-        
-        hashed_password = generate_password_hash(password, method='scrypt', salt_length=16)
-        users_collection.insert_one({'Email': Email,'username': username, 'password': hashed_password ,"user_id":user_id})
-        session['user_id'] = user_id
-        session['username'] = username  # Store username in session
-        session['email'] = Email  # Store email in session
-
-        send_email_welcome(Email, username)
-        
-        flash('Successfully registered! Welcome to Subtranscribe', 'success')
-        return redirect(url_for('auth.login'))
+        except Exception as e:
+            flash(f'An error occurred, try again later.', 'danger')
+            logger.error(f"Error during registration: {e}")
+            return redirect(url_for('auth.register'))
 
     return render_template('register.html')
 
@@ -52,7 +79,7 @@ def login():
             session.clear()
     if request.method == 'POST':
     
-        identifier = request.form['email']
+        identifier = request.form['email'].strip().lower()  
         password = request.form['password']
 
         user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
@@ -76,7 +103,6 @@ def logout():
     if request.method == 'GET':
         session.pop('user_id',None)
         session.pop('username',None)
-        session.pop('password',None)
         session.clear()
         flash('Successfully logged out!', 'success')
     return redirect(url_for('auth.login'))

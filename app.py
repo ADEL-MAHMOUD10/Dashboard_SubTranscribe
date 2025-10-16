@@ -217,7 +217,7 @@ def delete_file():
 
 @app.route("/health")
 def health_check():
-    return jsonify({"status": "ok", "service": "SubTranscribe", "version": "1.0.0"}), 200
+    return jsonify({"status": "ok", "service": "SubTranscribe", "version": "1.0.0","timestamp":datetime.now().strftime("%Y-%m-%d %H:%M:%S")}), 200
 
 @app.route("/healthserver")
 def health_check_legacy():
