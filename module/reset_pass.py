@@ -55,7 +55,7 @@ def reset_password():
         saved_otp = otp_collection.find_one({'User': email, 'OTP_hash': otp_input_hashed})
         
         if saved_otp:
-            if datetime.now() - saved_otp['created_at'] > timedelta(minutes=5):
+            if datetime.now() - saved_otp['created_at'] > timedelta(minutes=2):
                 otp_collection.delete_one({'User': email, 'OTP_hash': otp_input_hashed})
                 flash('OTP has expired. Please request a new one.', 'warning')
                 return render_template('check_user.html')

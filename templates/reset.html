@@ -213,7 +213,7 @@
                                     <input type="text" name="OTP" id="otpInput" placeholder="Enter your OTP" maxlength="6" class="form-input block w-full pl-10 pr-10 py-3 rounded-lg" pattern="[0-9]{6}" inputmode="numeric">
                                     <div class="absolute right-3 top-1/2 -translate-y-1/2 bg-purple-500/30 text-white px-2 py-1 rounded text-sm flex items-center">
                                         <i class="fas fa-clock mr-1"></i>
-                                        <span id="otpTimer">60s</span>
+                                        <span id="otpTimer">120s</span>
                                     </div>
                                 </div>
                                 <label for="password" class="block text-sm font-medium text-white mt-2">New Password</label>
@@ -387,7 +387,7 @@
             
             // OTP Timer functionality
             const timerElement = document.getElementById('otpTimer');
-            let timeLeft = 60;
+            let timeLeft = 120;
             
             const countdown = setInterval(function() {
                 timeLeft--;
@@ -401,7 +401,11 @@
                 }
                 
                 // Change color when time is running out
-                if (timeLeft <= 10) {
+                if (timeLeft <= 30) {
+                    timerElement.parentElement.classList.remove('bg-purple-500/30');
+                    timerElement.parentElement.classList.add('bg-yellow-500/30');
+                }
+                if (timeLeft <= 60) {
                     timerElement.parentElement.classList.remove('bg-purple-500/30');
                     timerElement.parentElement.classList.add('bg-orange-500/30');
                 }

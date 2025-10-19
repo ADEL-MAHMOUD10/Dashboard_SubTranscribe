@@ -75,7 +75,7 @@ def progress_id():
         response.headers['Content-Type'] = 'text/plain'
         return response
     except Exception as e:
-        print(f"Error generating upload ID: {e}")
+        logger.error(f"Error generating upload ID: {e}")
         return "error"
 
 # def Update_progress(transcript_id, status, message, Section, file_name=None, link=None):
