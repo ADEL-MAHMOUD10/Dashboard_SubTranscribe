@@ -100,15 +100,13 @@ def login():
         try:
             user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
             if user and check_password_hash(user['password'], password):
-                # Rotate session token on successful login
                 new_session_token = str(uuid.uuid4())
-                # Push into array (multi-device) and also set legacy field for backcompat
                 users_collection.update_one(
                     {'user_id': user['user_id']},
                     {'$set': {'session_token': new_session_token}, '$addToSet': {'session_tokens': new_session_token}}
                 )
-                session['user_id'] = user['user_id']  # Store user_id in session
-                session['username'] = user['username']  # Store username in session
+                session['user_id'] = user['user_id']
+                session['username'] = user['username']
                 session['session_token'] = new_session_token
                 flash('Successfully logged in!', 'success')
                 # if user and 'Email' in user:
@@ -135,12 +133,15 @@ def logout():
         if user_id and current_token:
             users_collection.update_one({'user_id': user_id}, {'$pull': {'session_tokens': current_token}})
     except Exception:
-            pass
-    session.pop('user_id',None)
-    session.pop('username',None)
-    session.pop('email',None)
-    session.pop('session_token',None)
-    session.pop('session_tokens',None)
-    session.clear()
-    cache.clear()
-    flash('Successfully logged out!', 'success')
+        logger.error(f"Error logging out user {user_id}")
+        flash('An error occurred, please try again later', 'danger')
+        return redirect(url_for('auth.login'))
+    try:
+        session.clear()
+        cache.clear()
+        flash('Successfully logged out!', 'success')
+        return redirect(url_for('auth.login'))
+    except Exception:
+        logger.error(f"Error clearing session and cache")
+        flash('An error occurred, please try again later', 'danger')
+        return redirect(url_for('auth.login'))

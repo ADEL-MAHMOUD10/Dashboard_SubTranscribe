@@ -1,6 +1,6 @@
 from collections import defaultdict
 from flask import Blueprint , session , request  ,render_template ,url_for ,redirect ,flash ,send_file, after_this_request
-from module.config import TOKEN_THREE ,files_collection ,users_collection, limiter, cache 
+from module.config import TOKEN_THREE ,files_collection ,users_collection, limiter, cache, is_session_valid
 from datetime import datetime, timezone
 from bson import ObjectId
 import requests
@@ -39,7 +39,7 @@ def user_dashboard():
 def dashboard(user_id):
     # Retrieve the user from the database by user_id
     user = users_collection.find_one({'user_id': user_id})
-    if 'user_id' not in session:
+    if 'user_id' not in session or not is_session_valid():
         flash('Please log in first.', 'danger')
         return redirect(url_for('subtitle.user_dashboard'))
 

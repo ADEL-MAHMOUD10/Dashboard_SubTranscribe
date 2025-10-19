@@ -1,12 +1,12 @@
 from flask import Blueprint , render_template, redirect, url_for, request, session, flash, Response
 from werkzeug.security import check_password_hash, generate_password_hash
-from module.config import users_collection ,files_collection, limiter, cache
+from module.config import users_collection ,files_collection, limiter, cache, is_session_valid
 from bson import ObjectId
 from datetime import datetime
 import uuid
 import json
 import re
-
+from loguru import logger
 setting_bp = Blueprint('setting', __name__)
 
 
@@ -187,28 +187,27 @@ def update_advanced_settings():
     return redirect(url_for('setting.settings'))
 
 @setting_bp.route('/logout_all_devices', methods=['POST'])
-@limiter.limit("3 per hour")
+@limiter.limit("6 per hour")
 def logout_all_devices():
     """Logout from all devices by invalidating the user's session."""
-    if 'user_id' not in session:
+    if 'user_id' not in session or not is_session_valid():
         return redirect(url_for('auth.login'))
-    
-    user_id = session.get('user_id')
-    
-    # Generate a new session token
-    new_session_token = str(uuid.uuid4())
-    
-    # Update user's session token in database
-    users_collection.update_one(
-        {'user_id': user_id},
-        {'$set': {'session_token': new_session_token}}
-    )
-    
-    # Clear current session
-    session.clear()
-    
-    flash('You have been logged out from all devices', 'success')
-    return redirect(url_for('auth.login'))
+    try:
+        user_id = session.get('user_id')
+        username = session.get('username')
+        current_token = session.get('session_token')
+        if user_id and current_token:
+            users_collection.update_one({'user_id': user_id}, {'$set': {'session_token': None, 'session_tokens': []}})
+            session.clear()
+            flash('Successfully logged out!', 'success')
+            return redirect(url_for('home'))
+        else:
+            flash('No user found', 'danger')
+            return redirect(url_for('home'))
+    except Exception as e:
+        logger.error(f"Error logging out user {username}({user_id}): {e}")
+        flash('An error occurred, please try again later', 'danger')
+        return redirect(url_for('home'))
 
 @setting_bp.route('/delete_account', methods=['POST'])
 @limiter.limit("1 per hour")

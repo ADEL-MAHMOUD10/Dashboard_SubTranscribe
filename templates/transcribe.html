@@ -184,8 +184,10 @@
                             <select class="form-select" id="modelSelectLink" name="model">
                                 <option value="slam-1">slam-1</option>
                                 <option value="universal" selected>Universal</option>
-                                <option value="voxtral-mini-2507" disabled>voxtral-mini(upcoming)</option>
+                                <option value="voxtral-mini-2507" disabled>voxtral(upcoming)</option>
                                 <option value="whisper-large-v3" disabled>Whisper-large-v3(upcoming)</option>
+                                <option value="scribe_v1" disabled>ElevenLabs Scribe V1(upcoming)</option>
+                                <option value="google_gemini_2_5_flash" disabled>Google Gemini 2.5 Flash(upcoming)</option>
                             </select>
                         </div>
                         
@@ -319,7 +321,7 @@
             if (flashMessage) {
                 flashMessage.style.transition = "opacity 0.5s ease"; 
                 flashMessage.style.opacity = "0"; 
-                setTimeout(() => flashMessage.remove(), 500); // بعد الانميشن يشيله
+                setTimeout(() => flashMessage.remove(), 500);
             }
         }, 2000);
     </script>
