@@ -1,9 +1,11 @@
 from flask import Blueprint , request ,redirect ,flash , render_template, url_for
 from module.config import users_collection ,otp_collection  ,EMAIL_PASSWORD ,EMAIL_USER
 from datetime import datetime ,timedelta
+from threading import Thread
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
+from loguru import logger
 import smtplib
 
 send_emails = Blueprint('send_emails', __name__)
@@ -28,7 +30,7 @@ def send_email(to_address, subject, html_content, image_path="subtitle.png"):
             mime_image.add_header('Content-Disposition', 'inline', filename=image_path)
             message.attach(mime_image)
     except FileNotFoundError:
-        print("Logo not found. Sending email without it.")
+        logger.info("Logo not found. Sending email without it.")
 
     smtpObj = None
     try:
@@ -38,10 +40,15 @@ def send_email(to_address, subject, html_content, image_path="subtitle.png"):
         smtpObj.sendmail(from_address, to_address, message.as_string())
         print("Email sent successfully.")
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        flash("Failed to send email","danger")
+        logger.error(f"Failed to send email: {e}")
     finally:
         if smtpObj:
             smtpObj.quit()
+    
+def send_async_email(to_address, subject, html_content):
+    Thread(target=send_email, args=(to_address, subject, html_content)).start()
+
 
 def send_email_reset(to_address, otp):    
     html_content = f"""
@@ -66,7 +73,7 @@ def send_email_reset(to_address, otp):
                     </body>
                 </html>
             """
-    send_email(to_address, "Reset Your Password", html_content)
+    send_async_email(to_address, "Reset Your Password", html_content)
 
 def send_email_welcome(to_address , username):    
     html_content = f"""
@@ -90,7 +97,7 @@ def send_email_welcome(to_address , username):
                     </body>
                 </html>
             """
-    send_email(to_address, "Welcome to Subtranscribe!", html_content)
+    send_async_email(to_address, "Welcome to Subtranscribe!", html_content)
 
 
 def send_email_transcript(to_address ,username, user_id, transcript_id):
@@ -115,5 +122,5 @@ def send_email_transcript(to_address ,username, user_id, transcript_id):
                     </body>
                 </html>
             """
-    send_email(to_address, "Transcript Completed!", html_content)
+    send_async_email(to_address, "Transcript Completed!", html_content)
 
