@@ -58,21 +58,7 @@
     
     <div class="container relative z-10">
         <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    {% if category == 'danger' %}
-                        <div class="alert-glass alert-danger mb-4 p-3 rounded" role="alert" id="flashMessage">
-                            <i class="fas fa-exclamation-circle me-2"></i>{{ message }}
-                        </div>
-                    {% elif category == 'success' %}
-                        <div class="alert-glass alert-success mb-4 p-3 rounded" role="alert" id="flashMessage">
-                            <i class="fas fa-check-circle me-2"></i>{{ message }}
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        {% include 'Flash-message.html' %}
         
         <!-- Settings Header -->
         <div class="glass-card mb-4 p-4" data-aos="fade-up">
@@ -398,18 +384,6 @@
                 duration: 800,
                 once: true
             });
-            
-            // Flash message timeout
-            const flashMessage = document.getElementById('flashMessage');
-            if (flashMessage) {
-                setTimeout(() => {
-                    flashMessage.style.opacity = '0';
-                    setTimeout(() => {
-                        flashMessage.style.display = 'none';
-                    }, 300);
-                }, 3000);
-            }
-            
             // Theme selector functionality
             const themeOptions = document.querySelectorAll('.theme-option');
             themeOptions.forEach(option => {

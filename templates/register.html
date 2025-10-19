@@ -111,7 +111,8 @@
     <div class="shape floating" style="width:40vw; height:40vw; max-width:600px; max-height:600px; top:-10%; right:-10%;"></div>
     <div class="shape floating" style="width:30vw; height:30vw; max-width:400px; max-height:400px; bottom:-10%; left:-10%; animation-delay: 2s;"></div>
     <div class="shape floating" style="width:25vw; height:25vw; max-width:350px; max-height:350px; top:40%; left:10%; animation-delay: 1s;"></div>
-
+    <!-- Flash message -->
+    {% include 'Flash-message.html' %}
     <!-- Register Container with Split Layout -->
     <div class="container mx-auto px-4 py-8 relative z-10">
         <div class="max-w-5xl mx-auto glass-card overflow-hidden rounded-2xl shadow-2xl">
@@ -314,23 +315,6 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Flash Messages -->
-                            {% with messages = get_flashed_messages(with_categories=true) %}
-                                {% if messages %}
-                                    {% for category, message in messages %}
-                                        {% if category == 'danger' %}
-                                            <div class="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg">
-                                                <p>{{ message }}</p>
-                                            </div>
-                                        {% elif category == 'success' %}
-                                            <div class="bg-green-500/20 border border-green-500/50 text-green-200 px-4 py-3 rounded-lg">
-                                                <p>{{ message }}</p>
-                                            </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                            {% endwith %}
                             
                             <!-- Submit Button -->
                             <button 
