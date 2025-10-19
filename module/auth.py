@@ -1,5 +1,6 @@
 from flask import Blueprint ,request ,redirect,url_for ,flash,session ,render_template 
 from module.config import users_collection, limiter, cache 
+from module.config import is_session_valid
 from module.send_mail import send_email_welcome
 from werkzeug.security import check_password_hash, generate_password_hash
 from pymongo.errors import DuplicateKeyError
@@ -39,15 +40,19 @@ def register():
                 return redirect(url_for('auth.register'))
             
             hashed_password = generate_password_hash(password, method='scrypt', salt_length=16)
+            session_token = str(uuid.uuid4())
             users_collection.insert_one({
                 'Email': Email,
                 'username': username,
                 'password': hashed_password ,
-                "user_id":user_id
+                "user_id":user_id,
+                'session_token': session_token,
+                'session_tokens': [session_token]
                 })
             session['user_id'] = user_id
             session['username'] = username  # Store username in session
             session['email'] = Email  # Store email in session
+            session['session_token'] = session_token
 
             try:
                 send_email_welcome(Email, username)
@@ -79,8 +84,8 @@ def register():
 def login():
     session.permanent = True
     if 'user_id' in session:
-        user = users_collection.find_one({'user_id': session['user_id']})
-        if user:
+        # Only auto-redirect if current session is valid; otherwise clear it
+        if is_session_valid():
             return redirect(url_for('main_user', user_id=session['user_id']))
         else:
             session.clear()
@@ -95,8 +100,16 @@ def login():
         try:
             user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
             if user and check_password_hash(user['password'], password):
+                # Rotate session token on successful login
+                new_session_token = str(uuid.uuid4())
+                # Push into array (multi-device) and also set legacy field for backcompat
+                users_collection.update_one(
+                    {'user_id': user['user_id']},
+                    {'$set': {'session_token': new_session_token}, '$addToSet': {'session_tokens': new_session_token}}
+                )
                 session['user_id'] = user['user_id']  # Store user_id in session
                 session['username'] = user['username']  # Store username in session
+                session['session_token'] = new_session_token
                 flash('Successfully logged in!', 'success')
                 # if user and 'Email' in user:
                 #     send_email_welcome(user['Email'], user['username'])
@@ -116,11 +129,18 @@ def login():
 
 @auth_bp.route('/logout', methods=['GET', 'POST'])
 def logout():
-    if request.method == 'GET':
-        session.pop('user_id',None)
-        session.pop('username',None)
-        session.pop('email',None)
-        session.clear()
-        cache.clear()
-        flash('Successfully logged out!', 'success')
-    return redirect(url_for('auth.login'))
+    try:
+        user_id = session.get('user_id')
+        current_token = session.get('session_token')
+        if user_id and current_token:
+            users_collection.update_one({'user_id': user_id}, {'$pull': {'session_tokens': current_token}})
+    except Exception:
+            pass
+    session.pop('user_id',None)
+    session.pop('username',None)
+    session.pop('email',None)
+    session.pop('session_token',None)
+    session.pop('session_tokens',None)
+    session.clear()
+    cache.clear()
+    flash('Successfully logged out!', 'success')

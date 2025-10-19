@@ -14,6 +14,7 @@ from module.setting import *
 from module.auth import *
 from module.subtitle import *
 from module.config import *
+from module.config import is_session_valid
 from module.transcribe import *
 from module.reset_pass import *
 import os
@@ -121,7 +122,7 @@ def about():
 
 @app.route('/v1/<user_id>')
 def main_user(user_id):
-    if 'user_id' in session:
+    if 'user_id' in session and is_session_valid():
         upload_id = str(uuid.uuid4())
         session['upload_id'] = upload_id
         return redirect(url_for('transcribe.transcribe_page', user_id=user_id))
@@ -161,7 +162,7 @@ def delete_file():
     """delete a file from the dashboard"""
     
     user_id = session.get('user_id')
-    if not user_id:
+    if not user_id or not is_session_valid():
         return jsonify({"success": False, "message": "User not authenticated"}), 401
     
     try:

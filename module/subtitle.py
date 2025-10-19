@@ -285,3 +285,4 @@ def redirect_to_transcript(file_id):
         flash(f"An error occurred: {str(e)}")
     
     return redirect(url_for('subtitle.dashboard',user_id=user_id))
+

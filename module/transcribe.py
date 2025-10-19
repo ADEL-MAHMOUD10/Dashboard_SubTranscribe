@@ -1,5 +1,6 @@
 from flask import Blueprint , session, redirect, url_for , request, render_template, flash
 from module.config import users_collection, files_collection, TOKEN_THREE
+from module.config import is_session_valid
 from module.send_mail import send_email_transcript
 from datetime import datetime, timezone 
 import requests
@@ -20,7 +21,7 @@ upload_semaphore = threading.Semaphore(value=1)  # Allow max 1 concurrent upload
 @transcribe_bp.route('/transcribe/<user_id>')
 def transcribe_page(user_id):
     """Render the transcribe page."""
-    if 'user_id' not in session:
+    if 'user_id' not in session or not is_session_valid():
         return redirect(url_for('auth.login'))
     upload_id = str(uuid.uuid4())
     user_id = session.get('user_id')
@@ -63,7 +64,7 @@ def cleanup_upload_memory(file_content=None, audio_file=None):
 def upload_or_link():
     """Handle file uploads or links for transcription."""
     user_id = session.get('user_id')
-    if 'user_id' not in session:
+    if 'user_id' not in session or not is_session_valid():
         return redirect(url_for('auth.login'))
 
     user = users_collection.find_one({'user_id': user_id})

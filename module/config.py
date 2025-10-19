@@ -56,8 +56,11 @@ CORS(app,
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['DEBUG'] = False
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year cache for static files  
 # In module/config.py
@@ -105,9 +108,27 @@ def clear_all_cache():
     except Exception as e:
         print(f"Error clearing all cache: {e}")
 
+def is_session_valid() -> bool:
+    """Validate the session's user_id and session_token against the database.
+    Supports both legacy single token and multi-device token arrays.
+    """
+    try:
+        user_id = session.get('user_id')
+        session_token = session.get('session_token')
+        if not user_id or not session_token:
+            return False
+        user = users_collection.find_one({'user_id': user_id}, {'session_token': 1, 'session_tokens': 1})
+        if not user:
+            return False
+        tokens = user.get('session_tokens')
+        if isinstance(tokens, list) and session_token in tokens:
+            return True
+        return user.get('session_token') == session_token
+    except Exception:
+        return False
+
 @app.before_request
 def set_nonce():
-    # نولد nonce جديد لكل request
     g.nonce = secrets.token_hex(16)
 
 @app.after_request
