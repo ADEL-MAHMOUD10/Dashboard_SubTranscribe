@@ -1,5 +1,5 @@
 from flask import Blueprint, request, redirect, flash, render_template, url_for
-from module.config import users_collection, otp_collection, EMAIL_PASSWORD, EMAIL_USER, limiter, cache
+from module.config import users_collection, otp_collection,limiter, cache
 from module.send_mail import send_email_reset
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
@@ -25,6 +25,7 @@ def check_user():
                 'created_at': datetime.now()
             })
             send_email_reset(Email, otp_plain)
+            logger.success(f"OTP is send to {Email}")
             flash(f'OTP has been sent to {Email}', 'success')
             return render_template('reset.html', email=Email)
         
@@ -53,7 +54,6 @@ def reset_password():
     
     try:
         saved_otp = otp_collection.find_one({'User': email, 'OTP_hash': otp_input_hashed})
-        
         if saved_otp:
             if datetime.now() - saved_otp['created_at'] > timedelta(minutes=2):
                 otp_collection.delete_one({'User': email, 'OTP_hash': otp_input_hashed})
@@ -74,6 +74,7 @@ def reset_password():
             
             if result.modified_count > 0:
                 flash('Password updated successfully.', 'success')
+                logger.success(f"{email} update Password successfully ")
                 return redirect(url_for('auth.login'))
             else:
                 flash('User not found in database.', 'danger')
@@ -83,5 +84,6 @@ def reset_password():
             return redirect(url_for('reset_pass.check_user'))
     
     except Exception as e:
-        flash(f'An error occurred: {str(e)}', 'danger')
+        flash(f'An error occurred when reset password, try again later', 'danger')
+        logger.error(f"An error occurred when reset password for {email} : {e}")
         return render_template('reset.html', email=email)
