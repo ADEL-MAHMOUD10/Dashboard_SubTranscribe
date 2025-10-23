@@ -28,7 +28,8 @@
         overflow: hidden;
         animation: slideIn 0.3s ease-out;
         position: relative;
-        min-width: 320px;
+        min-width: 280px;
+        max-width: 100%;
     }
 
     .flash-item.closing {
@@ -150,7 +151,7 @@
 
     @keyframes slideIn {
         from {
-            transform: translateX(450px);
+            transform: translateX(100%);
             opacity: 0;
         }
         to {
@@ -161,7 +162,7 @@
 
     @keyframes slideOut {
         to {
-            transform: translateX(450px);
+            transform: translateX(100%);
             opacity: 0;
         }
     }
@@ -175,15 +176,74 @@
         }
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
         #flash-notifications {
             left: 10px;
             right: 10px;
+            top: 10px;
             max-width: none;
+            gap: 8px;
         }
 
         .flash-item {
             min-width: auto;
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .flash-content {
+            padding: 12px;
+            gap: 10px;
+        }
+
+        .flash-icon {
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+        }
+
+        .flash-message {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .flash-close {
+            padding: 6px;
+            font-size: 14px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        #flash-notifications {
+            left: 5px;
+            right: 5px;
+            top: 5px;
+            gap: 6px;
+        }
+
+        .flash-item {
+            border-radius: 6px;
+        }
+
+        .flash-content {
+            padding: 10px;
+            gap: 8px;
+        }
+
+        .flash-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+        }
+
+        .flash-message {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .flash-close {
+            padding: 4px;
+            font-size: 12px;
         }
     }
 </style>
