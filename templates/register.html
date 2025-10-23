@@ -28,7 +28,7 @@
     <link rel="stylesheet" href="/static/css/common.css">
     
     <!-- Tailwind Config -->
-    <script>
+    <script nonce="{{ g.nonce }}">
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -350,7 +350,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
     <script src="/static/js/common.js"></script>
-    <script>
+    <script nonce="{{ g.nonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             // Password visibility toggle
             const togglePassword = document.getElementById('togglePassword');

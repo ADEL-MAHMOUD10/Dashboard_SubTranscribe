@@ -18,7 +18,7 @@
     <title>Privacy Policy - SubTranscribe</title>
     <link rel="shortcut icon" href="/static/image/subtitle.ico">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+    <script nonce="{{ g.nonce }}">
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -344,13 +344,13 @@
         </div>
     </footer>
 
-    <script>
+    <script nonce="{{ g.nonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             // Set current year in footer
             document.getElementById('current-year').textContent = new Date().getFullYear();
         });
     </script>
-    <script>
+    <script nonce="{{ g.nonce }}">
         // Mobile menu toggle
         document.getElementById('mobile-menu-button').addEventListener('click', function() {
             const menu = document.getElementById('mobile-menu');

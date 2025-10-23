@@ -1902,7 +1902,7 @@
     </script>
 
     <!-- Performance Monitoring Script -->
-    <script>
+    <script nonce="{{ g.nonce }}">
         // Core Web Vitals monitoring
         function sendToAnalytics(metric) {
             // Send to your analytics service
@@ -1933,7 +1933,7 @@
         }).observe({ entryTypes: ['layout-shift'] });
     </script>
 
-    <script>
+    <script nonce="{{ g.nonce }}">
         // Add Alpine.js to window for global access
         window.Alpine = window.Alpine || {};
         window.Alpine.start = window.Alpine.start || function() {};
