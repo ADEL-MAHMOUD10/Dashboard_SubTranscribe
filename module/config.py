@@ -1,5 +1,5 @@
 # from venv import logger
-from flask import Flask , session , g
+from flask import Flask, redirect , session , g, render_template
 from flask_cors import CORS
 from flask_caching import Cache
 from flask_limiter import Limiter
@@ -10,6 +10,7 @@ from flask_wtf.csrf import CSRFProtect , generate_csrf, validate_csrf
 from pymongo import MongoClient 
 import secrets
 import os 
+import uuid 
 
 load_dotenv()
 
@@ -60,7 +61,7 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
 app.config['DEBUG'] = False
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year cache for static files  
 # In module/config.py
@@ -197,3 +198,19 @@ def add_cache_headers(response):
     else:
         response.headers['Cache-Control'] = 'public, max-age=31536000'
     return response
+
+# 404 Error
+@app.errorhandler(404)
+def page_not_found(e):
+    error_id = str(uuid.uuid4())
+    error_message = "Page Not Found. The requested resource could not be found."
+    user_id = session.get('user_id')
+    return render_template('error.html', error=error_message, user_id=user_id, error_id=error_id), 404
+
+# 502 Error
+@app.errorhandler(502)
+def bad_gateway(e):
+    error_id = str(uuid.uuid4())
+    error_message = "Bad Gateway. The server received an invalid response from the upstream server."
+    user_id = session.get('user_id')
+    return render_template('error.html', error=error_message, user_id=user_id, error_id=error_id), 502

@@ -136,7 +136,7 @@ def home():
         user = users_collection.find_one({'user_id': session['user_id']})
         if user and 'username' not in session:
             session['username'] = user['username']
-    return render_template('intro.html')
+    return render_template('intro.html', nonce=g.nonce)
 
 @app.route('/privacy')
 @cache.cached(timeout=3600)  # Cache for 1 hour
@@ -235,6 +235,7 @@ def robots():
     return send_file(os.path.join(os.path.dirname(__file__), 'robots.txt'), mimetype='text/plain')
 
 # Add a dedicated error route to help with debugging
+
 @app.route('/error/<error_id>')
 def show_error(error_id):
     """Debug route to show errors"""
@@ -251,9 +252,6 @@ def test_error():
                           error="This is a test error message", 
                           user_id=user_id)
 
-# Main entry point
-import multiprocessing
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
     app.run(host="127.0.0.1",port=5000,debug=False,threaded=True)
     
