@@ -252,6 +252,8 @@ def test_error():
                           error="This is a test error message", 
                           user_id=user_id)
 
+# Main entry point
+import multiprocessing
 if __name__ == "__main__":
     app.run(host="127.0.0.1",port=5000,debug=False,threaded=True)
     
