@@ -252,8 +252,6 @@ def test_error():
                           user_id=user_id)
 
 # Main entry point
-import multiprocessing
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
     app.run(host="127.0.0.1",port=5000,debug=False,threaded=True)
     
