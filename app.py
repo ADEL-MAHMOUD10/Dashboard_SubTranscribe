@@ -129,7 +129,6 @@ def main_user(user_id):
     return redirect(url_for('auth.login'))
 
 @app.route('/')
-@cache.cached(timeout=900)  # Cache for 15 minutes
 def home():
     """Render the intro page."""
     if 'user_id' in session:
