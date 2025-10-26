@@ -11,7 +11,7 @@ import re
 auth_bp = Blueprint('auth', __name__)
 
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # powerful 
-# EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+") # simple regex for email validation not used now
+# EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+") # simple regex validation not used now
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
