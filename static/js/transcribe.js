@@ -110,21 +110,30 @@ document.addEventListener('DOMContentLoaded', function() {
         const supportedDomains = [
             'youtube.com', 'youtu.be', 'vimeo.com', 'dailymotion.com',
             'twitch.tv', 'facebook.com', 'instagram.com', 'x.com', 'tiktok.com',
-            'soundcloud.com', 'spotify.com', 'podcast.com','reddit.com','drive.google.com',
-            'https://assembly.ai/wildfires.mp3'
+            'soundcloud.com', 'spotify.com', 'podcast.com', 'reddit.com', 'drive.google.com'
         ];
-        
+    
+        const allowedExtensions = [
+            '.mp3', '.wav', '.ogg', '.m4a', '.mp4', '.mov', '.webm', '.flac', '.aac', '.avi', '.mkv'
+        ];
+    
         try {
             const urlObj = new URL(url);
             const hostname = urlObj.hostname.toLowerCase();
-            
-            return supportedDomains.some(domain => 
+            const pathname = urlObj.pathname.toLowerCase();
+    
+            const isKnownDomain = supportedDomains.some(domain =>
                 hostname === domain || hostname.endsWith('.' + domain)
             );
+
+            const hasAllowedExtension = allowedExtensions.some(ext => pathname.endsWith(ext));
+    
+            return isKnownDomain || hasAllowedExtension;
         } catch (_) {
             return false;
         }
     }
+
     
     function highlight() {
         dropArea.classList.add('dragover');
