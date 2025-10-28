@@ -2,7 +2,6 @@
 
 /* Simple overflow handling */
 html, body {
-    overflow-x: hidden !important;
     width: 100%;
     max-width: 100%;
     margin: 0;
@@ -10,6 +9,7 @@ html, body {
 }
 
 body {
+    overflow-x: hidden !important;
     min-height: 100vh;
     font-family: 'Inter', system-ui, sans-serif;
     background-color: #020617;
