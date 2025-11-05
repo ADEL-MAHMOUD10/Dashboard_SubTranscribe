@@ -57,11 +57,9 @@ CORS(app,
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['DEBUG'] = False
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year cache for static files  
 # In module/config.py
