@@ -212,3 +212,10 @@ def bad_gateway(e):
     error_message = "Bad Gateway. The server received an invalid response from the upstream server."
     user_id = session.get('user_id')
     return render_template('error.html', error=error_message, user_id=user_id, error_id=error_id), 502
+
+@app.errorhandler(429)
+def too_many_requests(e):
+    error_id = str(uuid.uuid4())
+    error_message = "Too Many Requests. You have exceeded the rate limit. Please try again later."
+    user_id = session.get('user_id')
+    return render_template('error.html', error=error_message, user_id=user_id, error_id=error_id), 429

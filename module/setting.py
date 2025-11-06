@@ -11,6 +11,7 @@ setting_bp = Blueprint('setting', __name__)
 
 
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # powerful 
+PASS_REGEX = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$'
 
 # User Settings Routes
 @setting_bp.route('/settings')
@@ -39,12 +40,12 @@ def update_profile():
     
     # Validate username
     if not username or len(username) < 3:
-        flash('Username must be at least 3 characters long', 'danger')
+        flash('Username must be at least 3 characters long', 'warning')
         return redirect(url_for('setting.settings'))    
     
     # Validate email
     if not email or not EMAIL_REGEX.match(email):
-        flash('Please enter a valid email address', 'danger')
+        flash('Please enter a valid email address', 'warning')
         return redirect(url_for('setting.settings'))
     
 
@@ -57,7 +58,7 @@ def update_profile():
     })
 
     if existing_user:
-        flash('Username or email is already exists by another user', 'danger')
+        flash('Username or email is already exists by another user', 'warning')
         return redirect(url_for('setting.settings'))
     
     # Update user profile
@@ -132,9 +133,9 @@ def update_password():
         return redirect(url_for('auth.login'))
     
     user_id = session.get('user_id')
-    current_password = request.form.get('current_password','')
-    new_password = request.form.get('new_password','')
-    confirm_password = request.form.get('confirm_password','')
+    current_password = request.form.get('current_password','').strip()
+    new_password = request.form.get('new_password','').strip()
+    confirm_password = request.form.get('confirm_password','').strip()
     
     # Get user from database
     user = users_collection.find_one({'user_id': user_id})
@@ -147,22 +148,28 @@ def update_password():
         flash('Current password is incorrect', 'danger')
         return redirect(url_for('setting.settings'))
     
+    if check_password_hash(user['password'], new_password):
+        flash('New password cannot be the same as the current password', 'danger')
+        return redirect(url_for('setting.settings'))
+
+    if not re.match(PASS_REGEX, new_password):
+        flash('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.', 'danger')
+        return redirect(url_for('setting.settings'))
+    
     # Validate new password
     if new_password != confirm_password:
         flash('New passwords do not match', 'danger')
         return redirect(url_for('setting.settings'))
     
-    if len(new_password) < 8:
-        flash('Password must be at least 8 characters long', 'danger')
-        return redirect(url_for('setting.settings'))
     
     # Update password
     changed_password = generate_password_hash(new_password, method='scrypt', salt_length=16)
+    session.clear()
     users_collection.update_one(
         {'user_id': user_id},
         {'$set': {'password': changed_password}}
     )
-    
+
     flash('Password updated successfully', 'success')
     return redirect(url_for('setting.settings'))
 

@@ -12,16 +12,17 @@ auth_bp = Blueprint('auth', __name__)
 
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # powerful 
 # EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+") # simple regex validation not used now
-
+PASS_REGEX = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$'
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def register():
     """register new user in db"""
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
-        password = request.form.get('password', '')
+        password = request.form.get('password', '').strip()
         Email = request.form.get('email', '').strip()
-        confirm_password = request.form.get('c_password')
+        confirm_password = request.form.get('c_password','').strip()
+
         user_id = str(uuid.uuid4())
 
         try:
@@ -29,12 +30,14 @@ def register():
                 flash('Passwords do not match', 'danger')
                 return redirect(url_for('auth.register'))    
             
-            if len(password) < 8:
-                flash('Password must be at least 8 characters long', 'danger')
+            if not re.match(PASS_REGEX, password):
+                flash('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.', 'danger')
                 return redirect(url_for('auth.register'))
+            
             if not username or len(username) < 4:
                 flash('Username must be at least 4 characters long', 'danger')
                 return redirect(url_for('auth.register'))
+            
             if not Email or not EMAIL_REGEX.match(Email):
                 flash('Invalid email address', 'danger')
                 return redirect(url_for('auth.register'))

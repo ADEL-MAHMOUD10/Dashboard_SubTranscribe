@@ -210,7 +210,7 @@
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <i class="fas fa-key text-white/50"></i>
                                     </div>
-                                    <input type="text" name="OTP" id="otpInput" placeholder="Enter your OTP" maxlength="6" class="form-input block w-full pl-10 pr-10 py-3 rounded-lg" pattern="[0-9]{6}" inputmode="numeric">
+                                    <input type="text" name="OTP" id="otpInput" placeholder="Enter your OTP" maxlength="8" class="form-input block w-full pl-10 pr-10 py-3 rounded-lg" pattern="[A-Za-z0-9]{8}" inputmode="text">
                                     <div class="absolute right-3 top-1/2 -translate-y-1/2 bg-purple-500/30 text-white px-2 py-1 rounded text-sm flex items-center">
                                         <i class="fas fa-clock mr-1"></i>
                                         <span id="otpTimer">120s</span>
@@ -340,7 +340,7 @@
             
             // Function to check if all fields are valid and enable/disable submit button
             function validateForm() {
-                const otpValid = otpInput.value.length === 6;
+                const otpValid = otpInput.value.length === 8;
                 const passwordValid = passwordInput.value.length >= 8 && 
                                      /[A-Z]/.test(passwordInput.value) && 
                                      /[a-z]/.test(passwordInput.value) && 
@@ -414,10 +414,10 @@
             // OTP auto-validation when 6 digits are entered
             otpInput.addEventListener('input', function(e) {
                 // Only allow numeric input
-                this.value = this.value.replace(/[^0-9]/g, '');
+                this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
                 
                 // Auto-focus on password field when 6 digits are entered
-                if (this.value.length === 6) {
+                if (this.value.length === 8) {
                     passwordInput.focus();
                 }
                 
