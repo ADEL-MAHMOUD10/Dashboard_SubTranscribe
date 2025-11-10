@@ -56,7 +56,6 @@ def update_profile():
             {'$or': [{'username': username}, {'Email': email}]}
         ]
     })
-
     if existing_user:
         flash('Username or email is already exists by another user', 'warning')
         return redirect(url_for('setting.settings'))

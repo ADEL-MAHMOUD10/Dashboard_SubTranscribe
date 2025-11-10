@@ -5,6 +5,7 @@ from module.send_mail import send_email_welcome
 from werkzeug.security import check_password_hash, generate_password_hash
 from pymongo.errors import DuplicateKeyError
 from loguru import logger
+from datetime import datetime
 import uuid
 import re
 
@@ -22,7 +23,7 @@ def register():
         password = request.form.get('password', '').strip()
         Email = request.form.get('email', '').strip()
         confirm_password = request.form.get('c_password','').strip()
-
+        reg_time = datetime.now().isoformat(timespec="seconds")
         user_id = str(uuid.uuid4())
 
         try:
@@ -49,6 +50,17 @@ def register():
                 'username': username,
                 'password': hashed_password ,
                 "user_id":user_id,
+                "created_at": reg_time,
+                "last_login_req": reg_time,
+                "settings": {
+                        "accent_color": "purple",
+                        "theme": "dark",
+                        "notifications": {
+                            "email": True,
+                            "marketing": False,
+                            "processing": True
+                        }
+                },
                 'session_token': session_token,
                 'session_tokens': [session_token]
                 })
@@ -94,19 +106,26 @@ def login():
             session.clear()
             flash('Session expired, please log in again', 'warning')
     if request.method == 'POST':
-    
+
         identifier = request.form['email'].strip()
         password = request.form.get('password', '')
         if not identifier or not password:
             flash('Please enter both username/email and password', 'danger')
             return redirect(url_for('auth.login'))
         try:
+            login_time = datetime.now().isoformat(timespec="seconds")
             user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
             if user and check_password_hash(user['password'], password):
                 new_session_token = str(uuid.uuid4())
                 users_collection.update_one(
                     {'user_id': user['user_id']},
-                    {'$set': {'session_token': new_session_token}, '$addToSet': {'session_tokens': new_session_token}}
+                    {
+                        '$set': {
+                            'last_login_req': login_time,
+                            'session_token': new_session_token
+                            },
+                        '$addToSet': {'session_tokens': new_session_token}   
+                    }
                 )
                 session['user_id'] = user['user_id']
                 session['username'] = user['username']
