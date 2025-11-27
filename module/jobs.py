@@ -19,12 +19,11 @@ def get_model():
     return 'universal'
 
 
-def upload_audio_to_assemblyai(job, upload_id, audio_file_path, file_size, username, user_id, upload_time):
+def upload_audio_to_assemblyai(upload_id, audio_file_path, file_size, username, user_id, upload_time):
     """
     Upload audio file to AssemblyAI and poll for transcription completion.
     
     Args:
-        job: RQ job object for status updates
         upload_id: Unique upload identifier
         audio_file_path: Path to the audio file
         file_size: Size of the audio file in bytes
@@ -36,6 +35,9 @@ def upload_audio_to_assemblyai(job, upload_id, audio_file_path, file_size, usern
         str: Transcript ID on success
         dict: Error dict on failure
     """
+    from rq import get_current_job
+    
+    job = get_current_job()
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     
@@ -51,18 +53,36 @@ def upload_audio_to_assemblyai(job, upload_id, audio_file_path, file_size, usern
         job.meta['status'] = 'uploading'
         job.save_meta()
         
+        # Verify file exists before trying to upload
+        if not os.path.exists(audio_file_path):
+            error_msg = f"Audio file not found: {audio_file_path}"
+            logger.error(f"[Job {job.id}] {error_msg}")
+            return {'error': error_msg}
+        
+        file_size_actual = os.path.getsize(audio_file_path)
+        logger.info(f"[Job {job.id}] File exists, size: {file_size_actual} bytes")
+        
         # Upload file to AssemblyAI
-        with open(audio_file_path, 'rb') as f:
-            response = requests.post(
-                f"{base_url}/upload",
-                headers=headers,
-                data=f.read(),
-                timeout=120
-            )
+        try:
+            with open(audio_file_path, 'rb') as f:
+                response = requests.post(
+                    f"{base_url}/upload",
+                    headers=headers,
+                    data=f.read(),
+                    timeout=120
+                )
+        except FileNotFoundError as e:
+            error_msg = f"Could not open file for upload: {e}"
+            logger.error(f"[Job {job.id}] {error_msg}")
+            return {'error': error_msg}
+        except Exception as e:
+            error_msg = f"Upload request error: {e}"
+            logger.error(f"[Job {job.id}] {error_msg}")
+            return {'error': error_msg}
         
         if response.status_code != 200:
-            error_msg = f"Upload failed with status code {response.status_code}"
-            logger.error(error_msg)
+            error_msg = f"Upload failed with status code {response.status_code}: {response.text}"
+            logger.error(f"[Job {job.id}] {error_msg}")
             return {'error': error_msg}
         
         upload_url = response.json().get("upload_url")
@@ -172,12 +192,11 @@ def upload_audio_to_assemblyai(job, upload_id, audio_file_path, file_size, usern
                 logger.warning(f"[Job {job.id}] Could not remove temp file {audio_file_path}: {e}")
 
 
-def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
+def transcribe_from_link(upload_id, link, username, user_id, upload_time):
     """
     Download media from link and transcribe using AssemblyAI.
     
     Args:
-        job: RQ job object for status updates
         upload_id: Unique upload identifier
         link: Media link (YouTube, etc.)
         username: Username of the uploader
@@ -188,6 +207,9 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
         str: Transcript ID on success
         dict: Error dict on failure
     """
+    from rq import get_current_job
+    
+    job = get_current_job()
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     downloaded_file = None
@@ -223,11 +245,21 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
         
         logger.info(f"[Job {job.id}] Downloaded to: {downloaded_file}")
         
-        total_size = os.path.getsize(downloaded_file)
-        if total_size == 0:
-            raise ValueError("Downloaded file is empty")
+        # Verify file exists
+        if not os.path.exists(downloaded_file):
+            error_msg = f"Downloaded file not found: {downloaded_file}"
+            logger.error(f"[Job {job.id}] {error_msg}")
+            raise FileNotFoundError(error_msg)
         
-        logger.info(f"📦 Downloaded file: {downloaded_file} ({total_size} bytes)")
+        total_size = os.path.getsize(downloaded_file)
+        logger.info(f"[Job {job.id}] Downloaded file size: {total_size} bytes")
+        
+        if total_size == 0:
+            error_msg = "Downloaded file is empty"
+            logger.error(f"[Job {job.id}] {error_msg}")
+            raise ValueError(error_msg)
+        
+        logger.info(f"[Job {job.id}] ✅ Downloaded file: {downloaded_file} ({total_size} bytes)")
         
         # Upload to AssemblyAI
         job.meta['status'] = 'uploading'
@@ -242,13 +274,21 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
                 timeout=600
             )
         
-        upload_res.raise_for_status()
+        logger.info(f"[Job {job.id}] Upload response status: {upload_res.status_code}")
+        
+        if upload_res.status_code != 200:
+            error_msg = f"Upload failed with status {upload_res.status_code}: {upload_res.text}"
+            logger.error(f"[Job {job.id}] {error_msg}")
+            raise ValueError(error_msg)
+        
         upload_url = upload_res.json().get('upload_url')
         
         if not upload_url:
-            raise ValueError("No upload URL received from AssemblyAI")
+            error_msg = "No upload URL received from AssemblyAI"
+            logger.error(f"[Job {job.id}] {error_msg}")
+            raise ValueError(error_msg)
         
-        logger.info("✅ Link file uploaded to AssemblyAI")
+        logger.info(f"[Job {job.id}] ✅ Link file uploaded to AssemblyAI")
         
         # Start transcription
         job.meta['status'] = 'transcribing'
@@ -263,11 +303,15 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
             timeout=300
         )
         
+        logger.info(f"[Job {job.id}] Transcription start response status: {response.status_code}")
+        
         if response.status_code != 200:
-            return {'error': f"Transcription failed with code {response.status_code}"}
+            error_msg = f"Failed to start transcription with code {response.status_code}: {response.text}"
+            logger.error(f"[Job {job.id}] {error_msg}")
+            return {'error': error_msg}
         
         transcript_id = response.json()["id"]
-        logger.info(f"Transcript ID: {transcript_id}")
+        logger.info(f"[Job {job.id}] Transcript ID: {transcript_id}")
         
         # Store initial file record with transcript_id
         files_collection.insert_one({
@@ -294,8 +338,10 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
                 resp = requests.get(polling_endpoint, headers=headers, timeout=30)
                 result = resp.json()
                 
+                logger.debug(f"[Job {job.id}] Poll #{i+1}: status={result.get('status')}")
+                
                 if result["status"] == "completed":
-                    logger.info("🎉 Link transcription completed")
+                    logger.info(f"[Job {job.id}] 🎉 Link transcription completed")
                     
                     # Update file record with completion status
                     files_collection.update_one(
@@ -308,7 +354,7 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
                 
                 if result["status"] == "error":
                     error_msg = result.get('error', 'Unknown transcription error')
-                    logger.error(f"Transcription error: {error_msg}")
+                    logger.error(f"[Job {job.id}] Transcription error: {error_msg}")
                     
                     # Update file record with error status
                     files_collection.update_one(
