@@ -30,7 +30,7 @@ def upload_audio_to_assemblyai(job, upload_id, audio_file_path, file_size, usern
         file_size: Size of the audio file in bytes
         username: Username of the uploader
         user_id: User ID of the uploader
-        upload_time: Upload timestamp
+        upload_time: Upload timestamp (as ISO string)
         
     Returns:
         str: Transcript ID on success
@@ -38,6 +38,13 @@ def upload_audio_to_assemblyai(job, upload_id, audio_file_path, file_size, usern
     """
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
+    
+    # Parse upload_time if it's a string
+    if isinstance(upload_time, str):
+        try:
+            upload_time = datetime.fromisoformat(upload_time.replace('Z', '+00:00'))
+        except:
+            upload_time = datetime.now(timezone.utc)
     
     logger.info(f"[Job {job.id}] Starting file upload: {audio_file_path}")
     try:
@@ -175,7 +182,7 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
         link: Media link (YouTube, etc.)
         username: Username of the uploader
         user_id: User ID of the uploader
-        upload_time: Upload timestamp
+        upload_time: Upload timestamp (as ISO string)
         
     Returns:
         str: Transcript ID on success
@@ -184,6 +191,13 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     downloaded_file = None
+    
+    # Parse upload_time if it's a string
+    if isinstance(upload_time, str):
+        try:
+            upload_time = datetime.fromisoformat(upload_time.replace('Z', '+00:00'))
+        except:
+            upload_time = datetime.now(timezone.utc)
     
     logger.info(f"[Job {job.id}] Starting link transcription: {link}")
     try:

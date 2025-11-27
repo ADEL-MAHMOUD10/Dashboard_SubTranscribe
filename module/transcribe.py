@@ -118,7 +118,9 @@ def upload_or_link():
             # If background queue available, enqueue a job that will download+transcribe
             if q:
                 flash("Your link has been queued for processing. You can monitor progress.", "info")
-                job = q.enqueue(transcribe_from_link_job, upload_id, link, username, user_id, upload_time, job_timeout=3600)
+                # Convert datetime to ISO string for RQ serialization (datetime objects don't pickle well across processes)
+                upload_time_str = upload_time.isoformat() if hasattr(upload_time, 'isoformat') else str(upload_time)
+                job = q.enqueue(transcribe_from_link_job, upload_id, link, username, user_id, upload_time_str, job_timeout=3600)
 
                 # Insert a placeholder record so users can see the queued job
                 files_collection.insert_one({
@@ -213,8 +215,11 @@ def upload_or_link():
                 temp_path = os.path.join(temp_dir, temp_filename)
                 file.save(temp_path)
 
+                # Convert datetime to ISO string for RQ serialization
+                upload_time_str = upload_time.isoformat() if hasattr(upload_time, 'isoformat') else str(upload_time)
+                
                 # Enqueue job; the worker will upload and clean up the temp file
-                job = q.enqueue(upload_audio_to_assemblyai, upload_id, temp_path, file_size, username, user_id, upload_time, job_timeout=3600)
+                job = q.enqueue(upload_audio_to_assemblyai, upload_id, temp_path, file_size, username, user_id, upload_time_str, job_timeout=3600)
 
                 files_collection.insert_one({
                     "username": username,
@@ -274,8 +279,6 @@ def upload_or_link():
     else:
         session['error'] = "Invalid file type or no file provided"
         return redirect(url_for('show_error', error_id=err_id))
-
-
 @transcribe_bp.route('/job_status_page/<job_id>')
 def job_status_page(job_id):
     """Display a page that polls for job completion."""
