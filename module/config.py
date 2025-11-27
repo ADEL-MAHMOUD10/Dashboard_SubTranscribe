@@ -119,7 +119,8 @@ elif REDIS_UR:
         # Don't decode responses - RQ needs binary data
         redis_conn = redis.from_url(REDIS_UR, socket_connect_timeout=2, socket_timeout=2)
         redis_conn.ping()
-        q = Queue(connection=redis_conn)
+        # Use a named queue so workers can listen on the same queue name
+        q = Queue('transcription', connection=redis_conn)
         print("✅ RQ Queue initialized with Redis")
     except redis.ConnectionError as e:
         print(f"⚠️  Warning: Redis connection failed: {e}")

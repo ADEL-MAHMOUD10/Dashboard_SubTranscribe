@@ -38,7 +38,7 @@ except Exception as e:
     sys.exit(1)
 
 # Create queue
-queue = Queue(connection=redis_conn)
+queue = Queue('transcription', connection=redis_conn)
 
 print(f"🚀 Starting RQ Worker...")
 print(f"   Listening on queue: {queue.name}")

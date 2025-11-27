@@ -3,294 +3,445 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transcription Processing</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Processing - SubTranscribe</title>
+    <link rel="shortcut icon" href="/static/image/subtitle.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css">
+    <link rel="stylesheet" href="/static/css/common.css">
     <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+        /* Progress bar styling */
+        .progress {
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 0.5rem;
+            height: 40px;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite, pulse-glow 2s ease-in-out infinite;
+        }
+
+        /* Spinner styling */
+        .spinner-border {
+            color: #3b82f6;
+            border-width: 3px;
+        }
+
+        .spinner-border-sm {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        /* Status icons */
+        .status-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Glass card styling for job status */
+        .job-status-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border-radius: 1rem;
+        }
+
+        /* Info card */
+        .info-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 0.75rem;
+        }
+
+        .info-card ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        .info-card li {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 0.75rem;
+        }
+
+        /* Center container */
+        .center-container {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
         }
-        
-        .progress {
-            background-color: #e9ecef;
+
+        /* Navbar styling */
+        .bg-glass {
+            background: rgba(15, 23, 42, 0.5) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
         }
-        
-        .card {
+
+        .navbar-brand {
+            color: #e2e8f0 !important;
+            font-weight: 600;
+        }
+
+        .nav-link {
+            color: rgba(226, 232, 240, 0.8) !important;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: #3b82f6 !important;
+        }
+
+        /* Button styling */
+        .btn-primary-gradient {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             border: none;
-            border-radius: 10px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
-        
-        .spinner-border {
-            color: #007bff;
+
+        .btn-primary-gradient:hover {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            color: white;
         }
-        
-        .container {
-            max-width: 600px;
+
+        /* Status text */
+        .status-text {
+            color: rgba(226, 232, 240, 0.9);
+            font-size: 1.1rem;
+        }
+
+        .status-detail {
+            color: rgba(226, 232, 240, 0.6);
+            font-size: 0.95rem;
+        }
+
+        /* Shape animations */
+        .shape {
+            position: fixed;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(139, 92, 246, 0.4));
+            filter: blur(40px);
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes floating {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(5px, 10px); }
+            50% { transform: translate(10px, -5px); }
+            75% { transform: translate(-5px, -10px); }
+        }
+
+        .floating {
+            animation: floating 10s ease-in-out infinite;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-lg">
-                <div class="card-body text-center p-5">
-                    <!-- Status Icon -->
-                    <div id="status-icon" class="mb-4">
-                        <div class="spinner-border text-primary" role="status" style="width: 80px; height: 80px;">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
+    <!-- Background Shapes -->
+    <div class="shape floating" style="width:40vw; height:40vw; max-width:600px; max-height:600px; top:-10%;"></div>
+    <div class="shape floating" style="width:30vw; height:30vw; max-width:400px; max-height:400px; bottom:-10%; left:-10%; animation-delay: 2s;"></div>
 
-                    <!-- Status Title -->
-                    <h2 id="status-title" class="mb-3">Processing Your Media</h2>
-
-                    <!-- Progress Message -->
-                    <p id="progress-message" class="text-muted fs-5 mb-4">
-                        This may take a few minutes. Please don't close this page.
-                    </p>
-
-                    <!-- Progress Bar -->
-                    <div class="progress mb-4" style="height: 30px;">
-                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
-                             role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                            <span id="progress-text" class="text-white fw-bold">0%</span>
-                        </div>
-                    </div>
-
-                    <!-- Detailed Status -->
-                    <div class="alert alert-info" id="status-alert">
-                        <strong>Status:</strong> <span id="status-text">Initializing...</span>
-                    </div>
-
-                    <!-- Job Details -->
-                    <div class="alert alert-secondary">
-                        <small class="text-muted">
-                            Job ID: <code id="job-id">{{ job_id }}</code>
-                        </small>
-                    </div>
-
-                    <!-- Error Alert (hidden by default) -->
-                    <div class="alert alert-danger d-none" id="error-alert" role="alert">
-                        <strong>Error:</strong> <span id="error-text"></span>
-                    </div>
-
-                    <!-- Estimated Time -->
-                    <div class="mt-4">
-                        <p class="text-muted small">
-                            ⏱️ Processing typically takes 2-10 minutes depending on file size.
-                        </p>
-                    </div>
-                </div>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-glass mb-4">
+        <div class="container">
+            <div class="d-flex align-items-center">
+                <a href="/" class="me-2">
+                    <img src="/static/image/subtitle.ico" style="max-width: 30px;" alt="SubTranscribe Logo">
+                </a>
+                <a class="navbar-brand" href="/">SubTranscribe</a>
             </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-            <!-- Info Section -->
-            <div class="card mt-4 bg-light">
-                <div class="card-body">
-                    <h5 class="card-title">💡 What's happening?</h5>
-                    <ul class="mb-0">
-                        <li><strong>Uploading:</strong> Your file is being uploaded to the transcription service.</li>
-                        <li><strong>Transcribing:</strong> AI is converting your audio to text.</li>
-                        <li><strong>Complete:</strong> You'll be automatically redirected to download your subtitles.</li>
-                    </ul>
+    <div class="container">
+        <div class="center-container">
+            <div class="w-100">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 col-md-10">
+                        <!-- Main Status Card -->
+                        <div class="job-status-card p-5 mb-4" data-aos="fade-up">
+                            <!-- Status Icon -->
+                            <div id="status-icon" class="text-center mb-4">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+
+                            <!-- Status Title -->
+                            <h2 id="status-title" class="text-center mb-3 status-text">
+                                ⚙️ Processing Your Media
+                            </h2>
+
+                            <!-- Progress Message -->
+                            <p id="progress-message" class="text-center status-detail mb-4">
+                                This may take a few minutes. Please don't close this page.
+                            </p>
+
+                            <!-- Progress Bar -->
+                            <div class="progress mb-4">
+                                <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    <span id="progress-text" class="text-white fw-bold ms-2">0%</span>
+                                </div>
+                            </div>
+
+                            <!-- Detailed Status -->
+                            <div class="info-card p-3 mb-3">
+                                <strong class="status-text">Status:</strong>
+                                <p id="status-text" class="status-detail mb-0 mt-1">Initializing...</p>
+                            </div>
+
+                            <!-- Job Details -->
+                            <div class="info-card p-3 mb-4">
+                                <small class="status-detail">
+                                    <i class="fas fa-key me-2"></i>Job ID: <code id="job-id" style="color: #3b82f6;">{{ job_id }}</code>
+                                </small>
+                            </div>
+
+                            <!-- Error Alert (hidden by default) -->
+                            <div class="alert alert-danger d-none" id="error-alert" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>Error:</strong> <span id="error-text"></span>
+                            </div>
+
+                            <!-- Estimated Time -->
+                            <div class="text-center">
+                                <p class="status-detail small">
+                                    <i class="fas fa-clock me-2"></i>Processing typically takes 2-10 minutes depending on file size.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Info Section -->
+                        <div class="job-status-card p-4" data-aos="fade-up" data-aos-delay="100">
+                            <h5 class="status-text mb-3">
+                                <i class="fas fa-info-circle me-2" style="color: #3b82f6;"></i>What's happening?
+                            </h5>
+                            <div class="info-card p-3">
+                                <ul class="small">
+                                    <li><strong>Uploading:</strong> Your file is being uploaded to the transcription service.</li>
+                                    <li><strong>Transcribing:</strong> AI is converting your audio to text.</li>
+                                    <li><strong>Complete:</strong> You'll be automatically redirected to download your subtitles.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-const jobId = "{{ job_id }}";
-const userId = "{{ user_id }}";
-let pollInterval = null;
-let pollCount = 0;
-
-// Status emoji/icon mapping
-const statusIcons = {
-    'queued': '⏳',
-    'started': '⚙️',
-    'finished': '✅',
-    'failed': '❌',
-    'processing': '⚙️'
-};
-
-// Status messages
-const statusMessages = {
-    'queued': 'Waiting in queue...',
-    'started': 'Starting transcription...',
-    'processing': 'Processing your media...',
-    'finished': 'Complete! Redirecting...',
-    'failed': 'Transcription failed'
-};
-
-async function pollJobStatus() {
-    pollCount++;
-    
-    try {
-        const response = await fetch(`/job_status/${jobId}`);
-        const data = await response.json();
-        
-        console.log('Job Status:', data);
-        
-        // Update status display
-        const status = data.status;
-        const progress = data.meta?.progress || '';
-        
-        updateUI(status, progress, data);
-        
-        // If finished or failed, stop polling and redirect/show error
-        if (status === 'finished') {
-            stopPolling();
-            handleCompletion(data);
-        } else if (status === 'failed') {
-            stopPolling();
-            handleError(data.error || 'Unknown error');
-        }
-    } catch (error) {
-        console.error('Error polling job status:', error);
-        // Continue polling even if fetch fails (might be temporary network issue)
-        // But show a warning after 10 failed attempts
-        if (pollCount > 10) {
-            showNetworkWarning();
-        }
-    }
-}
-
-function updateUI(status, progress, data) {
-    const statusText = document.getElementById('status-text');
-    const progressMessage = document.getElementById('progress-message');
-    const statusAlert = document.getElementById('status-alert');
-    const statusTitle = document.getElementById('status-title');
-    
-    // Update status text
-    const displayStatus = progress || statusMessages[status] || status;
-    statusText.textContent = displayStatus;
-    
-    // Update title and icon
-    const icon = statusIcons[status] || '⚙️';
-    statusTitle.innerHTML = `${icon} ${getStatusTitle(status)}`;
-    
-    // Update progress bar (estimate based on status)
-    let estimatedProgress = 0;
-    if (status === 'queued') {
-        estimatedProgress = 10;
-    } else if (status === 'started') {
-        estimatedProgress = 20;
-    } else if (progress.includes('Downloading')) {
-        estimatedProgress = 30;
-    } else if (progress.includes('Uploading')) {
-        estimatedProgress = 50;
-    } else if (progress.includes('Transcribing')) {
-        // Parse progress from "Transcribing... (45/120)"
-        const match = progress.match(/\((\d+)\/(\d+)\)/);
-        if (match) {
-            estimatedProgress = 50 + Math.round((parseInt(match[1]) / parseInt(match[2])) * 40);
-        } else {
-            estimatedProgress = 70;
-        }
-    } else if (status === 'finished') {
-        estimatedProgress = 100;
-    }
-    
-    updateProgressBar(estimatedProgress);
-    
-    // Update alert styling
-    if (status === 'finished') {
-        statusAlert.className = 'alert alert-success';
-    } else if (status === 'failed') {
-        statusAlert.className = 'alert alert-danger';
-    } else {
-        statusAlert.className = 'alert alert-info';
-    }
-}
-
-function updateProgressBar(percentage) {
-    const progressBar = document.getElementById('progress-bar');
-    const progressText = document.getElementById('progress-text');
-    
-    progressBar.style.width = percentage + '%';
-    progressBar.setAttribute('aria-valuenow', percentage);
-    progressText.textContent = percentage + '%';
-}
-
-function getStatusTitle(status) {
-    const titles = {
-        'queued': 'Queued for Processing',
-        'started': 'Starting Processing',
-        'processing': 'Processing Your Media',
-        'finished': 'Processing Complete',
-        'failed': 'Processing Failed'
-    };
-    return titles[status] || 'Processing...';
-}
-
-function handleCompletion(data) {
-    const transcriptId = data.result;
-    
-    if (!transcriptId) {
-        handleError('No transcript ID returned');
-        return;
-    }
-    
-    // Update UI to show completion
-    document.getElementById('status-title').innerHTML = '✅ Processing Complete';
-    document.getElementById('progress-message').textContent = 
-        'Your subtitles are ready! Redirecting...';
-    updateProgressBar(100);
-    
-    // Redirect after 2 seconds
-    setTimeout(() => {
-        window.location.href = `/v1/${userId}/download/${transcriptId}`;
-    }, 2000);
-}
-
-function handleError(errorMsg) {
-    document.getElementById('status-title').innerHTML = '❌ Processing Failed';
-    document.getElementById('status-alert').className = 'alert alert-danger';
-    
-    const errorAlert = document.getElementById('error-alert');
-    errorAlert.classList.remove('d-none');
-    document.getElementById('error-text').textContent = errorMsg || 'Unknown error occurred';
-    
-    const spinner = document.getElementById('status-icon');
-    spinner.innerHTML = '<div style="font-size: 80px;">❌</div>';
-}
-
-function showNetworkWarning() {
-    const progressMessage = document.getElementById('progress-message');
-    progressMessage.innerHTML += 
-        '<br><small class="text-warning">⚠️ Network connection issues detected. Still trying to connect...</small>';
-}
-
-function stopPolling() {
-    if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
-    }
-}
-
-// Start polling immediately and then every 3 seconds
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Starting to poll for job:', jobId);
-    pollJobStatus(); // Poll immediately
-    pollInterval = setInterval(pollJobStatus, 3000); // Then every 3 seconds
-    
-    // Stop polling after 1 hour (safety measure)
-    setTimeout(() => {
-        stopPolling();
-        handleError('Processing timeout (exceeded 1 hour)');
-    }, 60 * 60 * 1000);
-});
-
-// Stop polling if user leaves the page
-window.addEventListener('beforeunload', stopPolling);
-</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script>
+    // Initialize AOS animations
+    AOS.init({
+        duration: 600,
+        easing: 'ease-out',
+        once: false
+    });
+
+    const jobId = "{{ job_id }}";
+    const userId = "{{ user_id }}";
+    let pollInterval = null;
+    let pollCount = 0;
+
+    // Status emoji/icon mapping
+    const statusIcons = {
+        'queued': '⏳',
+        'started': '⚙️',
+        'finished': '✅',
+        'failed': '❌',
+        'processing': '⚙️'
+    };
+
+    // Status messages
+    const statusMessages = {
+        'queued': 'Waiting in queue...',
+        'started': 'Starting transcription...',
+        'processing': 'Processing your media...',
+        'finished': 'Complete! Redirecting...',
+        'failed': 'Transcription failed'
+    };
+
+    async function pollJobStatus() {
+        pollCount++;
+        
+        try {
+            const response = await fetch(`/job_status/${jobId}`);
+            const data = await response.json();
+            
+            console.log('Job Status:', data);
+            
+            // Update status display
+            const status = data.status;
+            const progress = data.meta?.progress || '';
+            
+            updateUI(status, progress, data);
+            
+            // If finished or failed, stop polling and redirect/show error
+            if (status === 'finished') {
+                stopPolling();
+                handleCompletion(data);
+            } else if (status === 'failed') {
+                stopPolling();
+                handleError(data.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error polling job status:', error);
+            // Continue polling even if fetch fails (might be temporary network issue)
+            // But show a warning after 10 failed attempts
+            if (pollCount > 10) {
+                showNetworkWarning();
+            }
+        }
+    }
+
+    function updateUI(status, progress, data) {
+        const statusText = document.getElementById('status-text');
+        const progressMessage = document.getElementById('progress-message');
+        const statusTitle = document.getElementById('status-title');
+        
+        // Update status text
+        const displayStatus = progress || statusMessages[status] || status;
+        statusText.textContent = displayStatus;
+        
+        // Update title and icon
+        const icon = statusIcons[status] || '⚙️';
+        statusTitle.innerHTML = `${icon} ${getStatusTitle(status)}`;
+        
+        // Update progress bar (estimate based on status)
+        let estimatedProgress = 0;
+        if (status === 'queued') {
+            estimatedProgress = 10;
+        } else if (status === 'started') {
+            estimatedProgress = 20;
+        } else if (progress.includes('Downloading')) {
+            estimatedProgress = 30;
+        } else if (progress.includes('Uploading')) {
+            estimatedProgress = 50;
+        } else if (progress.includes('Transcribing')) {
+            // Parse progress from "Transcribing... (45/120)"
+            const match = progress.match(/\((\d+)\/(\d+)\)/);
+            if (match) {
+                estimatedProgress = 50 + Math.round((parseInt(match[1]) / parseInt(match[2])) * 40);
+            } else {
+                estimatedProgress = 70;
+            }
+        } else if (status === 'finished') {
+            estimatedProgress = 100;
+        }
+        
+        updateProgressBar(estimatedProgress);
+    }
+
+    function updateProgressBar(percentage) {
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        
+        progressBar.style.width = percentage + '%';
+        progressBar.setAttribute('aria-valuenow', percentage);
+        progressText.textContent = percentage + '%';
+    }
+
+    function getStatusTitle(status) {
+        const titles = {
+            'queued': 'Queued for Processing',
+            'started': 'Starting Processing',
+            'processing': 'Processing Your Media',
+            'finished': 'Processing Complete',
+            'failed': 'Processing Failed'
+        };
+        return titles[status] || 'Processing...';
+    }
+
+    function handleCompletion(data) {
+        const transcriptId = data.result;
+        
+        if (!transcriptId) {
+            handleError('No transcript ID returned');
+            return;
+        }
+        
+        // Update UI to show completion
+        document.getElementById('status-title').innerHTML = '✅ Processing Complete';
+        document.getElementById('progress-message').textContent = 
+            'Your subtitles are ready! Redirecting...';
+        updateProgressBar(100);
+        
+        // Redirect after 2 seconds
+        setTimeout(() => {
+            window.location.href = `/v1/${userId}/download/${transcriptId}`;
+        }, 2000);
+    }
+
+    function handleError(errorMsg) {
+        document.getElementById('status-title').innerHTML = '❌ Processing Failed';
+        
+        const errorAlert = document.getElementById('error-alert');
+        errorAlert.classList.remove('d-none');
+        document.getElementById('error-text').textContent = errorMsg || 'Unknown error occurred';
+        
+        const statusIcon = document.getElementById('status-icon');
+        statusIcon.innerHTML = '<div style="font-size: 5rem;">❌</div>';
+    }
+
+    function showNetworkWarning() {
+        const progressMessage = document.getElementById('progress-message');
+        progressMessage.innerHTML += 
+            '<br><small class="text-warning">⚠️ Network connection issues detected. Still trying to connect...</small>';
+    }
+
+    function stopPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+
+    // Start polling immediately and then every 3 seconds
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('Starting to poll for job:', jobId);
+        pollJobStatus(); // Poll immediately
+        pollInterval = setInterval(pollJobStatus, 3000); // Then every 3 seconds
+        
+        // Stop polling after 1 hour (safety measure)
+        setTimeout(() => {
+            stopPolling();
+            handleError('Processing timeout (exceeded 1 hour)');
+        }, 60 * 60 * 1000);
+    });
+
+    // Stop polling if user leaves the page
+    window.addEventListener('beforeunload', stopPolling);
+</script>
 </body>
 </html>
