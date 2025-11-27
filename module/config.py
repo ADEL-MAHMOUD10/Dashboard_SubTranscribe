@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from datetime import timedelta  
 from flask_wtf.csrf import CSRFProtect , generate_csrf, validate_csrf
 from pymongo import MongoClient 
+from rq import Queue
+import redis
 import secrets
 import os 
 import uuid 
@@ -39,13 +41,29 @@ cache = Cache(app)
 # set token 
 load_dotenv()
 
-# Configure rate limiter
+# Configure rate limiter with graceful Redis fallback
+try:
+    if REDIS_UR:
+        # Test Redis connection with short timeout
+        test_redis = redis.from_url(REDIS_UR, socket_connect_timeout=2, socket_timeout=2)
+        test_redis.ping()
+        limiter_storage = REDIS_UR
+        print("✅ Rate limiter using Redis")
+    else:
+        limiter_storage = "memory://"
+        print("⚠️  Rate limiter using in-memory storage (not suitable for production)")
+except Exception as e:
+    print(f"⚠️  Redis rate limiter failed: {e}")
+    print("   Falling back to in-memory rate limiting")
+    limiter_storage = "memory://"
+
 limiter = Limiter(
     key_func=get_remote_address,
     app=app,
-    storage_uri=REDIS_UR if REDIS_UR else "memory://",
+    storage_uri=limiter_storage,
     headers_enabled=True,
-    default_limits=["1000 per hour", "100 per minute"]
+    default_limits=["1000 per hour", "100 per minute"],
+    in_memory_fallback_enabled=True
 )
 
 CORS(app, 
@@ -86,6 +104,35 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 users_collection.create_index("username", unique=True)
 users_collection.create_index("Email", unique=True)
+
+# Set up RQ (Redis Queue) for background jobs
+# Note: RQ doesn't support Windows directly due to os.fork() limitation
+# For Windows development, use synchronous transcription fallback
+import platform
+
+if platform.system() == 'Windows':
+    print("⚠️  Windows detected: RQ (background jobs) not supported")
+    print("   Using synchronous transcription (blocking) instead")
+    q = None
+elif REDIS_UR:
+    try:
+        # Don't decode responses - RQ needs binary data
+        redis_conn = redis.from_url(REDIS_UR, socket_connect_timeout=2, socket_timeout=2)
+        redis_conn.ping()
+        q = Queue(connection=redis_conn)
+        print("✅ RQ Queue initialized with Redis")
+    except redis.ConnectionError as e:
+        print(f"⚠️  Warning: Redis connection failed: {e}")
+        print("   Background jobs disabled. Transcription will block requests.")
+        q = None
+    except Exception as e:
+        print(f"⚠️  Warning: RQ Queue initialization failed: {e}")
+        print("   Background jobs disabled. Transcription will block requests.")
+        q = None
+else:
+    print("⚠️  Warning: REDIS_URI not set. Background jobs (RQ) disabled.")
+    print("   App will work but transcription will block HTTP requests.")
+    q = None
 
 def create_app():
     app = Flask(__name__)

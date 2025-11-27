@@ -7,16 +7,20 @@ services:
       dockerfile: Dockerfile
       target: production
     ports:
-      - "8000:8000"
+      - "5000:5000"
     environment:
       - FLASK_ENV=production
       - PYTHONPATH=/app
+      - REDIS_URI=redis://redis:6379/0
     volumes:
       - ./temp:/app/temp
       - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -39,9 +43,39 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
     command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+      - REDIS_URI=redis://redis:6379/0
+    command: rq worker transcription -u redis://redis:6379/0 --with-scheduler
+    restart: unless-stopped
+    networks:
+      - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
 
   nginx:
     image: nginx:alpine

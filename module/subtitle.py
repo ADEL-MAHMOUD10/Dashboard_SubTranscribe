@@ -136,7 +136,25 @@ def share_subtitle(transcript_id):
 @subtitle_bp.route('/v1/<user_id>/download/<transcript_id>', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def download_subtitle(user_id, transcript_id):
-    """Handle subtitle download based on the transcript ID."""
+    """Handle subtitle download based on the transcript ID or job status."""
+    # Handle pending transcription (user polling for job completion)
+    if transcript_id == 'pending':
+        job_id = request.args.get('job_id')
+        if not job_id:
+            return render_template("error.html", error="Job ID not provided")
+        
+        # Show pending page with job status polling
+        user_id = session.get('user_id')
+        return render_template('subtitle.html', 
+                             transcript_id='pending', 
+                             job_id=job_id,
+                             filename='Processing...',
+                             file_size='Unknown',
+                             upload_time=None,
+                             username='Unknown',
+                             user_id=user_id,
+                             status='processing')
+    
     # Initialize variables with default values
     file_name = 'Unknown'
     file_size = 'Unknown'

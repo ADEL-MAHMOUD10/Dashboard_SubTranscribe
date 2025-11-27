@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcription Processing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .progress {
+            background-color: #e9ecef;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .spinner-border {
+            color: #007bff;
+        }
+        
+        .container {
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-body text-center p-5">
+                    <!-- Status Icon -->
+                    <div id="status-icon" class="mb-4">
+                        <div class="spinner-border text-primary" role="status" style="width: 80px; height: 80px;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+
+                    <!-- Status Title -->
+                    <h2 id="status-title" class="mb-3">Processing Your Media</h2>
+
+                    <!-- Progress Message -->
+                    <p id="progress-message" class="text-muted fs-5 mb-4">
+                        This may take a few minutes. Please don't close this page.
+                    </p>
+
+                    <!-- Progress Bar -->
+                    <div class="progress mb-4" style="height: 30px;">
+                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                            <span id="progress-text" class="text-white fw-bold">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Status -->
+                    <div class="alert alert-info" id="status-alert">
+                        <strong>Status:</strong> <span id="status-text">Initializing...</span>
+                    </div>
+
+                    <!-- Job Details -->
+                    <div class="alert alert-secondary">
+                        <small class="text-muted">
+                            Job ID: <code id="job-id">{{ job_id }}</code>
+                        </small>
+                    </div>
+
+                    <!-- Error Alert (hidden by default) -->
+                    <div class="alert alert-danger d-none" id="error-alert" role="alert">
+                        <strong>Error:</strong> <span id="error-text"></span>
+                    </div>
+
+                    <!-- Estimated Time -->
+                    <div class="mt-4">
+                        <p class="text-muted small">
+                            ⏱️ Processing typically takes 2-10 minutes depending on file size.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Section -->
+            <div class="card mt-4 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">💡 What's happening?</h5>
+                    <ul class="mb-0">
+                        <li><strong>Uploading:</strong> Your file is being uploaded to the transcription service.</li>
+                        <li><strong>Transcribing:</strong> AI is converting your audio to text.</li>
+                        <li><strong>Complete:</strong> You'll be automatically redirected to download your subtitles.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const jobId = "{{ job_id }}";
+const userId = "{{ user_id }}";
+let pollInterval = null;
+let pollCount = 0;
+
+// Status emoji/icon mapping
+const statusIcons = {
+    'queued': '⏳',
+    'started': '⚙️',
+    'finished': '✅',
+    'failed': '❌',
+    'processing': '⚙️'
+};
+
+// Status messages
+const statusMessages = {
+    'queued': 'Waiting in queue...',
+    'started': 'Starting transcription...',
+    'processing': 'Processing your media...',
+    'finished': 'Complete! Redirecting...',
+    'failed': 'Transcription failed'
+};
+
+async function pollJobStatus() {
+    pollCount++;
+    
+    try {
+        const response = await fetch(`/job_status/${jobId}`);
+        const data = await response.json();
+        
+        console.log('Job Status:', data);
+        
+        // Update status display
+        const status = data.status;
+        const progress = data.meta?.progress || '';
+        
+        updateUI(status, progress, data);
+        
+        // If finished or failed, stop polling and redirect/show error
+        if (status === 'finished') {
+            stopPolling();
+            handleCompletion(data);
+        } else if (status === 'failed') {
+            stopPolling();
+            handleError(data.error || 'Unknown error');
+        }
+    } catch (error) {
+        console.error('Error polling job status:', error);
+        // Continue polling even if fetch fails (might be temporary network issue)
+        // But show a warning after 10 failed attempts
+        if (pollCount > 10) {
+            showNetworkWarning();
+        }
+    }
+}
+
+function updateUI(status, progress, data) {
+    const statusText = document.getElementById('status-text');
+    const progressMessage = document.getElementById('progress-message');
+    const statusAlert = document.getElementById('status-alert');
+    const statusTitle = document.getElementById('status-title');
+    
+    // Update status text
+    const displayStatus = progress || statusMessages[status] || status;
+    statusText.textContent = displayStatus;
+    
+    // Update title and icon
+    const icon = statusIcons[status] || '⚙️';
+    statusTitle.innerHTML = `${icon} ${getStatusTitle(status)}`;
+    
+    // Update progress bar (estimate based on status)
+    let estimatedProgress = 0;
+    if (status === 'queued') {
+        estimatedProgress = 10;
+    } else if (status === 'started') {
+        estimatedProgress = 20;
+    } else if (progress.includes('Downloading')) {
+        estimatedProgress = 30;
+    } else if (progress.includes('Uploading')) {
+        estimatedProgress = 50;
+    } else if (progress.includes('Transcribing')) {
+        // Parse progress from "Transcribing... (45/120)"
+        const match = progress.match(/\((\d+)\/(\d+)\)/);
+        if (match) {
+            estimatedProgress = 50 + Math.round((parseInt(match[1]) / parseInt(match[2])) * 40);
+        } else {
+            estimatedProgress = 70;
+        }
+    } else if (status === 'finished') {
+        estimatedProgress = 100;
+    }
+    
+    updateProgressBar(estimatedProgress);
+    
+    // Update alert styling
+    if (status === 'finished') {
+        statusAlert.className = 'alert alert-success';
+    } else if (status === 'failed') {
+        statusAlert.className = 'alert alert-danger';
+    } else {
+        statusAlert.className = 'alert alert-info';
+    }
+}
+
+function updateProgressBar(percentage) {
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    
+    progressBar.style.width = percentage + '%';
+    progressBar.setAttribute('aria-valuenow', percentage);
+    progressText.textContent = percentage + '%';
+}
+
+function getStatusTitle(status) {
+    const titles = {
+        'queued': 'Queued for Processing',
+        'started': 'Starting Processing',
+        'processing': 'Processing Your Media',
+        'finished': 'Processing Complete',
+        'failed': 'Processing Failed'
+    };
+    return titles[status] || 'Processing...';
+}
+
+function handleCompletion(data) {
+    const transcriptId = data.result;
+    
+    if (!transcriptId) {
+        handleError('No transcript ID returned');
+        return;
+    }
+    
+    // Update UI to show completion
+    document.getElementById('status-title').innerHTML = '✅ Processing Complete';
+    document.getElementById('progress-message').textContent = 
+        'Your subtitles are ready! Redirecting...';
+    updateProgressBar(100);
+    
+    // Redirect after 2 seconds
+    setTimeout(() => {
+        window.location.href = `/v1/${userId}/download/${transcriptId}`;
+    }, 2000);
+}
+
+function handleError(errorMsg) {
+    document.getElementById('status-title').innerHTML = '❌ Processing Failed';
+    document.getElementById('status-alert').className = 'alert alert-danger';
+    
+    const errorAlert = document.getElementById('error-alert');
+    errorAlert.classList.remove('d-none');
+    document.getElementById('error-text').textContent = errorMsg || 'Unknown error occurred';
+    
+    const spinner = document.getElementById('status-icon');
+    spinner.innerHTML = '<div style="font-size: 80px;">❌</div>';
+}
+
+function showNetworkWarning() {
+    const progressMessage = document.getElementById('progress-message');
+    progressMessage.innerHTML += 
+        '<br><small class="text-warning">⚠️ Network connection issues detected. Still trying to connect...</small>';
+}
+
+function stopPolling() {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
+}
+
+// Start polling immediately and then every 3 seconds
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Starting to poll for job:', jobId);
+    pollJobStatus(); // Poll immediately
+    pollInterval = setInterval(pollJobStatus, 3000); // Then every 3 seconds
+    
+    // Stop polling after 1 hour (safety measure)
+    setTimeout(() => {
+        stopPolling();
+        handleError('Processing timeout (exceeded 1 hour)');
+    }, 60 * 60 * 1000);
+});
+
+// Stop polling if user leaves the page
+window.addEventListener('beforeunload', stopPolling);
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

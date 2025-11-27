@@ -10,7 +10,6 @@ yt-dlp==2025.9.26
 python-dateutil
 dnspython
 gunicorn
-uuid
 requests-toolbelt
 aiohttp
 gevent
@@ -22,5 +21,7 @@ redis>=3.0
 Flask-WTF
 flask_caching
 loguru
-datetime
 secure==1.0.1
+rq>=1.15.0
+python-rq-dashboard>=0.12.0
+rq
