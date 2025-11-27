@@ -14,12 +14,14 @@ from module.setting import *
 from module.auth import *
 from module.subtitle import *
 from module.config import *
-from module.config import is_session_valid
+from module.config import is_session_valid, q
 from module.transcribe import *
 from module.reset_pass import *
 import os
 import warnings
 import uuid
+import threading
+import platform
 
 # Register all blueprints
 app.register_blueprint(auth_bp)
@@ -30,6 +32,39 @@ app.register_blueprint(reset_pass_bp)
 
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
+
+# ------------------- RQ Worker Background Thread Setup -------------------
+def start_rq_worker():
+    """
+    Start RQ worker in background thread to process queued jobs.
+    This allows the Flask app to process transcription jobs without blocking requests.
+    """
+    try:
+        # Only start worker if RQ is enabled (not on Windows, and Redis is configured)
+        if not q:
+            print("⚠️  RQ worker not started: RQ is disabled (Windows or no Redis)")
+            return
+        
+        from rq import Worker
+        
+        print("🚀 Starting RQ worker in background...")
+        worker = Worker([q], connection=q.connection, name=f'worker-{platform.node()}')
+        print(f"✅ RQ worker started: {worker.name}")
+        
+        # Work without scheduler (jobs processed as they arrive)
+        worker.work(with_scheduler=False)
+    except Exception as e:
+        print(f"❌ Error starting RQ worker: {e}")
+
+# Start RQ worker in a background daemon thread (won't block Flask startup)
+if not platform.system() == 'Windows':  # Only on non-Windows platforms
+    worker_thread = threading.Thread(target=start_rq_worker, daemon=True)
+    worker_thread.start()
+    print("📋 RQ worker thread created and running in background")
+else:
+    print("⚠️  Windows detected: RQ worker disabled (requires Unix/Linux)")
+
+# Suppress specific warnings
 
 # firebase_credentials = {
 #     "type": os.getenv("FIREBASE_TYPE"),
