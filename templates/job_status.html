@@ -299,7 +299,7 @@
             const response = await fetch(`/job_status/${jobId}`);
             const data = await response.json();
             
-            console.log('Job Status:', data);
+            console.log('Poll #' + pollCount, 'Status:', data.status, 'Data:', data);
             
             // Update status display
             let status = data.status;
@@ -307,6 +307,7 @@
             
             // Check for errors in result
             if (data.error) {
+                console.error('Job returned error:', data.error);
                 handleError(data.error);
                 stopPolling();
                 return;
@@ -314,11 +315,21 @@
             
             updateUI(status, progress, data);
             
-            // If finished or failed, stop polling and redirect/show error
-            if (status === 'finished' && data.result) {
-                stopPolling();
-                handleCompletion(data);
+            // If finished, check if we have a result or error
+            if (status === 'finished') {
+                console.log('Job finished. Result:', data.result, 'Error:', data.error);
+                
+                if (data.result) {
+                    stopPolling();
+                    handleCompletion(data);
+                } else if (!data.result && !data.error) {
+                    // Job finished but has no result and no error - this is a problem
+                    console.error('Job finished but returned no result or error');
+                    handleError('Job completed but returned no transcript ID. Please check the server logs.');
+                    stopPolling();
+                }
             } else if (status === 'failed' || status === 'error') {
+                console.error('Job failed. Error:', data.error);
                 stopPolling();
                 handleError(data.error || 'Unknown error');
             }

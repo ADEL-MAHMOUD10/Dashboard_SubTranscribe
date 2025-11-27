@@ -41,6 +41,10 @@ def upload_audio_to_assemblyai(upload_id, audio_file_path, file_size, username, 
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     
+    # Log job start
+    logger.info(f"[Job {job.id}] ========== JOB START ==========")
+    logger.info(f"[Job {job.id}] Function called with: upload_id={upload_id}, file={audio_file_path}, size={file_size}, user={username}")
+    
     # Parse upload_time if it's a string
     if isinstance(upload_time, str):
         try:
