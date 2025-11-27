@@ -205,21 +205,34 @@ def upload_or_link():
     file = request.files.get('file')
     if file and allowed_file(file.filename):
         try:
+            logger.info(f"[Upload] Starting file upload process for: {file.filename}")
             file_size = request.content_length or 0
+            
             # If RQ queue is available, enqueue the upload job and return job status page
             if q:
-                logger.info("Enqueuing file upload job")
+                logger.info("[Upload] RQ Queue available, enqueuing job")
                 temp_dir = tempfile.gettempdir()
                 ext = os.path.splitext(file.filename or 'audio')[1] if file.filename else ''
                 temp_filename = f"upload_{uuid.uuid4().hex[:8]}{ext}"
                 temp_path = os.path.join(temp_dir, temp_filename)
+                
+                logger.info(f"[Upload] Saving file to: {temp_path}")
                 file.save(temp_path)
+                
+                # Verify file was saved
+                if not os.path.exists(temp_path):
+                    error_msg = f"Failed to save file to {temp_path}"
+                    logger.error(f"[Upload] {error_msg}")
+                    session['error'] = error_msg
+                    return redirect(url_for('show_error', error_id=err_id))
 
                 # Convert datetime to ISO string for RQ serialization
                 upload_time_str = upload_time.isoformat() if hasattr(upload_time, 'isoformat') else str(upload_time)
                 
+                logger.info(f"[Upload] Enqueueing job with transcript ID: {upload_id}")
                 # Enqueue job; the worker will upload and clean up the temp file
                 job = q.enqueue(upload_audio_to_assemblyai, upload_id, temp_path, file_size, username, user_id, upload_time_str, job_timeout=3600)
+                logger.info(f"[Upload] Job enqueued successfully with ID: {job.id}")
 
                 files_collection.insert_one({
                     "username": username,
@@ -231,9 +244,13 @@ def upload_or_link():
                     "job_id": job.id,
                     "status": "queued"
                 })
+                logger.info(f"[Upload] File record inserted into database with job_id: {job.id}")
 
                 flash("Your file has been queued for processing. You can monitor progress.", "info")
-                return redirect(url_for('transcribe.job_status_page', job_id=job.id))
+                
+                redirect_url = url_for('transcribe.job_status_page', job_id=job.id)
+                logger.info(f"[Upload] Redirecting to: {redirect_url}")
+                return redirect(redirect_url)
 
             # Fallback synchronous processing when no queue is available
             logger.info("Using synchronous file transcription")
@@ -282,10 +299,26 @@ def upload_or_link():
 @transcribe_bp.route('/job_status_page/<job_id>')
 def job_status_page(job_id):
     """Display a page that polls for job completion."""
-    if 'user_id' not in session or not is_session_valid():
+    logger.info(f"[job_status_page] Accessing job_status_page for job_id: {job_id}")
+    logger.info(f"[job_status_page] user_id in session: {'user_id' in session}")
+    
+    token = session.get('session_token')
+    token_preview = token[:20] + "..." if token else None
+    logger.info(f"[job_status_page] session: user_id={session.get('user_id')}, token={token_preview}")
+    
+    if 'user_id' not in session:
+        logger.warning(f"[job_status_page] No user_id in session, redirecting to login")
+        return redirect(url_for('auth.login'))
+    
+    is_valid = is_session_valid()
+    logger.info(f"[job_status_page] is_session_valid() returned: {is_valid}")
+    
+    if not is_valid:
+        logger.warning(f"[job_status_page] Session validation failed, redirecting to login")
         return redirect(url_for('auth.login'))
     
     user_id = session.get('user_id')
+    logger.info(f"[job_status_page] Rendering job_status.html for user_id={user_id}, job_id={job_id}")
     return render_template('job_status.html', job_id=job_id, user_id=user_id)
 
 
