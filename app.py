@@ -37,7 +37,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning)
 def start_rq_worker():
     """
     Start RQ worker in background thread to process queued jobs.
-    This allows the Flask app to process transcription jobs without blocking requests.
+    Uses a workaround for the signal handler limitation in daemon threads.
     """
     try:
         # Only start worker if RQ is enabled (not on Windows, and Redis is configured)
@@ -46,21 +46,30 @@ def start_rq_worker():
             return
         
         from rq import Worker
-        import signal
+        import signal as signal_module
         
         print("🚀 Starting RQ worker in background...")
+        
+        # Create worker
         worker = Worker([q], connection=q.connection, name=f'worker-{platform.node()}')
         print(f"✅ RQ worker started: {worker.name}")
         
-        # Disable signal handlers for daemon threads (can't use SIGTERM in non-main thread)
-        # This allows the worker to run safely in a background thread
-        signal.signal(signal.SIGTERM, signal.SIG_DFL)
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        # Monkey-patch signal.signal to prevent RuntimeError in daemon threads
+        # This is a workaround for the "signal only works in main thread" limitation
+        original_signal = signal_module.signal
+        signal_module.signal = lambda sig, handler: None
         
-        # Work without scheduler (jobs processed as they arrive)
-        worker.work(with_scheduler=False)
+        try:
+            print("   Listening for jobs...")
+            worker.work(with_scheduler=False)
+        finally:
+            # Restore original signal function
+            signal_module.signal = original_signal
+            
     except Exception as e:
-        print(f"❌ Error starting RQ worker: {e}")
+        print(f"❌ Error in RQ worker: {e}")
+        import traceback
+        traceback.print_exc()
 
 # Start RQ worker in a background daemon thread (won't block Flask startup)
 if not platform.system() == 'Windows':  # Only on non-Windows platforms
