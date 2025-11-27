@@ -273,6 +273,11 @@
     const userId = "{{ user_id }}";
     let pollInterval = null;
     let pollCount = 0;
+    
+    // Log immediately to verify script is running
+    console.log('🚀 Job Status Script Loaded');
+    console.log('  jobId:', jobId);
+    console.log('  userId:', userId);
 
     // Status emoji/icon mapping
     const statusIcons = {
@@ -480,15 +485,33 @@
 
     // Start polling immediately and then every 3 seconds
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('Starting to poll for job:', jobId);
-        pollJobStatus(); // Poll immediately
-        pollInterval = setInterval(pollJobStatus, 3000); // Then every 3 seconds
-        
-        // Stop polling after 1 hour (safety measure)
-        setTimeout(() => {
-            stopPolling();
-            handleError('Processing timeout (exceeded 1 hour)');
-        }, 60 * 60 * 1000);
+        try {
+            console.log('✅ DOMContentLoaded fired');
+            console.log('Starting to poll for job:', jobId);
+            
+            if (!jobId || jobId === '{{ job_id }}') {
+                console.error('❌ ERROR: jobId not properly set!', jobId);
+                handleError('Job ID not found. Please refresh the page.');
+                return;
+            }
+            
+            console.log('Calling pollJobStatus()...');
+            pollJobStatus(); // Poll immediately
+            
+            console.log('Setting interval for polling...');
+            pollInterval = setInterval(pollJobStatus, 3000); // Then every 3 seconds
+            
+            console.log('✅ Polling initialized successfully');
+            
+            // Stop polling after 1 hour (safety measure)
+            setTimeout(() => {
+                stopPolling();
+                handleError('Processing timeout (exceeded 1 hour)');
+            }, 60 * 60 * 1000);
+        } catch (error) {
+            console.error('❌ Error in DOMContentLoaded:', error);
+            handleError('Error initializing job polling: ' + error.message);
+        }
     });
 
     // Stop polling if user leaves the page
