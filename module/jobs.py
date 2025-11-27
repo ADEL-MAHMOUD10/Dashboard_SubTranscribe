@@ -39,6 +39,7 @@ def upload_audio_to_assemblyai(job, upload_id, audio_file_path, file_size, usern
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     
+    logger.info(f"[Job {job.id}] Starting file upload: {audio_file_path}")
     try:
         job.meta['status'] = 'uploading'
         job.save_meta()
@@ -151,7 +152,7 @@ def upload_audio_to_assemblyai(job, upload_id, audio_file_path, file_size, usern
         return {'error': error_msg}
     
     except Exception as e:
-        logger.error(f"Upload/transcription error: {e}")
+        logger.error(f"[Job {job.id}] Upload/transcription error: {e}", exc_info=True)
         return {'error': f"An error occurred: {str(e)[:100]}"}
     
     finally:
@@ -159,9 +160,9 @@ def upload_audio_to_assemblyai(job, upload_id, audio_file_path, file_size, usern
         if os.path.exists(audio_file_path):
             try:
                 os.remove(audio_file_path)
-                logger.info(f"✅ Temp file cleaned: {audio_file_path}")
+                logger.info(f"[Job {job.id}] ✅ Temp file cleaned: {audio_file_path}")
             except Exception as e:
-                logger.warning(f"Could not remove temp file {audio_file_path}: {e}")
+                logger.warning(f"[Job {job.id}] Could not remove temp file {audio_file_path}: {e}")
 
 
 def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
@@ -184,6 +185,7 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
     base_url = "https://api.assemblyai.com/v2"
     downloaded_file = None
     
+    logger.info(f"[Job {job.id}] Starting link transcription: {link}")
     try:
         job.meta['status'] = 'downloading'
         job.meta['progress'] = 'Downloading media...'
@@ -200,13 +202,12 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
             'no_warnings': True,
         }
         
+        logger.info(f"[Job {job.id}] Downloading media from: {link}")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(link, download=True)
             downloaded_file = ydl.prepare_filename(info)
         
-        # Verify file exists and has content
-        if not os.path.exists(downloaded_file):
-            raise FileNotFoundError(f"Downloaded file not found: {downloaded_file}")
+        logger.info(f"[Job {job.id}] Downloaded to: {downloaded_file}")
         
         total_size = os.path.getsize(downloaded_file)
         if total_size == 0:
@@ -321,11 +322,11 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
         return {'error': error_msg}
     
     except requests.exceptions.HTTPError as e:
-        logger.error(f"AssemblyAI upload error: {e.response.status_code} - {e.response.text}")
+        logger.error(f"[Job {job.id}] AssemblyAI upload error: {e.response.status_code} - {e.response.text}")
         return {'error': f"Failed to upload to transcription service: {e.response.status_code}"}
     
     except Exception as e:
-        logger.error(f"Link processing error: {e}")
+        logger.error(f"[Job {job.id}] Link processing error: {e}", exc_info=True)
         return {'error': f"An error occurred: {str(e)[:100]}"}
     
     finally:
@@ -333,6 +334,6 @@ def transcribe_from_link(job, upload_id, link, username, user_id, upload_time):
         if downloaded_file and os.path.exists(downloaded_file):
             try:
                 os.remove(downloaded_file)
-                logger.info(f"✅ Temp file cleaned: {downloaded_file}")
+                logger.info(f"[Job {job.id}] ✅ Temp file cleaned: {downloaded_file}")
             except OSError as e:
-                logger.warning(f"Could not remove temp file: {e}")
+                logger.warning(f"[Job {job.id}] Could not remove temp file: {e}")
