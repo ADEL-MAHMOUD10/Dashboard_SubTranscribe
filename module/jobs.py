@@ -38,12 +38,19 @@ def upload_audio_to_assemblyai(upload_id, audio_file_path, file_size, username, 
     from rq import get_current_job
     
     job = get_current_job()
+    
+    # Ensure job context is available
+    if job is None:
+        error_msg = "Job context not available - this should not happen in RQ worker"
+        logger.error(f"CRITICAL: {error_msg}")
+        return {'error': error_msg}
+    
+    job_id = job.id
+    logger.info(f"[Job {job_id}] ========== JOB START ==========")
+    logger.info(f"[Job {job_id}] Function called with: upload_id={upload_id}, file={audio_file_path}, size={file_size}, user={username}")
+    
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
-    
-    # Log job start
-    logger.info(f"[Job {job.id}] ========== JOB START ==========")
-    logger.info(f"[Job {job.id}] Function called with: upload_id={upload_id}, file={audio_file_path}, size={file_size}, user={username}")
     
     # Parse upload_time if it's a string
     if isinstance(upload_time, str):
@@ -214,9 +221,19 @@ def transcribe_from_link(upload_id, link, username, user_id, upload_time):
     from rq import get_current_job
     
     job = get_current_job()
+    
+    # Ensure job context is available
+    if job is None:
+        error_msg = "Job context not available - this should not happen in RQ worker"
+        logger.error(f"CRITICAL: {error_msg}")
+        return {'error': error_msg}
+    
+    job_id = job.id
     headers = {"authorization": TOKEN_THREE}
     base_url = "https://api.assemblyai.com/v2"
     downloaded_file = None
+    
+    logger.info(f"[Job {job_id}] Starting link transcription: {link}")
     
     # Parse upload_time if it's a string
     if isinstance(upload_time, str):
@@ -224,8 +241,6 @@ def transcribe_from_link(upload_id, link, username, user_id, upload_time):
             upload_time = datetime.fromisoformat(upload_time.replace('Z', '+00:00'))
         except:
             upload_time = datetime.now(timezone.utc)
-    
-    logger.info(f"[Job {job.id}] Starting link transcription: {link}")
     try:
         job.meta['status'] = 'downloading'
         job.meta['progress'] = 'Downloading media...'
