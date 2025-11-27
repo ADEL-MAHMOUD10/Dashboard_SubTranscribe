@@ -308,12 +308,20 @@ def job_status(job_id):
         
         # If job is finished successfully, return the transcript ID
         if job.is_finished and not job.is_failed:
-            response_data['result'] = job.result
+            result = job.result
+            # Check if result is an error dict
+            if isinstance(result, dict) and 'error' in result:
+                response_data['error'] = result['error']
+                response_data['status'] = 'failed'
+            else:
+                response_data['result'] = result
         
         # If job failed, include error details
         if job.is_failed:
             response_data['error'] = job.exc_info or 'Job failed without error message'
+            response_data['status'] = 'failed'
         
+        logger.debug(f"Job {job_id} status: {response_data}")
         return jsonify(response_data)
     except Exception as e:
         logger.error(f"Error fetching job status: {e}")

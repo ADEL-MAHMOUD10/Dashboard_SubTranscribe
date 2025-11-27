@@ -302,16 +302,23 @@
             console.log('Job Status:', data);
             
             // Update status display
-            const status = data.status;
+            let status = data.status;
             const progress = data.meta?.progress || '';
+            
+            // Check for errors in result
+            if (data.error) {
+                handleError(data.error);
+                stopPolling();
+                return;
+            }
             
             updateUI(status, progress, data);
             
             // If finished or failed, stop polling and redirect/show error
-            if (status === 'finished') {
+            if (status === 'finished' && data.result) {
                 stopPolling();
                 handleCompletion(data);
-            } else if (status === 'failed') {
+            } else if (status === 'failed' || status === 'error') {
                 stopPolling();
                 handleError(data.error || 'Unknown error');
             }
