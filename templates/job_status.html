@@ -426,7 +426,15 @@
         
         const errorAlert = document.getElementById('error-alert');
         errorAlert.classList.remove('d-none');
-        document.getElementById('error-text').textContent = errorMsg || 'Unknown error occurred';
+        
+        // Handle long error messages
+        const truncated = errorMsg.length > 200 ? errorMsg.substring(0, 200) + '...' : errorMsg;
+        document.getElementById('error-text').textContent = truncated;
+        
+        // Also log full error to console
+        if (errorMsg.length > 200) {
+            console.error('Full error message:', errorMsg);
+        }
         
         const statusIcon = document.getElementById('status-icon');
         statusIcon.innerHTML = '<div style="font-size: 5rem;">❌</div>';
