@@ -46,10 +46,16 @@ def start_rq_worker():
             return
         
         from rq import Worker
+        import signal
         
         print("🚀 Starting RQ worker in background...")
         worker = Worker([q], connection=q.connection, name=f'worker-{platform.node()}')
         print(f"✅ RQ worker started: {worker.name}")
+        
+        # Disable signal handlers for daemon threads (can't use SIGTERM in non-main thread)
+        # This allows the worker to run safely in a background thread
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
         
         # Work without scheduler (jobs processed as they arrive)
         worker.work(with_scheduler=False)
