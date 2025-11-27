@@ -22,6 +22,4 @@ Flask-WTF
 flask_caching
 loguru
 secure==1.0.1
-rq>=1.15.0
-python-rq-dashboard>=0.12.0
 rq
