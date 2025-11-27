@@ -299,6 +299,7 @@ def job_status(job_id):
         from rq.job import Job
         job = Job.fetch(job_id, connection=q.connection)
         
+        # Build basic response
         response_data = {
             'job_id': job.id,
             'status': job.get_status(),
@@ -306,38 +307,37 @@ def job_status(job_id):
             'meta': job.meta,
         }
         
-        # If job is finished, handle result or error
+        logger.info(f"[job_status API] Job {job_id}: status={response_data['status']}, is_finished={job.is_finished}, is_failed={job.is_failed}")
+        
+        # If job is finished and not failed, get the result
         if job.is_finished and not job.is_failed:
             result = job.result
-            logger.info(f"Job {job_id} finished. Result type: {type(result)}, Value: {result}")
+            logger.info(f"[job_status API] Job {job_id} is_finished=True, result type: {type(result)}, value: {repr(result)[:100]}")
             
             # Check if result is an error dict
             if isinstance(result, dict) and 'error' in result:
                 response_data['error'] = result['error']
                 response_data['status'] = 'failed'
-                logger.warning(f"Job {job_id} returned error dict: {result['error']}")
+                logger.warning(f"[job_status API] Job {job_id} returned error dict: {result['error']}")
             elif result is None:
                 # Job finished but returned None - check meta status
                 meta_status = job.meta.get('status', 'unknown')
-                if meta_status == 'uploading':
-                    # Job failed during upload but didn't return error dict
-                    response_data['error'] = 'Job failed during file upload (no error message captured). Check server logs.'
-                    response_data['status'] = 'failed'
-                    logger.error(f"Job {job_id} finished with None result and uploading status - likely crashed")
-                else:
-                    response_data['error'] = 'Job completed but returned no transcript ID'
-                    response_data['status'] = 'failed'
+                response_data['error'] = f'Job returned None result. Meta status: {meta_status}'
+                response_data['status'] = 'failed'
+                logger.error(f"[job_status API] Job {job_id} finished with None result and meta status: {meta_status}")
             else:
+                # Success! Return the result (should be transcript ID string)
                 response_data['result'] = result
+                logger.info(f"[job_status API] Job {job_id} succeeded with result: {result}")
         
         # If job failed, include error details
         if job.is_failed:
             response_data['error'] = job.exc_info or 'Job failed without error message'
             response_data['status'] = 'failed'
-            logger.error(f"Job {job_id} failed with exc_info: {job.exc_info}")
+            logger.error(f"[job_status API] Job {job_id} is_failed=True, exc_info: {job.exc_info}")
         
-        logger.debug(f"Job {job_id} status response: {response_data}")
+        logger.debug(f"[job_status API] Returning response: {response_data}")
         return jsonify(response_data)
     except Exception as e:
-        logger.error(f"Error fetching job status for {job_id}: {e}", exc_info=True)
+        logger.error(f"[job_status API] Error fetching job status for {job_id}: {e}", exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 400

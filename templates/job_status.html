@@ -299,15 +299,17 @@
             const response = await fetch(`/job_status/${jobId}`);
             const data = await response.json();
             
-            console.log('Poll #' + pollCount, 'Status:', data.status, 'Data:', data);
+            console.log('Poll #' + pollCount, 'Full response:', JSON.stringify(data));
             
             // Update status display
-            let status = data.status;
-            const progress = data.meta?.progress || '';
+            let status = data.status || 'unknown';
+            const progress = data.meta?.progress || data.progress || '';
+            
+            console.log('Extracted status:', status, 'Progress:', progress);
             
             // Check for errors in result
             if (data.error) {
-                console.error('Job returned error:', data.error);
+                console.error('❌ Job returned error:', data.error);
                 handleError(data.error);
                 stopPolling();
                 return;
@@ -315,26 +317,30 @@
             
             updateUI(status, progress, data);
             
-            // If finished, check if we have a result or error
-            if (status === 'finished') {
-                console.log('Job finished. Result:', data.result, 'Error:', data.error);
+            // Check all possible finished states
+            if (status === 'finished' || status === 'success') {
+                console.log('✅ Job finished. Checking result...');
+                console.log('  data.result:', data.result);
+                console.log('  data.error:', data.error);
                 
                 if (data.result) {
+                    console.log('🎉 Result found:', data.result, 'Redirecting...');
                     stopPolling();
                     handleCompletion(data);
                 } else if (!data.result && !data.error) {
-                    // Job finished but has no result and no error - this is a problem
-                    console.error('Job finished but returned no result or error');
-                    handleError('Job completed but returned no transcript ID. Please check the server logs.');
+                    // Job finished but has no result and no error
+                    console.error('⚠️ Job finished but returned no result or error');
+                    console.error('Full data object:', data);
+                    handleError('Job completed but returned no transcript ID. This may be a server issue.');
                     stopPolling();
                 }
             } else if (status === 'failed' || status === 'error') {
-                console.error('Job failed. Error:', data.error);
+                console.error('❌ Job failed with status:', status);
                 stopPolling();
-                handleError(data.error || 'Unknown error');
+                handleError(data.error || 'Unknown error occurred during processing');
             }
         } catch (error) {
-            console.error('Error polling job status:', error);
+            console.error('❌ Error polling job status:', error);
             // Continue polling even if fetch fails (might be temporary network issue)
             // But show a warning after 10 failed attempts
             if (pollCount > 10) {
@@ -402,9 +408,14 @@
     }
 
     function handleCompletion(data) {
+        console.log('🎉 handleCompletion called with data:', data);
+        
         const transcriptId = data.result;
+        console.log('Extracted transcriptId:', transcriptId);
+        console.log('userId:', userId);
         
         if (!transcriptId) {
+            console.error('❌ No transcript ID in result');
             handleError('No transcript ID returned');
             return;
         }
@@ -412,12 +423,16 @@
         // Update UI to show completion
         document.getElementById('status-title').innerHTML = '✅ Processing Complete';
         document.getElementById('progress-message').textContent = 
-            'Your subtitles are ready! Redirecting...';
+            'Your subtitles are ready! Redirecting in 2 seconds...';
         updateProgressBar(100);
         
         // Redirect after 2 seconds
+        const redirectUrl = `/v1/${userId}/download/${transcriptId}`;
+        console.log('Redirecting to:', redirectUrl);
+        
         setTimeout(() => {
-            window.location.href = `/v1/${userId}/download/${transcriptId}`;
+            console.log('Executing redirect to:', redirectUrl);
+            window.location.href = redirectUrl;
         }, 2000);
     }
 
