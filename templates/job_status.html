@@ -304,8 +304,9 @@
             // Update status display
             let status = data.status || 'unknown';
             const progress = data.meta?.progress || data.progress || '';
+            const metaStatus = data.meta?.status || '';
             
-            console.log('Extracted status:', status, 'Progress:', progress);
+            console.log('Extracted status:', status, 'Meta status:', metaStatus, 'Progress:', progress);
             
             // Check for errors in result
             if (data.error) {
@@ -317,9 +318,13 @@
             
             updateUI(status, progress, data);
             
-            // Check all possible finished states
-            if (status === 'finished' || status === 'success') {
-                console.log('✅ Job finished. Checking result...');
+            // Check for completion - RQ status can be "finished" or we can check meta status "completed"
+            const isComplete = status === 'finished' || status === 'success' || metaStatus === 'completed';
+            
+            if (isComplete) {
+                console.log('✅ Job appears to be complete. Checking for result...');
+                console.log('  status:', status);
+                console.log('  metaStatus:', metaStatus);
                 console.log('  data.result:', data.result);
                 console.log('  data.error:', data.error);
                 
@@ -329,15 +334,20 @@
                     handleCompletion(data);
                 } else if (!data.result && !data.error) {
                     // Job finished but has no result and no error
-                    console.error('⚠️ Job finished but returned no result or error');
-                    console.error('Full data object:', data);
-                    handleError('Job completed but returned no transcript ID. This may be a server issue.');
+                    console.warn('⚠️ Job marked complete but no result found. Waiting a moment and retrying...');
+                    // Don't stop polling yet - might be a timing issue
+                    // Continue polling a bit more
+                } else if (data.error) {
+                    console.error('❌ Job finished with error:', data.error);
+                    handleError(data.error);
                     stopPolling();
                 }
             } else if (status === 'failed' || status === 'error') {
                 console.error('❌ Job failed with status:', status);
                 stopPolling();
                 handleError(data.error || 'Unknown error occurred during processing');
+            } else {
+                console.log('Job still processing. Status:', status, 'Meta:', metaStatus);
             }
         } catch (error) {
             console.error('❌ Error polling job status:', error);

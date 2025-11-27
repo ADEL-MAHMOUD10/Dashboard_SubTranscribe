@@ -149,7 +149,15 @@ def upload_audio_to_assemblyai(upload_id, audio_file_path, file_size, username, 
                 result = resp.json()
                 
                 if result["status"] == "completed":
-                    logger.info("🎉 Transcription completed")
+                    logger.info(f"[Job {job_id}] 🎉 Transcription completed")
+                    
+                    # Update job meta to show completion BEFORE returning
+                    try:
+                        job.meta['status'] = 'completed'
+                        job.meta['progress'] = 'Finalizing...'
+                        job.save_meta()
+                    except Exception as e:
+                        logger.warning(f"[Job {job_id}] Failed to save final meta: {e}")
                     
                     # Update file record with completion status
                     files_collection.update_one(
@@ -157,6 +165,7 @@ def upload_audio_to_assemblyai(upload_id, audio_file_path, file_size, username, 
                         {'$set': {'status': 'completed'}}
                     )
                     
+                    logger.info(f"[Job {job_id}] Returning transcript_id: {transcript_id}")
                     gc.collect()
                     return transcript_id
                 
@@ -360,7 +369,15 @@ def transcribe_from_link(upload_id, link, username, user_id, upload_time):
                 logger.debug(f"[Job {job.id}] Poll #{i+1}: status={result.get('status')}")
                 
                 if result["status"] == "completed":
-                    logger.info(f"[Job {job.id}] 🎉 Link transcription completed")
+                    logger.info(f"[Job {job_id}] 🎉 Link transcription completed")
+                    
+                    # Update job meta to show completion BEFORE returning
+                    try:
+                        job.meta['status'] = 'completed'
+                        job.meta['progress'] = 'Finalizing...'
+                        job.save_meta()
+                    except Exception as e:
+                        logger.warning(f"[Job {job_id}] Failed to save final meta: {e}")
                     
                     # Update file record with completion status
                     files_collection.update_one(
@@ -368,6 +385,7 @@ def transcribe_from_link(upload_id, link, username, user_id, upload_time):
                         {'$set': {'status': 'completed'}}
                     )
                     
+                    logger.info(f"[Job {job_id}] Returning transcript_id: {transcript_id}")
                     gc.collect()
                     return transcript_id
                 
