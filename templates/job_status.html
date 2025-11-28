@@ -271,9 +271,10 @@
 
     const jobId = "{{ job_id }}";
     const userId = "{{ user_id }}";
+    const downloadUrlTemplate = "{{ download_url_template|safe }}";
     let pollInterval = null;
     let pollCount = 0;
-    
+
     // Log immediately to verify script is running
     console.log('🚀 Job Status Script Loaded');
     console.log('  jobId:', jobId);
@@ -441,8 +442,8 @@
             'Your subtitles are ready! Redirecting in 2 seconds...';
         updateProgressBar(100);
         
-        // Redirect after 2 seconds
-        const redirectUrl = `/v1/${userId}/download/${transcriptId}`;
+        // Use the URL template from Flask to build the correct redirect URL
+        const redirectUrl = downloadUrlTemplate.replace('__transcript_id__', transcriptId);
         console.log('Redirecting to:', redirectUrl);
         
         setTimeout(() => {

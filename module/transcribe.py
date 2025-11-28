@@ -296,6 +296,7 @@ def upload_or_link():
     else:
         session['error'] = "Invalid file type or no file provided"
         return redirect(url_for('show_error', error_id=err_id))
+    
 @transcribe_bp.route('/job_status_page/<job_id>')
 def job_status_page(job_id):
     """Display a page that polls for job completion."""
@@ -319,8 +320,11 @@ def job_status_page(job_id):
     
     user_id = session.get('user_id')
     logger.info(f"[job_status_page] Rendering job_status.html for user_id={user_id}, job_id={job_id}")
-    return render_template('job_status.html', job_id=job_id, user_id=user_id)
-
+    download_url_template = url_for('subtitle.download_subtitle', user_id=user_id, transcript_id='__transcript_id__')
+    return render_template('job_status.html', 
+                           job_id=job_id, 
+                           user_id=user_id, 
+                           download_url_template=download_url_template)
 
 @transcribe_bp.route('/job_status/<job_id>')
 def job_status(job_id):

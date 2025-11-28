@@ -125,16 +125,13 @@ def upload_audio_to_assemblyai(upload_id, audio_file_path, file_size, username, 
         logger.info(f"Transcript ID: {transcript_id}")
         
         # Store initial file record with transcript_id
-        files_collection.insert_one({
-            "username": username,
-            "user_id": user_id,
-            "file_name": os.path.basename(audio_file_path),
-            "file_size": file_size,
-            "transcript_id": transcript_id,
-            "upload_time": upload_time,
-            "job_id": job.id,
-            "status": "processing"
-        })
+        files_collection.update_one(
+            {'job_id': job.id},
+            {'$set': {
+                "transcript_id": transcript_id,
+                "status": "processing"
+            }}
+        )
         
         # Poll for completion
         polling_endpoint = f"{base_url}/transcript/{transcript_id}"
@@ -342,17 +339,15 @@ def transcribe_from_link(upload_id, link, username, user_id, upload_time):
         logger.info(f"[Job {job.id}] Transcript ID: {transcript_id}")
         
         # Store initial file record with transcript_id
-        files_collection.insert_one({
-            "username": username,
-            "user_id": user_id,
-            "file_name": link,
-            "file_size": total_size,
-            "transcript_id": transcript_id,
-            "upload_time": upload_time,
-            "link": link,
-            "job_id": job.id,
-            "status": "processing"
-        })
+        files_collection.update_one(
+            {'job_id': job.id},
+            {'$set': {
+                "transcript_id": transcript_id,
+                "file_size": total_size,
+                "file_name": info.get('title', link),  # Use video title if available
+                "status": "processing"
+            }}
+        )
         
         # Poll for completion
         polling_endpoint = f"{base_url}/transcript/{transcript_id}"
