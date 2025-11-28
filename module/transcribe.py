@@ -336,20 +336,23 @@ def job_status(job_id):
         from rq.job import Job
         job = Job.fetch(job_id, connection=q.connection)
         
+        # Get the basic job status from RQ
+        rq_status = job.get_status()  # Returns: 'queued', 'started', 'finished', 'failed'
+        
         # Build basic response
         response_data = {
             'job_id': job.id,
-            'status': job.get_status(),
+            'status': rq_status,
             'progress': job.meta.get('progress', ''),
             'meta': job.meta,
         }
         
-        logger.info(f"[job_status API] Job {job_id}: status={response_data['status']}, is_finished={job.is_finished}, is_failed={job.is_failed}")
+        logger.info(f"[job_status API] Job {job_id}: rq_status={rq_status}, is_finished={job.is_finished}, is_failed={job.is_failed}")
         
-        # If job is finished and not failed, get the result
+        # If job is finished (completed successfully)
         if job.is_finished and not job.is_failed:
             result = job.result
-            logger.info(f"[job_status API] Job {job_id} is_finished=True, result type: {type(result)}, value: {repr(result)[:100]}")
+            logger.info(f"[job_status API] Job {job_id} finished, result type: {type(result)}, value: {repr(result)[:100]}")
             
             # Check if result is an error dict
             if isinstance(result, dict) and 'error' in result:
@@ -357,24 +360,29 @@ def job_status(job_id):
                 response_data['status'] = 'failed'
                 logger.warning(f"[job_status API] Job {job_id} returned error dict: {result['error']}")
             elif result is None:
-                # Job finished but returned None - check meta status
+                # Job finished but returned None
                 meta_status = job.meta.get('status', 'unknown')
-                response_data['error'] = f'Job returned None result. Meta status: {meta_status}'
+                response_data['error'] = f'Job completed but returned no result. Meta status: {meta_status}'
                 response_data['status'] = 'failed'
-                logger.error(f"[job_status API] Job {job_id} finished with None result and meta status: {meta_status}")
+                logger.error(f"[job_status API] Job {job_id} finished with None result")
             else:
-                # Success! Return the result (should be transcript ID string)
+                # Success! Return the transcript ID
                 response_data['result'] = result
-                logger.info(f"[job_status API] Job {job_id} succeeded with result: {result}")
+                response_data['status'] = 'finished'  # Explicitly set to 'finished'
+                logger.info(f"[job_status API] Job {job_id} succeeded with transcript_id: {result}")
         
-        # If job failed, include error details
-        if job.is_failed:
+        # If job failed
+        elif job.is_failed:
             response_data['error'] = job.exc_info or 'Job failed without error message'
             response_data['status'] = 'failed'
             logger.error(f"[job_status API] Job {job_id} is_failed=True, exc_info: {job.exc_info}")
         
-        logger.debug(f"[job_status API] Returning response: {response_data}")
+        # For queued/started/processing jobs, keep the RQ status
+        else:
+            logger.debug(f"[job_status API] Job {job_id} still in progress: {rq_status}")
+        
         return jsonify(response_data)
+        
     except Exception as e:
         logger.error(f"[job_status API] Error fetching job status for {job_id}: {e}", exc_info=True)
         return jsonify({'status': 'error', 'message': str(e)}), 400
