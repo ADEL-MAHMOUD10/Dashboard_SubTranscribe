@@ -95,7 +95,6 @@ def transcribe_page(user_id):
     session['upload_id'] = upload_id
     return render_template('transcribe.html', upload_id=upload_id, user_id=session['user_id'])
 
-
 @transcribe_bp.route('/v1', methods=['POST'])
 def upload_or_link():
     """Handle file upload or media link submission for transcription."""
@@ -109,20 +108,25 @@ def upload_or_link():
     upload_time = datetime.now(timezone.utc)
     err_id = generate_error_id()
 
+    # ========== HANDLE LINK UPLOAD ==========
     link = request.form.get('link')
     if link:
-        # Handle media link transcription (download then transcribe)
         try:
             logger.info(f"Processing link: {link}")
-
-            # If background queue available, enqueue a job that will download+transcribe
+            
+            # Check if RQ queue is available
             if q:
+                logger.info("Using RQ queue for link processing")
                 flash("Your link has been queued for processing. You can monitor progress.", "info")
-                # Convert datetime to ISO string for RQ serialization (datetime objects don't pickle well across processes)
-                upload_time_str = upload_time.isoformat() if hasattr(upload_time, 'isoformat') else str(upload_time)
-                job = q.enqueue(transcribe_from_link_job, upload_id, link, username, user_id, upload_time_str, job_timeout=3600)
-
-                # Insert a placeholder record so users can see the queued job
+                
+                upload_time_str = upload_time.isoformat()
+                job = q.enqueue(
+                    transcribe_from_link_job,
+                    upload_id, link, username, user_id, upload_time_str,
+                    job_timeout=3600
+                )
+                
+                # Insert placeholder record
                 files_collection.insert_one({
                     "username": username,
                     "user_id": user_id,
@@ -135,80 +139,82 @@ def upload_or_link():
                     "status": "queued",
                     "source": "link"
                 })
-
+                
+                logger.info(f"Link job enqueued: {job.id}")
                 return redirect(url_for('transcribe.job_status_page', job_id=job.id))
-
-            # No queue: perform synchronous download + transcription (existing behavior)
-            flash("Downloading media... This may take a few minutes.", "info")
+            
+            # ========== FALLBACK: Synchronous Processing ==========
+            # CRITICAL: Only use this when RQ is unavailable
+            logger.warning("RQ not available, using synchronous link processing (blocking)")
+            flash("Processing link... This may take several minutes. Please wait.", "warning")
+            
             import yt_dlp
             from pathlib import Path
-
+            
             temp_dir = tempfile.gettempdir()
             output_template = os.path.join(temp_dir, "download_%(id)s.%(ext)s")
-
-            # Configure yt-dlp options
+            
             ydl_opts = {
                 'format': 'best[ext=mp4]/best[ext=mkv]/best',
                 'outtmpl': output_template,
                 'quiet': False,
                 'no_warnings': True,
             }
-
-            # Download the media
+            
             download_path = None
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(link, download=True)
                 download_path = ydl.prepare_filename(info)
-
+            
             if not download_path or not os.path.exists(download_path):
                 session['error'] = "Failed to download media from link"
                 return redirect(url_for('show_error', error_id=err_id))
-
+            
             try:
                 file_size = os.path.getsize(download_path)
                 logger.info(f"Downloaded: {download_path}, size: {file_size}")
-
+                
                 # Transcribe the downloaded file
-                flash("Processing your media... This may take 5-15 minutes. Please wait.", "warning")
                 result = sync_upload_audio_to_assemblyai(download_path, file_size)
-
+                
                 if isinstance(result, dict) and 'error' in result:
                     session['error'] = result['error']
                     return redirect(url_for('show_error', error_id=err_id))
-
+                
                 # Save file record
                 files_collection.insert_one({
                     "username": username,
                     "user_id": user_id,
-                    "file_name": link.split('/')[-1][:100],  # Use last part of URL
+                    "file_name": link.split('/')[-1][:100],
                     "file_size": file_size,
                     "transcript_id": result,
                     "upload_time": upload_time,
                     "source": "link"
                 })
-
+                
                 return redirect(url_for('subtitle.download_subtitle', user_id=user_id, transcript_id=result))
+                
             finally:
-                # Clean up downloaded file
                 if download_path and os.path.exists(download_path):
                     try:
                         os.remove(download_path)
                         logger.info(f"Cleaned up: {download_path}")
                     except Exception as e:
                         logger.warning(f"Could not delete temp file {download_path}: {e}")
-
+        
         except Exception as e:
             logger.error(f"Link download error: {e}")
             session['error'] = f"Failed to process link: {str(e)[:150]}"
             return redirect(url_for('show_error', error_id=err_id))
     
+    # ========== HANDLE FILE UPLOAD ==========
     file = request.files.get('file')
     if file and allowed_file(file.filename):
         try:
             logger.info(f"[Upload] Starting file upload process for: {file.filename}")
             file_size = request.content_length or 0
             
-            # If RQ queue is available, enqueue the upload job and return job status page
+            # Check if RQ queue is available
             if q:
                 logger.info("[Upload] RQ Queue available, enqueuing job")
                 temp_dir = tempfile.gettempdir()
@@ -219,21 +225,22 @@ def upload_or_link():
                 logger.info(f"[Upload] Saving file to: {temp_path}")
                 file.save(temp_path)
                 
-                # Verify file was saved
                 if not os.path.exists(temp_path):
                     error_msg = f"Failed to save file to {temp_path}"
                     logger.error(f"[Upload] {error_msg}")
                     session['error'] = error_msg
                     return redirect(url_for('show_error', error_id=err_id))
-
-                # Convert datetime to ISO string for RQ serialization
-                upload_time_str = upload_time.isoformat() if hasattr(upload_time, 'isoformat') else str(upload_time)
                 
-                logger.info(f"[Upload] Enqueueing job with transcript ID: {upload_id}")
-                # Enqueue job; the worker will upload and clean up the temp file
-                job = q.enqueue(upload_audio_to_assemblyai, upload_id, temp_path, file_size, username, user_id, upload_time_str, job_timeout=3600)
+                upload_time_str = upload_time.isoformat()
+                
+                logger.info(f"[Upload] Enqueueing job")
+                job = q.enqueue(
+                    upload_audio_to_assemblyai,
+                    upload_id, temp_path, file_size, username, user_id, upload_time_str,
+                    job_timeout=3600
+                )
                 logger.info(f"[Upload] Job enqueued successfully with ID: {job.id}")
-
+                
                 files_collection.insert_one({
                     "username": username,
                     "user_id": user_id,
@@ -244,33 +251,28 @@ def upload_or_link():
                     "job_id": job.id,
                     "status": "queued"
                 })
-                logger.info(f"[Upload] File record inserted into database with job_id: {job.id}")
-
-                flash("Your file has been queued for processing. You can monitor progress.", "info")
+                logger.info(f"[Upload] File record inserted with job_id: {job.id}")
                 
-                redirect_url = url_for('transcribe.job_status_page', job_id=job.id)
-                logger.info(f"[Upload] Redirecting to: {redirect_url}")
-                return redirect(redirect_url)
-
-            # Fallback synchronous processing when no queue is available
+                flash("Your file has been queued for processing. You can monitor progress.", "info")
+                return redirect(url_for('transcribe.job_status_page', job_id=job.id))
+            
+            # ========== FALLBACK: Synchronous Processing ==========
             logger.info("Using synchronous file transcription")
             flash("Processing your file... This may take 5-15 minutes. Please don't close this page.", "warning")
-
-            # Save temp file and process synchronously
+            
             temp_dir = tempfile.gettempdir()
             ext = os.path.splitext(file.filename or 'audio')[1] if file.filename else ''
             temp_filename = f"upload_{uuid.uuid4().hex[:8]}{ext}"
             temp_path = os.path.join(temp_dir, temp_filename)
             file.save(temp_path)
-
+            
             try:
                 result = sync_upload_audio_to_assemblyai(temp_path, file_size)
-
+                
                 if isinstance(result, dict) and 'error' in result:
                     session['error'] = result['error']
                     return redirect(url_for('show_error', error_id=err_id))
-
-                # Save file record
+                
                 files_collection.insert_one({
                     "username": username,
                     "user_id": user_id,
@@ -279,10 +281,10 @@ def upload_or_link():
                     "transcript_id": result,
                     "upload_time": upload_time
                 })
-
+                
                 return redirect(url_for('subtitle.download_subtitle', user_id=user_id, transcript_id=result))
+                
             finally:
-                # Clean up temp file
                 if os.path.exists(temp_path):
                     try:
                         os.remove(temp_path)
