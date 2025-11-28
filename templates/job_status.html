@@ -3,293 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Processing File - SubTranscribe</title>
+    <title>Processing - SubTranscribe</title>
+    <link rel="shortcut icon" href="/static/image/subtitle.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css">
+    <link rel="stylesheet" href="/static/css/common.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
+        /* Center container vertically */
+        .center-container {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            min-height: 80vh;
         }
-        
-        .container {
-            background: #0f3460;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-            border: 1px solid rgba(101, 163, 239, 0.2);
+
+        /* Status icons */
+        .status-icon-display {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            color: #3b82f6;
+            transition: color 0.3s ease;
         }
-        
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid #1a1a2e;
-            border-top: 5px solid #65a3ef;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 30px;
+
+        /* Spinner styling */
+        .spinner-border {
+            width: 4rem;
+            height: 4rem;
+            border-width: .3em;
         }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        h1 {
-            color: #e8e8e8;
-            margin-bottom: 20px;
-            font-size: 24px;
+
+        /* Status text styling */
+        .status-title {
+            color: #e2e8f0;
             font-weight: 600;
         }
-        
-        .status-box {
-            background: rgba(26, 26, 46, 0.5);
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 1px solid rgba(101, 163, 239, 0.3);
+
+        .status-detail {
+            color: rgba(226, 232, 240, 0.7);
         }
-        
-        .status-label {
-            font-weight: bold;
-            color: #65a3ef;
-            margin-bottom: 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .status-text {
-            color: #b8c5d6;
-            font-size: 16px;
-        }
-        
-        .progress-text {
-            color: #7a8a9e;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-        
-        .error-box {
-            background: rgba(220, 53, 69, 0.1);
-            border: 2px solid rgba(220, 53, 69, 0.5);
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-            display: none;
-            color: #ff6b6b;
-        }
-        
-        .error-box strong {
-            display: block;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        
-        .success-box {
-            background: rgba(40, 167, 69, 0.1);
-            border: 2px solid rgba(40, 167, 69, 0.5);
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
-            display: none;
-            color: #51cf66;
-        }
-        
-        .success-box strong {
-            display: block;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: #65a3ef;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 8px;
-            margin-top: 20px;
-            transition: all 0.3s;
-            font-weight: 600;
-        }
-        
-        .btn:hover {
-            background: #5093df;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(101, 163, 239, 0.4);
-        }
-        
-        .info-text {
-            color: #7a8a9e;
-            font-size: 13px;
-            margin-top: 15px;
-        }
-        
-        /* Pulse animation for spinner container */
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.7;
-            }
-        }
-        
-        .spinner-container {
-            animation: pulse 2s ease-in-out infinite;
+
+        /* Info card for status details */
+        .info-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 0.75rem;
         }
     </style>
 </head>
 <body>
+    <!-- Background Shapes -->
+    <div class="shape floating" style="width:40vw; height:40vw; max-width:600px; max-height:600px; top:-10%;"></div>
+    <div class="shape floating" style="width:30vw; height:30vw; max-width:400px; max-height:400px; bottom:-10%; left:-10%; animation-delay: 2s;"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-glass mb-4">
+        <div class="container">
+            <div class="d-flex align-items-center">
+                <a href="/" class="me-2">
+                    <img src="/static/image/subtitle.ico" style="max-width: 30px;" alt="SubTranscribe Logo">
+                </a>
+                <a class="navbar-brand" href="/">SubTranscribe</a>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}">Dashboard</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
-        <div class="spinner-container">
-            <div class="spinner" id="spinner"></div>
-        </div>
-        <h1>Processing Your File</h1>
-        
-        <div class="status-box">
-            <div class="status-label">Status</div>
-            <div class="status-text" id="status">Loading...</div>
-            <div class="progress-text" id="progress"></div>
-        </div>
-        
-        <div class="info-text">
-            Please wait while we process your media file. This may take a few minutes.
-        </div>
-        
-        <div class="error-box" id="error-box">
-            <strong>⚠️ Error Occurred</strong>
-            <div id="error-message"></div>
-            <a href="/v1/{{ user_id }}" class="btn">Try Again</a>
-        </div>
-        
-        <div class="success-box" id="success-box">
-            <strong>✓ Success!</strong>
-            <div>Redirecting to download page...</div>
+        <div class="center-container">
+            <div class="w-100">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 col-md-10">
+                        <div class="glass-card text-center p-5" data-aos="fade-up">
+                            <!-- Status Icon -->
+                            <div id="status-icon-container" class="status-icon-display">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+
+                            <!-- Status Title -->
+                            <h2 id="status-title" class="status-title mb-3">Processing Your Media</h2>
+
+                            <!-- Status Details -->
+                            <div class="info-card p-3 mb-4">
+                                <strong class="text-white-50">Status:</strong>
+                                <p id="status-text" class="status-detail mb-0 mt-1">Initializing...</p>
+                                <p id="progress-text" class="status-detail small mb-0"></p>
+                            </div>
+                            
+                            <!-- Main Message -->
+                            <p id="main-message" class="status-detail mb-4">
+                                Please wait while we process your file. This may take a few minutes.
+                            </p>
+
+                            <!-- Error Alert (hidden by default) -->
+                            <div class="alert alert-danger d-none" id="error-alert" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <strong>Error:</strong> <span id="error-text"></span>
+                                <div class="mt-2">
+                                     <a href="{{ url_for('transcribe.transcribe_page', user_id=user_id) }}" class="btn btn-danger-gradient btn-sm">Try Again</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script src="/static/js/common.js"></script>
     <script>
-        const jobId = "{{ job_id }}";
-        const downloadUrlTemplate = "{{ download_url_template }}";
-        const pollInterval = 2000; // Poll every 2 seconds
-        let pollCount = 0;
-        const maxPolls = 300; // Max 10 minutes (2 sec * 300 = 600 sec)
+        // Initialize AOS animations
+        AOS.init({
+            duration: 600,
+            easing: 'ease-out',
+            once: false
+        });
 
-        // Status messages
-        const statusMessages = {
-            'queued': 'Queued for processing...',
-            'started': 'Starting processing...',
-            'downloading': 'Downloading media...',
-            'uploading': 'Uploading file...',
-            'transcribing': 'Transcribing audio...',
-            'processing': 'Processing...',
-            'finished': 'Completed!',
-            'failed': 'Failed',
-            'error': 'Error'
+        const jobId = "{{ job_id }}";
+        const userId = "{{ user_id }}";
+        const downloadUrlTemplate = "{{ download_url_template|safe }}";
+        const pollInterval = 3000; // Poll every 3 seconds
+        let pollCount = 0;
+        const maxPolls = 300; // Max 15 minutes (3 sec * 300 = 900 sec)
+
+        // Status messages and icons
+        const statusConfig = {
+            'queued':       { title: 'Queued for Processing',      message: 'Your job is waiting in the queue.' },
+            'started':      { title: 'Starting Process',           message: 'The transcription process is now starting.' },
+            'downloading':  { title: 'Downloading Media',          message: 'Downloading media from the provided link.' },
+            'uploading':    { title: 'Uploading Your File',        message: 'Your file is being securely uploaded.' },
+            'transcribing': { title: 'AI Transcription in Progress', message: 'Our AI is converting your audio to text.' },
+            'processing':   { title: 'Processing Your Media',      message: 'Please wait while we process your file.' },
+            'finished':     { title: 'Processing Complete!',       message: 'Your subtitles are ready. Redirecting...' },
+            'failed':       { title: 'Processing Failed',          message: 'Something went wrong during transcription.' },
+            'error':        { title: 'An Error Occurred',          message: 'An unexpected error occurred.' }
         };
 
-        function updateUI(statusText, progressText) {
-            document.getElementById('status').textContent = statusText;
-            if (progressText) {
-                document.getElementById('progress').textContent = progressText;
-            }
+        const statusTextElem = document.getElementById('status-text');
+        const progressTextElem = document.getElementById('progress-text');
+        const statusTitleElem = document.getElementById('status-title');
+        const mainMessageElem = document.getElementById('main-message');
+        const statusIconContainer = document.getElementById('status-icon-container');
+        const errorAlert = document.getElementById('error-alert');
+        const errorText = document.getElementById('error-text');
+
+        function updateUI(status, progress) {
+            const config = statusConfig[status] || { title: 'Processing...', message: 'Please wait...' };
+            
+            statusTitleElem.textContent = config.title;
+            mainMessageElem.textContent = config.message;
+            statusTextElem.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            progressTextElem.textContent = progress;
         }
 
         function showError(errorMessage) {
-            document.getElementById('spinner').style.display = 'none';
-            document.querySelector('.info-text').style.display = 'none';
-            document.getElementById('error-box').style.display = 'block';
-            document.getElementById('error-message').textContent = errorMessage;
+            statusTitleElem.textContent = 'Processing Failed';
+            mainMessageElem.classList.add('d-none');
+            errorAlert.classList.remove('d-none');
+            errorText.textContent = errorMessage.length > 200 ? errorMessage.substring(0, 200) + '...' : errorMessage;
+            
+            // Update icon
+            statusIconContainer.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
         }
 
         function showSuccess() {
-            document.getElementById('spinner').style.display = 'none';
-            document.querySelector('.info-text').style.display = 'none';
-            document.getElementById('success-box').style.display = 'block';
+            updateUI('finished', '');
+            statusIconContainer.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
         }
 
         function pollJobStatus() {
             pollCount++;
             
-            // Timeout check
             if (pollCount > maxPolls) {
-                showError('Request timed out. Please try again.');
+                showError('Request timed out after 15 minutes. Please try again.');
                 return;
             }
 
             fetch(`/job_status/${jobId}`)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        throw new Error(`Server responded with status: ${response.status}`);
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Job status:', data);
+                    console.log(`Poll #${pollCount}:`, data);
                     
-                    // Get status message
                     const status = data.status || 'unknown';
                     const metaStatus = data.meta?.status || status;
-                    const statusText = statusMessages[metaStatus] || statusMessages[status] || status;
-                    const progressText = data.progress || data.meta?.progress || '';
+                    const progress = data.progress || data.meta?.progress || '';
                     
-                    // Update UI
-                    updateUI(statusText, progressText);
+                    updateUI(metaStatus, progress);
                     
-                    // Check if job finished successfully
-                    if (status === 'finished' && data.result) {
+                    // Check for completion
+                    if (status === 'finished' && data.result && !data.error) {
                         console.log('✅ Job completed! Transcript ID:', data.result);
                         showSuccess();
-                        
-                        // Redirect to download page
                         const downloadUrl = downloadUrlTemplate.replace('__transcript_id__', data.result);
                         console.log('Redirecting to:', downloadUrl);
-                        
-                        setTimeout(() => {
-                            window.location.href = downloadUrl;
-                        }, 1500); // Wait 1.5 seconds before redirect
-                        
+                        setTimeout(() => window.location.href = downloadUrl, 2000);
                         return; // Stop polling
                     }
                     
-                    // Check if job failed
+                    // Check for failure
                     if (status === 'failed' || data.error) {
-                        console.error('❌ Job failed:', data.error);
-                        showError(data.error || 'An error occurred during processing');
+                        const errorMsg = data.error || 'An unknown error occurred during processing.';
+                        console.error('❌ Job failed:', errorMsg);
+                        showError(errorMsg);
                         return; // Stop polling
                     }
                     
-                    // Continue polling if still processing
-                    if (status === 'queued' || status === 'started' || status === 'processing') {
-                        setTimeout(pollJobStatus, pollInterval);
-                    } else {
-                        // Unknown status, keep polling but log warning
-                        console.warn('Unknown status:', status);
-                        setTimeout(pollJobStatus, pollInterval);
-                    }
+                    // Continue polling
+                    setTimeout(pollJobStatus, pollInterval);
                 })
                 .catch(error => {
                     console.error('❌ Error polling job status:', error);
-                    showError('Connection error. Please refresh the page.');
+                    // This is a network error, not a job failure
+                    showError('A network error occurred. Please check your connection and refresh the page.');
                 });
         }
 
-        // Start polling when page loads
-        window.addEventListener('DOMContentLoaded', () => {
+        // Start polling when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!jobId || jobId === '{{ job_id }}' || !downloadUrlTemplate) {
+                console.error('Job ID or URL template is missing.');
+                showError('Page configuration error. Please go back and try again.');
+                return;
+            }
             console.log('Starting job status polling for job:', jobId);
             pollJobStatus();
         });
