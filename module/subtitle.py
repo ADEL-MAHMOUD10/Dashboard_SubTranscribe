@@ -35,7 +35,6 @@ def user_dashboard():
 #     return None 
 
 @subtitle_bp.route('/v1/dashboard/<user_id>')
-@cache.cached(timeout=300, key_prefix=lambda: f"dashboard_{session.get('user_id')}")
 def dashboard(user_id):
     # Retrieve the user from the database by user_id
     user = users_collection.find_one({'user_id': user_id})
