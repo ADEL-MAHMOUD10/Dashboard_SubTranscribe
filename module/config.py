@@ -200,6 +200,7 @@ def security_headers(response):
     # 🛡️ CSP Policy (FULLY WORKING)
     csp = {
         "default-src": "'self'",
+        
         "script-src": [
             "'self'",
             f"'nonce-{g.nonce}'",
@@ -207,6 +208,7 @@ def security_headers(response):
             "https://cdn.jsdelivr.net",
             "https://cdnjs.cloudflare.com"
         ],
+        
         "style-src": [
             "'self'",
             "'unsafe-inline'",
@@ -215,22 +217,29 @@ def security_headers(response):
             "https://cdnjs.cloudflare.com",
             "https://fonts.googleapis.com"
         ],
+        
         "font-src": [
             "'self'",
+            "data:",
             "https://fonts.gstatic.com",
-            "https://cdnjs.cloudflare.com"
+            "https://cdnjs.cloudflare.com",
+            "https://cdn.jsdelivr.net"
         ],
+        
         "img-src": [
             "'self'",
-            "data:"
+            "data:",
         ],
+        
         "connect-src": [
             "'self'",
             "https://subtranscribe.koyeb.app",
             "https://fonts.googleapis.com",
-            "https://fonts.gstatic.com"
+            "https://fonts.gstatic.com",
+            "https://cdn.jsdelivr.net"
         ],
     }
+
 
 
     # build policy
