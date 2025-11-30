@@ -217,7 +217,8 @@ def security_headers(response):
         ],
         "font-src": [
             "'self'",
-            "https://fonts.gstatic.com"
+            "https://fonts.gstatic.com",
+            "https://cdnjs.cloudflare.com"
         ],
         "img-src": [
             "'self'",
@@ -230,6 +231,7 @@ def security_headers(response):
             "https://fonts.gstatic.com"
         ],
     }
+
 
     # build policy
     csp_policy = "; ".join([f"{k} {' '.join(v) if isinstance(v, list) else v}" for k, v in csp.items()])
