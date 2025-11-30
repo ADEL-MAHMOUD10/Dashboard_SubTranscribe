@@ -202,9 +202,8 @@ def security_headers(response):
         "default-src": "'self'",
         
         "script-src": [
-            f"'nonce-{g.nonce}'",
-            "'strict-dynamic'",
             "'self'",
+            f"'nonce-{g.nonce}'",
             "https://cdn.tailwindcss.com",
             "https://cdn.jsdelivr.net",
             "https://cdnjs.cloudflare.com",
