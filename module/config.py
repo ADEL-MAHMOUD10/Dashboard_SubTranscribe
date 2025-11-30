@@ -204,6 +204,7 @@ def security_headers(response):
         "script-src": [
             "'self'",
             f"'nonce-{g.nonce}'",
+            "'unsafe-eval'",
             "https://cdn.tailwindcss.com",
             "https://cdn.jsdelivr.net",
             "https://cdnjs.cloudflare.com",

@@ -52,7 +52,7 @@
     
     <!-- Modern libraries -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com" nonce="{{ g.nonce }}"></script>
     <!-- Alpine.js for dropdown functionality -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Ensure Tabler Icons load correctly -->
@@ -119,7 +119,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
     
     <!-- Tailwind Config -->
-    <script>
+    <script nonce="{{ g.nonce }}">
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -625,7 +625,7 @@
     </style>
     
     <!-- Navbar JavaScript -->
-    <script>
+    <script nonce="{{ nonce }}">
         document.addEventListener('DOMContentLoaded', function() {
             // Mobile menu toggle
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -711,7 +711,7 @@
     </script>
 
     <!-- Breadcrumbs Schema -->
-    <script type="application/ld+json">
+    <script type="application/ld+json" nonce="{{ nonce }}">
     {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
@@ -995,8 +995,7 @@
         <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
             <div class="absolute -top-10 -right-10 w-40 h-40 bg-primary-500/10 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-secondary-500/10 rounded-full blur-3xl"></div>
-                </div>
-        
+        </div>
         <div class="container mx-auto px-4 relative z-10">
             <!-- Section Header -->
             <div class="text-center mb-16" data-aos="fade-up" data-aos-offset="10">
@@ -1828,7 +1827,7 @@
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
     
     <!-- Enhanced FAQ Schema for SEO -->
-    <script type="application/ld+json">
+    <script type="application/ld+json" nonce="{{ g.nonce }}">
     {
         "@context": "https://schema.org",
         "@type": "FAQPage",
