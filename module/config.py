@@ -202,14 +202,15 @@ def security_headers(response):
         "default-src": "'self'",
         
         "script-src": [
-            "'self'",
             f"'nonce-{g.nonce}'",
+            "'strict-dynamic'",
+            "'self'",
             "https://cdn.tailwindcss.com",
             "https://cdn.jsdelivr.net",
             "https://cdnjs.cloudflare.com",
             "https://unpkg.com"
         ],
-        
+
         "style-src": [
             "'self'",
             "'unsafe-inline'",
