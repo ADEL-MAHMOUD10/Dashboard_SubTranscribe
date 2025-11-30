@@ -206,7 +206,8 @@ def security_headers(response):
             f"'nonce-{g.nonce}'",
             "https://cdn.tailwindcss.com",
             "https://cdn.jsdelivr.net",
-            "https://cdnjs.cloudflare.com"
+            "https://cdnjs.cloudflare.com",
+            "https://unpkg.com"
         ],
         
         "style-src": [
@@ -236,10 +237,10 @@ def security_headers(response):
             "https://subtranscribe.koyeb.app",
             "https://fonts.googleapis.com",
             "https://fonts.gstatic.com",
-            "https://cdn.jsdelivr.net"
+            "https://cdn.jsdelivr.net",
+            "https://unpkg.com"
         ],
     }
-
 
 
     # build policy
