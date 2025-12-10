@@ -185,7 +185,7 @@ def security_headers(response):
     response.set_cookie(
         'csrf_token',
         csrf_token,
-        httponly=False,
+        httponly=True,
         secure=True,
         samesite='Strict'
     )
