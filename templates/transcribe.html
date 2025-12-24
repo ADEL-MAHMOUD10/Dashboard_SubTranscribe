@@ -1,316 +1,485 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transcribe - SubTranscribe</title>
+
+    <!-- Favicon -->
     <link rel="shortcut icon" href="/static/image/subtitle.ico">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css">
+
+    <!-- Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/transcribe.css">
+
+    <script nonce="{{ g.nonce }}">
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.5rem;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
 </head>
-<body>
-    <div id="particles-js"></div>
-    
-    <!-- Background Shapes -->
-    <div class="shape floating" style="width:40vw; height:40vw; max-width:600px; max-height:600px; top:-10%;"></div>
-    <div class="shape floating" style="width:30vw; height:30vw; max-width:400px; max-height:400px; bottom:-10%; left:-10%; animation-delay: 2s;"></div>
-    <div class="shape floating" style="width:25vw; height:25vw; max-width:350px; max-height:350px; top:40%; left:10%; animation-delay: 1s;"></div>
-    
+
+<body class="bg-[#0f172a] text-white font-sans antialiased min-h-screen relative overflow-x-hidden">
+
+    <!-- Background Image with Blur -->
+    <div class="fixed inset-0 z-0 bg-cover bg-center"
+        style="background-image: url('/static/image/graid_bg.png'); filter: blur(2px); opacity: 0.6;">
+    </div>
+    <div class="fixed inset-0 z-0 bg-dark-900/40"></div>
+
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-glass mb-4">
-        <div class="container">
-            <div class="d-flex align-items-center">
-                <a href="/" class="me-2">
-                    <img src="/static/image/subtitle.ico" style="max-width: 30px;" alt="SubTranscribe Logo">
+    <nav class="fixed w-full top-0 z-50 pt-6 px-4">
+        <div class="container mx-auto max-w-7xl">
+            <div class="glass-card rounded-full px-6 py-3 flex items-center justify-between">
+                <!-- Logo -->
+                <a href="/" class="flex items-center gap-3 group">
+                    <div
+                        class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center p-1.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <img src="/static/image/subtitle.ico" alt="SubTranscribe" class="w-full h-full object-contain">
+                    </div>
+                    <span
+                        class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300">SubTranscribe</span>
                 </a>
-                <a class="navbar-brand" href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}">SubTranscribe</a>
-            </div>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/about">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="btn btn-primary-gradient ms-2 px-4" href="{{ url_for('auth.logout') }}">
-                            <i class="fas fa-sign-out-alt me-2"></i>Logout
-                        </a>
-                    </li>
-                </ul>
+
+                <!-- Right Side Actions -->
+                <div class="flex items-center gap-4">
+                    <a href="/"
+                        class="hidden sm:block text-sm font-medium text-white/70 hover:text-white transition-colors">Home</a>
+                    <a href="/#about"
+                        class="hidden sm:block text-sm font-medium text-white/70 hover:text-white transition-colors">About</a>
+
+                    <div class="h-4 w-px bg-white/10 mx-2 hidden sm:block"></div>
+
+                    <a href="{{ url_for('auth.logout') }}"
+                        class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 transition-all text-sm font-medium text-red-300 hover:text-red-200">
+                        <i class="ti ti-logout"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
-    
-    <div class="container relative z-10">
-        <!-- Flash message -->
-        {% include 'Flash-message.html' %}
-            
-        <!-- Header -->
-        <div class="glass-card mb-4 p-4" data-aos="fade-up">
-            <div class="row">
-                <div class="col-md-6 mb-3 mb-md-0">
-                    <div class="text-center">
-                        <div class="stats-icon mx-auto mb-2">
-                            <i class="fas fa-microphone-alt"></i>
-                        </div>
-                        <h4 class="mb-1">Transcribe Media</h4>
-                        <p class="text-white/70 mb-0">Convert audio and video to text with AI</p>
+
+    <!-- Main Content -->
+    <div class="relative z-10 pt-32 pb-20 px-4">
+        <div class="container mx-auto max-w-4xl">
+
+            <!-- Flash Message Removed from here -->
+
+            <!-- Header Card -->
+            <div class="glass-card p-8 mb-8 flex flex-col md:flex-row items-center justify-between gap-6"
+                data-aos="fade-up">
+                <div class="flex items-center gap-6">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-3xl text-blue-400 border border-white/10">
+                        <i class="ti ti-microphone"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold mb-1">Transcribe Media</h1>
+                        <p class="text-white/60">Convert audio & video to text with <span
+                                class="text-blue-400 font-medium">98% Accuracy</span></p>
                     </div>
                 </div>
-                <div class="col-md-6 d-flex flex-column align-items-center justify-content-center">
-                    <a href="{{ url_for('setting.settings',user_id=session.get('user_id')) }}" class="btn btn-outline-light mb-2 w-100 w-md-80">
-                        <i class="fas fa-cog me-2"></i>Settings
+
+                <!-- Quick Actions -->
+                <div class="flex items-center gap-3">
+                    <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}"
+                        class="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-white/70 hover:text-white font-medium">
+                        <i class="ti ti-dashboard"></i>
+                        <span class="hidden sm:inline">Dashboard</span>
                     </a>
-                    <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}" class="btn btn-primary-gradient w-100 w-md-80">
-                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    <a href="{{ url_for('setting.settings',user_id=session.get('user_id')) }}"
+                        class="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-white/70 hover:text-white font-medium"
+                        title="Settings">
+                        <i class="ti ti-settings"></i>
+                        <span class="hidden sm:inline">Settings</span>
                     </a>
                 </div>
             </div>
-        </div>
-        
-        <!-- Main Content -->
-        <div class="glass-card p-4" data-aos="fade-up" data-aos-delay="200">
-            <h5 class="mb-4"><i class="fas fa-file-alt me-2"></i>Upload Media</h5>
-            
-            <!-- Tab Navigation -->
-            <ul class="nav nav-tabs" id="transcribeTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link rounded-start active" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-pane" type="button" role="tab" aria-controls="file-pane" aria-selected="true">
-                        <i class="fas fa-file-upload me-2"></i>File Upload
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link rounded-end" id="link-tab" data-bs-toggle="tab" data-bs-target="#link-pane" type="button" role="tab" aria-controls="link-pane" aria-selected="false">
-                        <i class="fas fa-link me-2"></i>URL Link
-                    </button>
-                </li>
-            </ul>
-            
-            <!-- Tab Content -->
-            <div class="tab-content mt-4" id="transcribeTabContent">
-                <!-- File Upload Tab -->
-                <div class="tab-pane fade show active" id="file-pane" role="tabpanel" aria-labelledby="file-tab">
-                    <form id="fileUploadForm" action="{{ url_for('transcribe.upload_or_link') }}" method="POST" enctype="multipart/form-data">
-                        <div class="upload-area" id="dropArea">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <div class="upload-icon">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                            </div>
-                            <h5 class="mb-2">Drag & Drop File Here</h5>
-                            <p class="text-white/70 mb-4">or click to browse files</p>
-                            <p class="text-white/50 mb-0">Supported formats: MP3, WAV, MP4, MOV, WMV, MKV</p>
-                            <input type="file" id="fileInput" name="file" class="upload-input" accept=".mp3,.wav,.mp4,.mov,.wmv,.mkv">
-                        </div>
-                        <!-- Choose Model Dropdown (File Upload) -->
-                        <div class="mt-3">
-                            <label for="modelSelectFile" class="form-label">Choose Model</label>
-                            <select class="form-select" id="modelSelectFile" name="model">
-                                <option value="slam-1">slam-1</option>
-                                <option value="universal" selected>Universal</option>
-                                <option value="voxtral-mini-2507" disabled>voxtral-mini(upcoming)</option>
-                                <option value="whisper-large-v3" disabled>Whisper-large-v3(upcoming)</option>
-                            </select>
-                        </div>
-                        
-                        <!-- File Info -->
-                        <div class="file-info" id="fileInfo">
-                            <div class="file-info-content">
-                                <div class="file-icon">
-                                    <i class="fas fa-file-audio" id="fileTypeIcon"></i>
+
+            <!-- Upload / Input Section -->
+            <div class="glass-card overflow-hidden" data-aos="fade-up" data-aos-delay="100">
+                <!-- Custom Tabs -->
+                <ul class="flex border-b border-white/10 bg-black/20" id="transcribeTab" role="tablist">
+                    <li class="flex-1" role="presentation">
+                        <button
+                            class="w-full py-4 text-center font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all nav-link active flex items-center justify-center gap-2"
+                            id="file-tab" data-tab-toggle="tab" data-tab-target="#file-pane" type="button" role="tab"
+                            aria-selected="true">
+                            <i class="ti ti-upload"></i> File Upload
+                        </button>
+                    </li>
+                    <li class="flex-1" role="presentation">
+                        <button
+                            class="w-full py-4 text-center font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all nav-link flex items-center justify-center gap-2"
+                            id="link-tab" data-tab-toggle="tab" data-tab-target="#link-pane" type="button" role="tab"
+                            aria-selected="false">
+                            <i class="ti ti-link"></i> URL Link
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="p-8">
+                    <div class="tab-content" id="transcribeTabContent">
+
+                        <!-- File Upload Tab -->
+                        <div class="tab-pane active" id="file-pane" role="tabpanel">
+                            <form id="fileUploadForm" action="{{ url_for('transcribe.upload_or_link') }}" method="POST"
+                                enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                <div class="upload-area group relative border-2 border-dashed border-white/20 rounded-2xl p-10 text-center hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-300 cursor-pointer"
+                                    id="dropArea">
+                                    <input type="file" id="fileInput" name="file"
+                                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                        accept=".mp3,.wav,.mp4,.mov,.wmv,.mkv">
+
+                                    <div
+                                        class="w-20 h-20 rounded-full bg-white/5 mx-auto flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                                        <i
+                                            class="ti ti-cloud-upload text-4xl text-white/40 group-hover:text-blue-400 transition-colors"></i>
+                                    </div>
+                                    <h3 class="text-xl font-semibold mb-2">Drag & Drop or Click to Upload</h3>
+                                    <p class="text-white/50 text-sm max-w-xs mx-auto">Supports MP3, WAV, MP4, MOV, WMV,
+                                        MKV (Max 1GB)</p>
                                 </div>
-                                <div class="flex-grow-1">
-                                    <p class="mb-1" id="fileName" style="font-size: medium; max-width: 80%;">file.mp3</p>
-                                    <p class="mb-0 text-white/70" id="fileSize">0 MB</p>
+
+                                <!-- Model Selection -->
+                                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-white/70 mb-2">Select Model</label>
+                                        <div class="relative">
+                                            <select id="modelSelectFile" name="model"
+                                                class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none">
+                                                <option value="slam-1">slam-1</option>
+                                                <option value="universal" selected>Universal</option>
+                                                <option value="voxtral-mini-2507" disabled>voxtral-mini (Upcoming)
+                                                </option>
+                                                <option value="whisper-large-v3" disabled>Whisper V3 (Upcoming)</option>
+                                            </select>
+                                            <div
+                                                class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                                                <i class="ti ti-chevron-down"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- File Info (Hidden by default) -->
+                                    <div id="fileInfo" class="hidden">
+                                        <label class="block text-sm font-medium text-white/70 mb-2">Selected
+                                            File</label>
+                                        <div
+                                            class="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
+                                            <div
+                                                class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                                <i class="ti ti-file-music" id="fileTypeIcon"></i>
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <p id="fileName" class="text-sm font-medium truncate">file.mp3</p>
+                                                <p id="fileSize" class="text-xs text-white/50">0 MB</p>
+                                            </div>
+                                            <button type="button" id="changeFileBtn"
+                                                class="ml-auto text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white transition-colors">Change</button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-danger-gradient" id="changeFileBtn">
-                                    <i class="fas fa-sync-alt me-1"></i>Change
-                                </button>
-                            </div>
+
+                                <div class="mt-8 flex justify-end">
+                                    <button type="submit" id="uploadBtn"
+                                        class="w-full md:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-blue-500/25 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                        <i class="ti ti-bolt"></i>
+                                        <span>Start Transcription</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        
-                        <div class="mt-4 d-flex justify-content-center">
-                            <button type="submit" class="btn btn-primary-gradient" id="uploadBtn" style="width: 90%;">
-                                <i class="fas fa-cloud-upload-alt me-2"></i>Upload & Transcribe
-                            </button>
+
+                        <!-- URL Link Tab -->
+                        <div class="tab-pane hidden" id="link-pane" role="tabpanel">
+                            <form id="linkForm" action="{{ url_for('transcribe.upload_or_link') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                <div class="mb-8">
+                                    <label class="block text-sm font-medium text-white/70 mb-2">Media URL</label>
+                                    <div class="relative">
+                                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-white/40">
+                                            <i class="ti ti-link text-xl"></i>
+                                        </div>
+                                        <input type="url" id="linkInput" name="link"
+                                            placeholder="https://example.com/audio.mp3" required
+                                            class="w-full bg-black border border-white/10 rounded-xl pl-12 pr-4 py-4 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 placeholder-white/20">
+                                    </div>
+                                    <p class="mt-2 text-xs text-white/40 flex items-center gap-1">
+                                        <i class="ti ti-info-circle"></i>
+                                        Supports YouTube, Google Drive (Public), and direct media links.
+                                    </p>
+                                </div>
+
+                                <div class="mb-8">
+                                    <label class="block text-sm font-medium text-white/70 mb-2">Select Model</label>
+                                    <div class="relative">
+                                        <select id="modelSelectLink" name="model"
+                                            class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 appearance-none">
+                                            <option value="slam-1">slam-1</option>
+                                            <option value="universal" selected>Universal</option>
+                                            <option value="voxtral-mini-2507" disabled>voxtral (Upcoming)</option>
+                                            <option value="whisper-large-v3" disabled>Whisper V3 (Upcoming)</option>
+                                            <option value="scribe_v1" disabled>ElevenLabs Scribe V1 (Upcoming)</option>
+                                            <option value="google_gemini_2_5_flash" disabled>Google Gemini 2.5 Flash
+                                                (Upcoming)</option>
+                                        </select>
+                                        <div
+                                            class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                                            <i class="ti ti-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end">
+                                    <button type="submit" id="linkBtn"
+                                        class="w-full md:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold shadow-lg shadow-purple-500/25 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                        <i class="ti ti-wand"></i>
+                                        <span>Process Link</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    </form>
-                </div>
-                
-                <!-- URL Link Tab -->
-                <div class="tab-pane fade" id="link-pane" role="tabpanel" aria-labelledby="link-tab">
-                    <form id="linkForm" action="{{ url_for('transcribe.upload_or_link') }}" method="POST">
-                        <div class="mb-4">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <label for="linkInput" class="form-label">Media URL</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-glass border-0">
-                                    <i class="fas fa-link"></i>
-                                </span>
-                                <input type="url" class="form-control form-input" id="linkInput" name="link" placeholder="https://example.com/video.mp4" required>
-                            </div>
-                            <div class="form-text text-white/50 mt-2">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Ensure Google Drive files are public, YouTube videos aren't private, and other content in another platform is accessible.
-                            </div>
-                        </div>
-                        <!-- Choose Model Dropdown (URL Link) -->
-                        <div class="mb-4">
-                            <label for="modelSelectLink" class="form-label">Choose Model</label>
-                            <select class="form-select" id="modelSelectLink" name="model">
-                                <option value="slam-1">slam-1</option>
-                                <option value="universal" selected>Universal</option>
-                                <option value="voxtral-mini-2507" disabled>voxtral(upcoming)</option>
-                                <option value="whisper-large-v3" disabled>Whisper-large-v3(upcoming)</option>
-                                <option value="scribe_v1" disabled>ElevenLabs Scribe V1(upcoming)</option>
-                                <option value="google_gemini_2_5_flash" disabled>Google Gemini 2.5 Flash(upcoming)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mt-4 d-flex justify-content-center">
-                            <button type="submit" class="btn btn-primary-gradient" id="linkBtn" style="width: 90%;">
-                                <i class="fas fa-external-link-alt me-2"></i>Process Link
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- Progress Container -->
-            <div class="progress-container" id="progressContainer">
-                <h6><i class="fas fa-cog fa-spin"></i>Processing Your Media</h6>
-                <div class="progress">
-                    <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                <div class="progress-details">
-                    <div class="progress-percentage" id="progressPercentage">0%</div>
-                    <div class="progress-message" id="progressMessage">Preparing to process...</div>
-                </div>
-                
-                <!-- Status Animation -->
-                <div class="status-animation-container" id="statusAnimationContainer">
-                    <div class="status-steps">
-                        <div class="status-step" data-step="upload">
-                            <div class="status-icon">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                            </div>
-                            <div class="status-label">Uploading</div>
-                            <div class="status-line"></div>
-                        </div>
-                        <div class="status-step" data-step="process">
-                            <div class="status-icon">
-                                <i class="fas fa-cogs"></i>
-                            </div>
-                            <div class="status-label">Processing</div>
-                            <div class="status-line"></div>
-                        </div>
-                        <div class="status-step" data-step="analyze">
-                            <div class="status-icon">
-                                <i class="fas fa-headphones"></i>
-                            </div>
-                            <div class="status-label">Analyzing</div>
-                            <div class="status-line"></div>
-                        </div>
-                        <div class="status-step" data-step="complete">
-                            <div class="status-icon">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
-                            <div class="status-label">Complete</div>
-                        </div>
+
                     </div>
                 </div>
             </div>
+
+            <!-- Progress Section (Hidden Default) -->
+            <div class="glass-card p-8 mt-8 hidden" id="progressContainer">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold flex items-center gap-2 text-lg">
+                        <i class="ti ti-loader animate-spin text-blue-400"></i>
+                        Processing Media
+                    </h3>
+                    <span id="progressPercentage" class="text-2xl font-bold text-blue-400">0%</span>
+                </div>
+
+                <div class="w-full bg-dark-900/50 rounded-full h-3 mb-4 overflow-hidden">
+                    <div id="progressBar"
+                        class="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-300 relative"
+                        style="width: 0%">
+                        <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                    </div>
+                </div>
+
+                <p id="progressMessage" class="text-center text-white/60 text-sm">Initializing...</p>
+
+                <!-- Status Steps Visualizer -->
+                <div class="status-steps-container mt-8 grid grid-cols-4 gap-2 text-center relative">
+                    <!-- Step 1 -->
+                    <div class="status-step active flex flex-col items-center gap-2 relative z-10" data-step="upload">
+                        <div
+                            class="w-10 h-10 rounded-full bg-dark-800 border border-white/10 flex items-center justify-center text-white/40 transition-all duration-500 icon-box">
+                            <i class="ti ti-cloud-upload"></i>
+                        </div>
+                        <span class="text-xs text-white/40 font-medium label">Upload</span>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="status-step flex flex-col items-center gap-2 relative z-10" data-step="process">
+                        <div
+                            class="w-10 h-10 rounded-full bg-dark-800 border border-white/10 flex items-center justify-center text-white/40 transition-all duration-500 icon-box">
+                            <i class="ti ti-cpu"></i>
+                        </div>
+                        <span class="text-xs text-white/40 font-medium label">Process</span>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="status-step flex flex-col items-center gap-2 relative z-10" data-step="analyze">
+                        <div
+                            class="w-10 h-10 rounded-full bg-dark-800 border border-white/10 flex items-center justify-center text-white/40 transition-all duration-500 icon-box">
+                            <i class="ti ti-wave-sine"></i>
+                        </div>
+                        <span class="text-xs text-white/40 font-medium label">Analyze</span>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="status-step flex flex-col items-center gap-2 relative z-10" data-step="complete">
+                        <div
+                            class="w-10 h-10 rounded-full bg-dark-800 border border-white/10 flex items-center justify-center text-white/40 transition-all duration-500 icon-box">
+                            <i class="ti ti-check"></i>
+                        </div>
+                        <span class="text-xs text-white/40 font-medium label">Done</span>
+                    </div>
+
+                    <!-- Connector Line Back -->
+                    <div class="absolute top-5 left-0 w-full h-0.5 bg-white/10 -z-0"></div>
+                </div>
+            </div>
+
+            <!-- Features / Info Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8" data-aos="fade-up" data-aos-delay="200">
+                <div class="glass-card p-6 flex items-start gap-4">
+                    <div class="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                        <i class="ti ti-file-text text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sm mb-1">Max File Size</h4>
+                        <p class="text-xs text-white/50">Up to 1GB per file upload.</p>
+                    </div>
+                </div>
+                <div class="glass-card p-6 flex items-start gap-4">
+                    <div class="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+                        <i class="ti ti-clock-bolt text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sm mb-1">Fast Processing</h4>
+                        <p class="text-xs text-white/50">Most files ready in < 5 mins.</p>
+                    </div>
+                </div>
+                <div class="glass-card p-6 flex items-start gap-4">
+                    <div class="p-2 rounded-lg bg-green-500/10 text-green-400">
+                        <i class="ti ti-shield-check text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sm mb-1">Secure & Safe</h4>
+                        <p class="text-xs text-white/50">End-to-end encrypted storage.</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        
-        <!-- Help Section -->
-        <div class="glass-card p-4 mt-4" data-aos="fade-up" data-aos-delay="300">
-            <h5 class="mb-4"><i class="fas fa-info-circle me-2"></i>Tips</h5>
-            
-            <div class="row">
-                <div class="col-md-4 mb-3 mb-md-0">
-                    <div class="d-flex">
-                        <div class="me-3">
-                            <div class="stats-icon">
-                                <i class="fas fa-file"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h6>File Size</h6>
-                            <p class="text-white/70 mb-0">For best results, keep files under 1GB</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-4 mb-3 mb-md-0">
-                    <div class="d-flex">
-                        <div class="me-3">
-                            <div class="stats-icon">
-                                <i class="fas fa-volume-up"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h6>Audio Quality</h6>
-                            <p class="text-white/70 mb-0">Clear audio improves transcription accuracy</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-4">
-                    <div class="d-flex">
-                        <div class="me-3">
-                            <div class="stats-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h6>Processing Time</h6>
-                            <p class="text-white/70 mb-0">Typically 1-5 minutes for most files</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-center mt-4">
-                <a href="https://subtranscribe.koyeb.app/#faq" class="btn btn-outline-light" style="width: 90%;">
-                    <i class="fas fa-question-circle me-2"></i>Learn More
-                </a>
-            </div>
-        </div>
-        
-        <!-- Notification Toast -->
-        <div id="notification" class="notification-toast"></div>
     </div>
-    
-    <footer class="mt-5 py-4 bg-glass">
-        <div class="container text-center">
-            <p class="text-white/70 mb-0">© <span id="current-year">2024</span> SubTranscribe. All rights reserved.</p>
+
+    <!-- Notification Toast -->
+    <div id="notification"
+        class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300">
+        <div class="glass-card px-6 py-4 flex items-center gap-3 border-l-4 border-blue-500">
+            <i class="ti ti-info-circle text-blue-400 text-xl"></i>
+            <span class="font-medium text-sm text-white">Notification message</span>
         </div>
-    </footer>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    </div>
+
+    <!-- Flash Messages (Moved here to avoid z-index trapping) -->
+    {% include 'Flash-message.html' %}
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
     <script src="/static/js/common.js"></script>
     <script src="/static/js/transcribe.js"></script>
     <script nonce="{{ g.nonce }}">
-        setTimeout(function() {
-            const flashMessage = document.getElementById('flashMessage');
-            if (flashMessage) {
-                flashMessage.style.transition = "opacity 0.5s ease"; 
-                flashMessage.style.opacity = "0"; 
-                setTimeout(() => flashMessage.remove(), 500);
-            }
-        }, 2000);
-    </script>
+        AOS.init();
 
+        document.addEventListener('DOMContentLoaded', function () {
+            // ==========================================
+            // TAB SWITCHING LOGIC (MANUAL & ROBUST)
+            // ==========================================
+            const tabButtons = document.querySelectorAll('[data-tab-toggle="tab"]');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation(); // Stop any other handlers
+
+                    const targetId = this.getAttribute('data-tab-target');
+                    const targetPane = document.querySelector(targetId);
+
+                    // 1. Reset Tabs Visuals
+                    tabButtons.forEach(b => {
+                        b.classList.remove('active', 'text-white', 'bg-white/5');
+                        b.classList.add('text-white/60');
+                        b.querySelector('i').classList.remove('text-blue-400');
+                        b.setAttribute('aria-selected', 'false');
+                    });
+
+                    // 2. Activate Clicked Tab
+                    this.classList.add('active', 'text-white', 'bg-white/5');
+                    this.classList.remove('text-white/60');
+                    this.querySelector('i').classList.add('text-blue-400');
+                    this.setAttribute('aria-selected', 'true');
+
+                    // 3. Hide all Panes
+                    tabPanes.forEach(pane => {
+                        pane.classList.remove('show', 'active');
+                        pane.classList.add('hidden');
+                        pane.style.display = 'none'; // Force hide
+                    });
+
+                    // 4. Show Target Pane
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                        targetPane.classList.remove('hidden');
+                        targetPane.style.display = 'block'; // Force show
+                    }
+                });
+            });
+
+            // Initialize: Ensure correct visibility on load
+            // Check which tab is active in HTML or default to file
+            const activeTab = document.querySelector('[data-tab-toggle="tab"].active') || document.querySelector('#file-tab');
+            if (activeTab) {
+                // Trigger click to set initial state
+                // But avoiding event dispatch, just manual set for safety
+                const targetId = activeTab.getAttribute('data-tab-target');
+                document.querySelectorAll('.tab-pane').forEach(p => { p.style.display = 'none'; p.classList.add('hidden'); });
+                if (document.querySelector(targetId)) {
+                    document.querySelector(targetId).style.display = 'block';
+                    document.querySelector(targetId).classList.remove('hidden');
+                }
+            }
+        });
+    </script>
 </body>
-</html> 
+
+</html>

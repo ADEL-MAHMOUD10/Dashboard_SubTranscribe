@@ -12,7 +12,7 @@
 
     #flash-notifications {
         position: fixed;
-        top: 20px;
+        top: 100px;
         right: 20px;
         z-index: 9999;
         display: flex;
@@ -154,6 +154,7 @@
             transform: translateX(100%);
             opacity: 0;
         }
+
         to {
             transform: translateX(0);
             opacity: 1;
@@ -171,6 +172,7 @@
         from {
             width: 100%;
         }
+
         to {
             width: 0%;
         }
@@ -267,7 +269,7 @@
         if (!container) return;
 
         const icon = flashIcons[category] || flashIcons['info'];
-        
+
         const flashDiv = document.createElement('div');
         flashDiv.className = `flash-item ${category}`;
         flashDiv.innerHTML = `
@@ -278,7 +280,7 @@
                 <div class="flash-text">
                     <p class="flash-message">${message}</p>
                 </div>
-                <button class="flash-close" onclick="removeFlash(this)">
+                <button class="flash-close">
                     <i class="fa-solid fa-circle-xmark" style="color: #000;"></i>
                 </button>
             </div>
@@ -287,17 +289,29 @@
             </div>
         `;
 
+        // Add event listener to close button (CSP Compliant)
+        const closeBtn = flashDiv.querySelector('.flash-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                removeFlash(closeBtn);
+            });
+        }
+
         container.appendChild(flashDiv);
 
         setTimeout(() => {
-            removeFlash(flashDiv.querySelector('.flash-close'));
+            // Check if element still exists before trying to close
+            if (document.body.contains(flashDiv)) {
+                const currentCloseBtn = flashDiv.querySelector('.flash-close');
+                if (currentCloseBtn) removeFlash(currentCloseBtn);
+            }
         }, 5000);
     }
 
     function removeFlash(btn) {
         const flashItem = btn.closest('.flash-item');
         if (!flashItem) return;
-        
+
         flashItem.classList.add('closing');
         setTimeout(() => {
             flashItem.remove();
@@ -305,13 +319,13 @@
     }
 
     // Auto-load Flask flashed messages
-    document.addEventListener('DOMContentLoaded', function() {
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    createFlashNotification('{{ category }}', '{{ message|safe }}');
-                {% endfor %}
-            {% endif %}
+    document.addEventListener('DOMContentLoaded', function () {
+        {% with messages = get_flashed_messages(with_categories = true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        createFlashNotification('{{ category }}', '{{ message|safe }}');
+        {% endfor %}
+        {% endif %}
         {% endwith %}
     });
 </script>
