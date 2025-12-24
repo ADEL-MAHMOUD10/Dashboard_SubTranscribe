@@ -114,7 +114,22 @@ def share_subtitle(transcript_id):
                 except (ValueError, TypeError):
                     # Keep it as a string if conversion fails
                     pass
-        return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=file_user) 
+        
+        # Fetch preview text
+        preview_text = "Preview loading..."
+        try:
+            headers = {"authorization": TOKEN_THREE}
+            preview_url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}"
+            response = requests.get(preview_url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                text = data.get('text', '')
+                preview_text = text[:1000] + "..." if len(text) > 1000 else text
+        except Exception as e:
+            print(f"Error fetching preview: {e}")
+            preview_text = "Preview unavailable."
+
+        return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=file_user, preview=preview_text) 
 
     if request.method == 'POST':
         file_format = request.form['format']  # Get the requested file format
@@ -252,7 +267,21 @@ def download_subtitle(user_id, transcript_id):
                 pass
         username = get_filename.get('username')
     
-    return render_template('subtitle.html', transcript_id=transcript_id, filename=file_name, file_size=file_size, upload_time=upload_time, username=username, user_id=user_id)  # Render the download page with the updated template
+    # Fetch preview text
+    preview_text = "Preview loading..."
+    try:
+        headers = {"authorization": TOKEN_THREE}
+        preview_url = f"https://api.assemblyai.com/v2/transcript/{transcript_id}"
+        response = requests.get(preview_url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            text = data.get('text', '')
+            preview_text = text[:1000] + "..." if len(text) > 1000 else text
+    except Exception as e:
+        print(f"Error fetching preview: {e}")
+        preview_text = "Preview unavailable."
+
+    return render_template('subtitle.html', transcript_id=transcript_id, filename=file_name, file_size=file_size, upload_time=upload_time, username=username, user_id=user_id, preview=preview_text)  # Render the download page with the updated template
 
 @subtitle_bp.route('/serve/<filename>')
 @limiter.limit("30 per minute")

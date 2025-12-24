@@ -1,33 +1,27 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Download Subtitles - SubTranscribe</title>
-    
-    <!-- Modern libraries -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Alpine.js for dropdown functionality -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Ensure Tabler Icons load correctly -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@1.119.0/iconfont/tabler-icons.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    
-    <!-- Favicon and App Icons -->
-    <link rel="shortcut icon" href="/static/image/download-arrow.ico">
-    <link rel="manifest" href="/static/manifest.json">
-    
-    <!-- Import modern fonts -->
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/static/image/subtitle.ico">
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-    
-    <!-- Common styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+
+    <!-- Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/common.css">
-    
-    <!-- Tailwind Config -->
+
     <script nonce="{{ g.nonce }}">
         tailwind.config = {
             darkMode: 'class',
@@ -37,526 +31,288 @@
                         sans: ['Inter', 'system-ui', 'sans-serif'],
                     },
                     colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                            950: '#172554',
-                        },
-                        secondary: {
-                            50: '#f5f3ff',
-                            100: '#ede9fe',
-                            200: '#ddd6fe',
-                            300: '#c4b5fd',
-                            400: '#a78bfa',
-                            500: '#8b5cf6',
-                            600: '#7c3aed',
-                            700: '#6d28d9',
-                            800: '#5b21b6',
-                            900: '#4c1d95',
-                            950: '#2e1065',
-                        },
                         dark: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            200: '#e2e8f0',
-                            300: '#cbd5e1',
-                            400: '#94a3b8',
-                            500: '#64748b',
-                            600: '#475569',
-                            700: '#334155',
-                            800: '#1e293b',
                             900: '#0f172a',
-                            950: '#020617',
-                        }
-                    },
-                    animation: {
-                        'float': 'float 6s ease-in-out infinite',
-                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'spin-slow': 'spin 8s linear infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-20px)' },
-                        }
-                    },
-                    height: {
-                        'screen-navbar': 'calc(100vh - 80px)',
+                            800: '#1e293b',
+                            700: '#334155',
+                        },
                     }
-                },
-            },
-            variants: {
-                extend: {
-                    transform: ['group-hover', 'hover'],
-                    scale: ['group-hover'],
-                    translate: ['group-hover'],
-                },
-            },
+                }
+            }
         }
     </script>
-
     <style>
-        /* Card hover effects */
-        .feature-card {
-            transition: all 0.3s ease;
-            transform: translateY(0);
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.5rem;
         }
-        
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+
+        .format-radio:checked+div {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
         }
-        
-        /* Format card styles */
-        .format-card {
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .format-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .format-card.selected {
-            border-color: rgba(59, 130, 246, 0.8);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
-        }
-        
-        /* Progress bar animation */
-        @keyframes progress {
-            0% { width: 0%; }
-            100% { width: 100%; }
-        }
-        
-        .progress-animation {
-            animation: progress 10s linear forwards;
-        }
-        
-        /* Timestamp styling */
-        .utc-time {
-            font-size: 0.85rem;
-            white-space: nowrap;
-        }
-        
-        @media (max-width: 768px) {
-            .utc-time {
-                font-size: 0.75rem;
-            }
+
+        .format-radio:checked+div .check-icon {
+            opacity: 1;
+            transform: scale(1);
         }
     </style>
 </head>
-<body class="min-h-screen m-0 p-0">
-    <!-- Flash message -->
-    {% include 'Flash-message.html' %}
-    <!-- Interactive Particles Background -->
-    <div id="particles-background" class="particles-container"></div>
-    
-    <!-- Background Shapes -->
-    <div class="shape floating" style="width:40vw; height:40vw; max-width:600px; max-height:600px; top:-10%;"></div>
-    <div class="shape floating" style="width:30vw; height:30vw; max-width:400px; max-height:400px; bottom:-10%; left:-10%; animation-delay: 2s;"></div>
-    <div class="shape floating" style="width:25vw; height:25vw; max-width:350px; max-height:350px; top:40%; left:10%; animation-delay: 1s;"></div>
-    
+
+<body
+    class="bg-[#0f172a] text-white font-sans antialiased min-h-screen relative overflow-x-hidden selection:bg-blue-500/30">
+
+    <!-- Background -->
+    <div class="fixed inset-0 z-0 bg-cover bg-center"
+        style="background-image: url('/static/image/graid_bg.png'); filter: blur(2px); opacity: 0.6;" loading="lazy">
+    </div>
+    <div class="fixed inset-0 z-0 bg-dark-900/40"></div>
+
     <!-- Navigation -->
-    <header class="relative z-10">
-        <nav class="glass px-4 py-3">
-            <div class="container mx-auto flex flex-wrap items-center justify-between">
-                <!-- Logo -->
-                <a href="{% if session.get('user_id') %}{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}{% else %}{{ url_for('auth.login') }}{% endif %}"class="flex items-center space-x-2">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg p-2">
+    <nav class="fixed w-full top-0 z-50 pt-6 px-4">
+        <div class="container mx-auto max-w-7xl">
+            <div class="glass-card rounded-full px-6 py-3 flex items-center justify-between">
+                <a href="/" class="flex items-center gap-3 group">
+                    <div
+                        class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center p-1.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
                         <img src="/static/image/subtitle.ico" alt="SubTranscribe" class="w-full h-full object-contain">
                     </div>
-                    <span class="text-xl font-bold gradient-text">SubTranscribe</span>
+                    <span
+                        class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300">SubTranscribe</span>
                 </a>
-                
-                <!-- Mobile menu button -->
-                <button id="mobile-menu-button" class="md:hidden rounded-lg p-2 text-white hover:bg-white/10">
-                    <i class="fas fa-bars"></i>
-                </button>
-                
-                <!-- Desktop Navigation -->
-                <div class="hidden md:flex items-center space-x-1">
-                    <a href="/" class="py-2 px-3 text-white hover:bg-white/10 rounded-lg transition-all">Home</a>
-                    <a href="/about" class="py-2 px-3 text-white hover:bg-white/10 rounded-lg transition-all">About</a>
+
+                <div class="flex items-center gap-4">
                     {% if session.get('user_id') %}
-                    <a href="{{ url_for('subtitle.user_dashboard') }}" class="py-2 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all ml-2">
-                        <i class="fas fa-home"></i>
-                        Dashboard
-                    </a>
-                    <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}" class="py-2 px-4 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all ml-2">
-                        <i class="fas fa-microphone-alt"></i>
-                        Transcribe
-                    </a>
-                    <a href="{{ url_for('auth.logout') }}" class="py-2 px-4 bg-white/10 hover:bg-red-500 text-white rounded-lg transition-all ml-2">
-                        Sign Out
+                    <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}"
+                        class="hidden sm:block text-sm font-medium text-white/70 hover:text-white transition-colors">Dashboard</a>
+                    <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
+                        class="hidden sm:block text-sm font-medium text-white/70 hover:text-white transition-colors">Transcribe</a>
+                    <div class="h-4 w-px bg-white/10 mx-2 hidden sm:block"></div>
+                    <a href="{{ url_for('auth.logout') }}"
+                        class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 transition-all text-sm font-medium text-red-300 hover:text-red-200">
+                        <i class="ti ti-logout"></i>
+                        <span>Logout</span>
                     </a>
                     {% else %}
-                    <a href="{{ url_for('auth.login') }}" class="py-2 px-4 bg-white/10 hover:bg-green-500 text-white rounded-lg transition-all ml-2">
-                        Sign In
-                    </a>
-                    <a href="{{ url_for('auth.register') }}" class="py-2 px-4 bg-white/10 hover:bg-red-500 text-white rounded-lg transition-all ml-2">
-                        Sign Up
-                    </a>
+                    <a href="{{ url_for('auth.login') }}"
+                        class="text-sm font-medium text-white hover:text-blue-300 transition-colors">Login</a>
+                    <a href="{{ url_for('auth.register') }}"
+                        class="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all shadow-lg shadow-blue-500/25">Sign
+                        Up</a>
                     {% endif %}
                 </div>
             </div>
-            
-            <!-- Mobile Navigation -->
-            <div id="mobile-menu" class="hidden md:hidden mt-3 rounded-lg overflow-hidden glass">
-                <a href="/" class="block py-2 px-4 text-white hover:bg-white/10">Home</a>
-                <a href="/about" class="block py-2 px-4 text-white hover:bg-white/10">About</a>
-                {% if session.get('user_id') %}
-                <a href="{{ url_for('subtitle.user_dashboard') }}" class="block py-2 px-4 text-white hover:bg-white/10">
-                    <i class="fas fa-home mr-2"></i>
-                    Dashboard
-                </a>
-                <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}" class="block py-2 px-4 text-white hover:bg-white/10">
-                    <i class="fas fa-microphone-alt mr-2"></i>
-                    Transcribe
-                </a>
-                <a href="{{ url_for('auth.logout') }}" class="block py-2 px-4 text-white hover:bg-red/10">Sign Out</a>
-                {% else %}
-                <a href="{{ url_for('auth.login') }}" class="block py-2 px-4 text-white hover:bg-white/10">Sign In</a>
-                {% endif %}
-            </div>
-        </nav>
-    </header>
-    
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8 relative z-0">
-        <!-- Page Title -->
-        <div class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4" data-aos="fade-up">
-                <span class="gradient-text">Download</span> Your Subtitles
-            </h1>
-            <p class="text-lg text-white/70 max-w-2xl mx-auto" data-aos="fade-up" data-aos-delay="100">
-                Your transcription is complete! Choose your preferred format and download your subtitles.
-            </p>
         </div>
-        
-        <!-- Content Container -->
-        <div class="max-w-4xl mx-auto">
-            <div class="glass-card p-8 mb-8" data-aos="fade-up" data-aos-delay="200">
-                <!-- File Information -->
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold mb-4">File Information</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <p class="text-white/70 mb-1">Original File:</p>
-                            <p class="font-semibold truncate">{{ filename }}</p>
-                        </div>
-                        <div>
-                            <p class="text-white/70 mb-1">File Size:</p>
-                            <p class="font-semibold">{{ file_size }}</p>
-                        </div>
-                        <div>
-                            <p class="text-white/70 mb-1">File User:</p>
-                            <p class="font-semibold">{{ username }}</p>
-                        </div>
-                        <div>
-                            <p class="text-white/70 mb-1">Processed On:</p>
-                            <p class="font-semibold">
-                                {% if upload_time %}
-                                    {% if upload_time is string %}
-                                        <span class="utc-time">{{ upload_time }}</span>
-                                    {% else %}
-                                        <span class="utc-time" data-timestamp="{{ upload_time.strftime('%Y-%m-%dT%H:%M:%S') }}Z">
-                                            {{ upload_time.strftime('%b %d, %Y, %H:%M:%S') }}
-                                        </span>
-                                    {% endif %}
-                                {% else %}
-                                    Unknown
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Format Selection -->
-                <div class="mb-8">
-                    <h2 class="text-2xl font-bold mb-4">Choose Format</h2>
-                    <form action="" method="post" id="download-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <!-- SRT Format -->
-                            <label class="format-card glass-card p-4 text-center selected cursor-pointer">
-                                <input type="radio" name="format" value="srt" class="hidden" checked>
-                                <div class="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-3">
-                                    <i class="fas fa-closed-captioning text-blue-400 text-2xl"></i>
-                                </div>
-                                <h3 class="text-lg font-semibold mb-1">SRT</h3>
-                                <p class="text-white/70 text-sm">Standard subtitle format compatible with most video players</p>
-                            </label>
-                            
-                            <!-- VTT Format -->
-                            <label class="format-card glass-card p-4 text-center cursor-pointer">
-                                <input type="radio" name="format" value="vtt" class="hidden">
-                                <div class="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto mb-3">
-                                    <i class="fas fa-file-code text-purple-400 text-2xl"></i>
-                                </div>
-                                <h3 class="text-lg font-semibold mb-1">VTT</h3>
-                                <p class="text-white/70 text-sm">Web-friendly format for HTML5 video players</p>
-                            </label>
-                            
-                            <!-- TXT Format -->
-                            <label class="format-card glass-card p-4 text-center cursor-pointer">
-                                <input type="radio" name="format" value="paragraphs" class="hidden">
-                                <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-3">
-                                    <i class="fas fa-file-alt text-green-400 text-2xl"></i>
-                                </div>
-                                <h3 class="text-lg font-semibold mb-1">TXT</h3>
-                                <p class="text-white/70 text-sm">Plain text transcript without timestamps</p>
-                            </label>
-                        </div>
-                
-                        <!-- Download Button -->
-                        <div class="text-center mt-8">
-                            <button type="submit" id="download-button" class="py-3 px-8 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all btn-glow inline-flex items-center space-x-2">
-                                <i class="fas fa-download"></i>
-                                <span>Download Subtitles</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                
-                <!-- Preview Section -->
-                <div class="glass-card p-8 opacity-70 relative" data-aos="fade-up" data-aos-delay="300">
-                    <div class="absolute inset-0 bg-dark-900/30 rounded-lg flex items-center justify-center">
-                        <span class="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 rounded-full text-white font-bold shadow-lg border border-white/20 transform rotate-12">Coming Soon</span>
-                    </div>
-                    <h2 class="text-2xl font-bold mb-4">Preview (Upcoming Feature)</h2>
-                    
-                    <!-- Preview Content -->
-                    <div class="bg-dark-900/50 rounded-lg p-4 font-mono text-sm overflow-auto max-h-80" id="preview-content">
-                        <pre>{{ preview }}</pre>
-                    </div>
-                    
-                    <!-- Edit Button -->
-                    <div class="mt-6 text-center">
-                        <button id="edit-button" class="py-2 px-6 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all inline-flex items-center space-x-2">
-                            <i class="fas fa-edit"></i>
-                            <span>Edit Subtitles</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Additional Options -->
-                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8" data-aos="fade-up" data-aos-delay="400">
-                    <!-- Share Option -->
-                    <div class="glass-card p-6">
-                        <h3 class="text-xl font-bold mb-3 flex items-center">
-                            <i class="fas fa-share-alt text-blue-400 mr-2"></i>
-                            Share
-                        </h3>
-                        <p class="text-white/70 mb-4">Share your subtitles with others using this link:</p>
-                        <div class="flex">
-                            <input type="text" value="https://subtranscribe.koyeb.app/share/{{ transcript_id }}" class="bg-dark-900/50 border border-white/10 rounded-l-lg py-2 px-3 w-full text-white" readonly>
-                            <button class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-r-lg transition-all" id="copy-button">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Translation Option -->
-                    <div class="glass-card p-6 opacity-70 relative">
-                        <div class="absolute inset-0 bg-dark-900/30 rounded-lg flex items-center justify-center">
-                            <span class="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 rounded-full text-white font-bold shadow-lg border border-white/20 transform rotate-12">Coming Soon</span>
-                        </div>
-                        <h3 class="text-xl font-bold mb-3 flex items-center">
-                            <i class="fas fa-language text-purple-400 mr-2"></i>
-                            Translate (Upcoming Feature)
-                        </h3>
-                        <p class="text-white/70 mb-4">Translate your subtitles to another language:</p>
-                        <div class="flex">
-                            <select class="bg-dark-900/50 border border-white/10 rounded-l-lg py-2 px-3 w-full text-white">
-                                <option value="">Select language</option>
-                                <option value="es">Spanish</option>
-                                <option value="fr">French</option>
-                                <option value="de">German</option>
-                                <option value="it">Italian</option>
-                                <option value="pt">Portuguese</option>
-                                <option value="ru">Russian</option>
-                                <option value="zh">Chinese</option>
-                                <option value="ja">Japanese</option>
-                                <option value="ko">Korean</option>
-                            </select>
-                            <button class="bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded-r-lg transition-all">
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Back to Dashboard -->
-                <div class="mt-8 text-center" data-aos="fade-up" data-aos-delay="500">
-                    <div class="flex justify-center items-center space-x-4">
-                            <a href="{{ url_for('subtitle.user_dashboard') }}" class="text-primary-400 hover:text-primary-300 transition-colors inline-flex items-center gap-1">
-                            <i class="fas fa-arrow-left text-xs"></i>
-                            <span>Back to Dashboard</span>
-                        </a>
-                        {% if session.get('user_id') %}
-                            <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}" class="py-2 px-6 bg-gradient-to-r from-blue-500 to-purple-600 ...">
-                                <i class="fas fa-plus"></i>
-                                <span>Transcribe Another File</span>
-                            </a>
-                        {% else %}
-                            <a href="{{ url_for('auth.login') }}" class="py-2 px-6 bg-gradient-to-r from-blue-500 to-purple-600 ...">
-                                <i class="fas fa-plus"></i>
-                                <span>Sign in to Transcribe</span>
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-    
-    <!-- Footer -->
-    <footer class="py-8 mt-16 relative z-0 glass">
-        <div class="container mx-auto px-4 text-center">
-            © <span id="current-year">2024</span> SubTranscribe. All rights reserved.
-        </div>
-    </footer>
+    </nav>
 
-    <!-- Edit Modal -->
-    <div id="edit-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="absolute inset-0 bg-black/70"></div>
-        <div class="relative glass-card p-8 max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <button id="close-modal" class="absolute top-4 right-4 text-white/70 hover:text-white">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-            
-            <h2 class="text-2xl font-bold mb-6">Edit Subtitles</h2>
-            
-            <textarea id="edit-textarea" class="w-full h-96 bg-dark-900/50 border border-white/10 rounded-lg p-4 text-white font-mono text-sm mb-6"></textarea>
-            
-            <div class="flex justify-end space-x-4">
-                <button id="cancel-edit" class="py-2 px-6 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all">
-                    Cancel
-                </button>
-                <button id="save-edit" class="py-2 px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all btn-glow">
-                    Save Changes
-                </button>
+    <!-- Main Content -->
+    <div class="relative z-10 pt-32 pb-20 px-4">
+        <div class="container mx-auto max-w-4xl">
+
+            {% include 'Flash-message.html' %}
+
+            <!-- Header -->
+            <div class="text-center mb-12" data-aos="fade-up">
+                <div
+                    class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/10 text-green-400 mb-6 border border-green-500/20 shadow-lg shadow-green-500/10 animate-float">
+                    <i class="ti ti-confetti text-4xl"></i>
+                </div>
+                <h1
+                    class="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                    Transcription Complete!</h1>
+                <p class="text-lg text-white/60 max-w-2xl mx-auto">
+                    Your subtitles are ready. Select your preferred format below to download.
+                </p>
             </div>
+
+            <!-- Main Card -->
+            <div class="glass-card p-1" data-aos="fade-up" data-aos-delay="100">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-1">
+
+                    <!-- File Info & Actions -->
+                    <div class="md:col-span-2 p-8 bg-black/20 rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none">
+                        <div class="flex items-start justify-between mb-8">
+                            <div>
+                                <h2 class="text-xl font-bold mb-1 p-2">File Details</h2>
+                                <p class="text-sm text-white/50 p-2">Information about your transcript</p>
+                            </div>
+                            <div
+                                class="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] md:text-xs font-mono font-bold whitespace-nowrap">
+                                File Size : {{ file_size }}
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 mb-8">
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <span class="text-white/60 text-sm">Filename</span>
+                                <span class="font-medium text-white truncate max-w-[200px]" title="{{ filename }}">{{
+                                    filename }}</span>
+                            </div>
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <span class="text-white/60 text-sm">Owner</span>
+                                <span class="font-medium text-white truncate max-w-[200px]">{{ username }}</span>
+                            </div>
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <span class="text-white/60 text-sm">Processed</span>
+                                <span class="font-medium text-white">
+                                    {% if upload_time %}
+                                    <span class="utc-time" data-timestamp="{{ upload_time }}">{{ upload_time }}</span>
+                                    {% else %}N/A{% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <form action="" method="post" id="download-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <h3 class="text-sm font-bold text-white/80 uppercase tracking-wider mb-4 p-2">Select Format
+                            </h3>
+
+                            <div class="grid grid-cols-3 gap-4 mb-8">
+                                <!-- SRT -->
+                                <label class="cursor-pointer group relative">
+                                    <input type="radio" name="format" value="srt" class="format-radio sr-only" checked>
+                                    <div
+                                        class="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-center h-full flex flex-col items-center justify-center">
+                                        <i class="ti ti-file-description text-2xl text-blue-400 mb-2"></i>
+                                        <span class="text-sm font-bold">SRT</span>
+                                        <!-- Check Icon -->
+                                        <div
+                                            class="check-icon absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center opacity-0 transition-all transform scale-50">
+                                            <i class="ti ti-check text-white text-xs"></i>
+                                        </div>
+                                    </div>
+                                </label>
+                                <!-- VTT -->
+                                <label class="cursor-pointer group relative">
+                                    <input type="radio" name="format" value="vtt" class="format-radio sr-only">
+                                    <div
+                                        class="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-center h-full flex flex-col items-center justify-center">
+                                        <i class="ti ti-file-code text-2xl text-purple-400 mb-2"></i>
+                                        <span class="text-sm font-bold">VTT</span>
+                                        <div
+                                            class="check-icon absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center opacity-0 transition-all transform scale-50">
+                                            <i class="ti ti-check text-white text-xs"></i>
+                                        </div>
+                                    </div>
+                                </label>
+                                <!-- TXT -->
+                                <label class="cursor-pointer group relative">
+                                    <input type="radio" name="format" value="paragraphs" class="format-radio sr-only">
+                                    <div
+                                        class="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-center h-full flex flex-col items-center justify-center">
+                                        <i class="ti ti-align-left text-2xl text-emerald-400 mb-2"></i>
+                                        <span class="text-sm font-bold">TXT</span>
+                                        <div
+                                            class="check-icon absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center opacity-0 transition-all transform scale-50">
+                                            <i class="ti ti-check text-white text-xs"></i>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <button type="submit"
+                                class="w-full py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-blue-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg">
+                                <i class="ti ti-download"></i> Download Subtitles
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Sidebar: Share & Preview -->
+                    <div class="p-8 flex flex-col gap-6">
+                        <!-- Share -->
+                        <div class="p-5 rounded-2xl bg-white/5 border border-white/10">
+                            <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                <i class="ti ti-share text-blue-400"></i> Share Link
+                            </h3>
+                            <div class="flex items-center gap-2 p-2 rounded-lg bg-black/30 border border-white/10">
+                                <input type="text" value="https://subtranscribe.koyeb.app/share/{{ transcript_id }}"
+                                    class="bg-transparent text-xs text-white/70 w-full outline-none p-1" readonly
+                                    id="shareInput">
+                                <button data-copy-target="shareInput"
+                                    class="p-1.5 rounded-md hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+                                    <i class="ti ti-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Preview Snippet -->
+                        <div
+                            class="flex-1 p-5 rounded-2xl bg-white/5 border border-white/10 relative overflow-hidden group">
+                            <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                <i class="ti ti-eye text-purple-400"></i> Quick Preview
+                            </h3>
+                            <div
+                                class="text-xs text-white/80 font-mono leading-relaxed h-[250px] overflow-y-auto pr-2 custom-scrollbar whitespace-pre-wrap">
+                                {{ preview }}
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="text-center mt-12" data-aos="fade-up" data-aos-delay="200">
+                <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}"
+                    class="bg-white/5 hover:bg-white/10 border border-white/5 px-6 py-3 rounded-full text-white/70 hover:text-white transition-all inline-flex items-center gap-2">
+                    <i class="ti ti-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-    <script src="/static/js/common.js"></script>
-    <script nonce="{{ g.nonce }}">
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize AOS animations
-            AOS.init({
-                once: true,
-                duration: 800,
-                offset: 100,
-                delay: 100,
-                easing: 'ease-out'
-            });
-            
-            // Convert UTC times to local timezone
-            document.querySelectorAll('.utc-time').forEach(function(element) {
-                const timestamp = element.getAttribute('data-timestamp');
-                if (timestamp) {
-                    const date = new Date(timestamp);
-                    if (!isNaN(date)) {
-                        const options = { 
-                            year: 'numeric', 
-                            month: 'short', 
-                            day: 'numeric',
-                            hour: '2-digit', 
-                            minute: '2-digit', 
-                            second: '2-digit',
-                            timeZoneName: 'short'
-                        };
-                        element.textContent = date.toLocaleDateString(undefined, options);
-                    }
-                }
-            });
-            
-            // Mobile menu toggle
-            const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-            
-            mobileMenuButton.addEventListener('click', function() {
-                mobileMenu.classList.toggle('hidden');
-            });
-            
-            // Format selection
-            const formatCards = document.querySelectorAll('.format-card');
-            const formatRadios = document.querySelectorAll('input[name="format"]');
-            
-            // Set current year in footer
-            document.getElementById('current-year').textContent = new Date().getFullYear();
+    <!-- Footer -->
+    <footer class="py-8 text-center text-white/30 text-sm">
+        <div class="container mx-auto">
+            <p>&copy; <span id="current-year"></span> SubTranscribe. All rights reserved.</p>
+        </div>
+    </footer>
 
-            formatCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    // Remove selected class from all cards
-                    formatCards.forEach(c => c.classList.remove('selected'));
-                    
-                    // Add selected class to clicked card
-                    this.classList.add('selected');
-                    
-                    // Check the radio input inside this card
-                    const radio = this.querySelector('input[type="radio"]');
-                    if (radio) {
-                        radio.checked = true;
-                    }
-                });
-            });
-            
-            // Copy button functionality
-            const copyButton = document.getElementById('copy-button');
-            const shareLink = copyButton.previousElementSibling;
-            
-            copyButton.addEventListener('click', function() {
-                shareLink.select();
-                document.execCommand('copy');
-                
-                // Show copied feedback
-                const originalIcon = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-check"></i>';
-                
-                setTimeout(() => {
-                    this.innerHTML = originalIcon;
-                }, 2000);
-            });
-            
-            // Edit modal functionality
-            const editButton = document.getElementById('edit-button');
-            const editModal = document.getElementById('edit-modal');
-            const closeModal = document.getElementById('close-modal');
-            const cancelEdit = document.getElementById('cancel-edit');
-            const editTextarea = document.getElementById('edit-textarea');
-            const previewContent = document.getElementById('preview-content');
-            
-            editButton.addEventListener('click', function() {
-                editModal.classList.remove('hidden');
-                editTextarea.value = previewContent.innerText;
-            });
-            
-            closeModal.addEventListener('click', function() {
-                editModal.classList.add('hidden');
-            });
-            
-            cancelEdit.addEventListener('click', function() {
-                editModal.classList.add('hidden');
-            });
-            
-            // Close modal when clicking outside
-            editModal.addEventListener('click', function(e) {
-                if (e.target === editModal) {
-                    editModal.classList.add('hidden');
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script nonce="{{ g.nonce }}">
+        AOS.init();
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+
+        // Copy Function
+        document.querySelectorAll('button[data-copy-target]').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const targetId = this.getAttribute('data-copy-target');
+                const targetEl = document.getElementById(targetId);
+                if (targetEl) {
+                    targetEl.select();
+                    navigator.clipboard.writeText(targetEl.value).then(() => {
+                        const icon = this.querySelector('i');
+                        icon.classList.replace('ti-copy', 'ti-check');
+                        icon.classList.add('text-green-400');
+                        setTimeout(() => {
+                            icon.classList.replace('ti-check', 'ti-copy');
+                            icon.classList.remove('text-green-400');
+                        }, 2000);
+                    });
                 }
             });
         });
+
+        // Time Formatting
+        document.querySelectorAll('.utc-time').forEach(el => {
+            const raw = el.getAttribute('data-timestamp') || el.textContent;
+            try {
+                // Ensure proper UTC parsing if format is like '2023-10-10 10:10:10' without Z
+                let d = new Date(raw.trim().endsWith('Z') ? raw : raw + 'Z');
+                if (!isNaN(d)) {
+                    el.textContent = d.toLocaleString(undefined, {
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                }
+            } catch (e) { }
+        });
     </script>
 </body>
+
 </html>
