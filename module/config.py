@@ -198,12 +198,16 @@ def security_headers(response):
     response.headers['Permissions-Policy'] = "camera=(), microphone=(), geolocation=()"
 
     # 🛡️ CSP Policy (FULLY WORKING)
+    nonce = getattr(g, 'nonce', None)
+    if nonce is None:
+        nonce = secrets.token_hex(16)
+        
     csp = {
         "default-src": "'self'",
         
         "script-src": [
             "'self'",
-            f"'nonce-{g.nonce}'",
+            f"'nonce-{nonce}'",
             "https://cdn.tailwindcss.com",
             "https://cdn.jsdelivr.net",
             "https://cdnjs.cloudflare.com",
