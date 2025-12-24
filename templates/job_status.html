@@ -1,457 +1,389 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Processing File - SubTranscribe</title>
+    <title>Processing Status - SubTranscribe</title>
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/static/image/subtitle.ico">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/common.css">
+    <link rel="stylesheet" href="/static/css/transcribe.css">
+
+    <script nonce="{{ g.nonce }}">
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        },
+                    },
+                    keyframes: {
+                        shimmer: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(100%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1e1e2e;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow: hidden;
-        }
-        
-        /* Window Frame */
-        .window {
-            background: #282a36;
-            border-radius: 12px;
-            box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.5),
-                0 0 0 1px rgba(255, 255, 255, 0.1);
-            width: 100%;
-            max-width: 600px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        /* Title Bar */
-        .title-bar {
-            background: #1e1e2e;
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            user-select: none;
-            -webkit-app-region: drag;
-        }
-        
-        .window-title {
-            color: #f8f8f2;
-            font-size: 14px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .window-icon {
-            width: 16px;
-            height: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 3px;
-        }
-        
-        /* Window Controls */
-        .window-controls {
-            display: flex;
-            gap: 8px;
-            -webkit-app-region: no-drag;
-        }
-        
-        .control {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            position: relative;
-        }
-        
-        .control:hover {
-            opacity: 0.8;
-        }
-        
-        .control.close {
-            background: #ff5f56;
-        }
-        
-        .control.minimize {
-            background: #ffbd2e;
-        }
-        
-        .control.maximize {
-            background: #27c93f;
-        }
-        
-        /* Window Content */
-        .window-content {
-            padding: 40px;
-            background: #282a36;
-        }
-        
-        /* Modern Spinner */
-        .spinner-container {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 30px;
-            position: relative;
-        }
-        
-        .spinner {
-            width: 100%;
-            height: 100%;
-            border: 3px solid transparent;
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        .spinner::before {
-            content: '';
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            right: 5px;
-            bottom: 5px;
-            border: 3px solid transparent;
-            border-top-color: #764ba2;
-            border-radius: 50%;
-            animation: spin 1.5s linear infinite reverse;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        h1 {
-            color: #f8f8f2;
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        
-        /* Status Panel */
-        .status-panel {
-            background: #1e1e2e;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-        
-        .status-header {
-            font-size: 12px;
-            color: #6272a4;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-            font-weight: 500;
-        }
-        
-        .status-main {
-            font-size: 18px;
-            color: #f8f8f2;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-        
-        .status-sub {
-            font-size: 14px;
-            color: #6272a4;
-            font-style: italic;
-        }
-        
-        /* Info Text */
-        .info-text {
-            color: #6272a4;
-            font-size: 14px;
-            text-align: center;
-            margin-top: 20px;
-            line-height: 1.5;
-        }
-        
-        /* Message Boxes */
-        .message-box {
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .error-box {
-            background: rgba(255, 95, 86, 0.1);
-            border: 1px solid rgba(255, 95, 86, 0.3);
-            color: #ff6b6b;
-        }
-        
-        .success-box {
-            background: rgba(39, 201, 63, 0.1);
-            border: 1px solid rgba(39, 201, 63, 0.3);
-            color: #51cf66;
-        }
-        
-        .message-box strong {
-            display: block;
-            font-size: 16px;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-        
-        /* Button */
-        .btn {
-            display: inline-block;
-            padding: 10px 24px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            margin-top: 15px;
-            font-weight: 500;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .btn:hover {
-            background: #5a67d8;
-            transform: translateY(-1px);
-        }
-        
-        .btn:active {
-            transform: translateY(0);
-        }
-        
-        /* Window Resizer */
-        .resizer {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 20px;
-            height: 20px;
-            cursor: nwse-resize;
-            opacity: 0.3;
-        }
-        
-        .resizer::before {
-            content: '';
-            position: absolute;
-            bottom: 3px;
-            right: 3px;
-            width: 0;
-            height: 0;
-            border-style: solid;
-            border-width: 0 0 10px 10px;
-            border-color: transparent transparent #6272a4 transparent;
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.5rem;
         }
     </style>
 </head>
-<body>
-    <div class="window">
-        <div class="title-bar">
-            <div class="window-title">
-                <div class="window-icon"></div>
-                SubTranscribe - Processing File
-            </div>
-            <div class="window-controls">
-                <button class="control minimize"></button>
-                <button class="control maximize"></button>
-                <button class="control close"></button>
-            </div>
-        </div>
-        <!-- Flash message -->
-        {% include 'Flash-message.html' %}
-        <div class="window-content">
-            <div class="spinner-container">
-                <div class="spinner" id="spinner"></div>
-            </div>
-            
-            <h1>Processing Your File</h1>
-            
-            <div class="status-panel">
-                <div class="status-header">Status</div>
-                <div class="status-main" id="status">Loading...</div>
-                <div class="status-sub" id="progress"></div>
-            </div>
-            
-            <div class="info-text">
-                Please wait while we process your media file. This may take a few minutes.
-            </div>
-            
-            <div class="message-box error-box" id="error-box">
-                <strong>⚠️ Error Occurred</strong>
-                <div id="error-message"></div>
-                <a href="/v1/{{ user_id }}" class="btn">Try Again</a>
-            </div>
-            
-            <div class="message-box success-box" id="success-box">
-                <strong>✓ Success!</strong>
-                <div>Redirecting to download page...</div>
+
+<body class="bg-[#0f172a] text-white font-sans antialiased min-h-screen relative overflow-x-hidden flex flex-col">
+
+    <!-- Background Image with Blur -->
+    <div class="fixed inset-0 z-0 bg-cover bg-center"
+        style="background-image: url('/static/image/graid_bg.png'); filter: blur(2px); opacity: 0.6;">
+    </div>
+    <div class="fixed inset-0 z-0 bg-dark-900/40"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full top-0 z-50 pt-6 px-4">
+        <div class="container mx-auto max-w-7xl">
+            <div class="glass-card rounded-full px-6 py-3 flex items-center justify-between">
+                <!-- Logo -->
+                <a href="/" class="flex items-center gap-3 group">
+                    <div
+                        class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center p-1.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <img src="/static/image/subtitle.ico" alt="SubTranscribe" class="w-full h-full object-contain">
+                    </div>
+                    <span
+                        class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300">SubTranscribe</span>
+                </a>
+
+                <!-- Right Side Actions -->
+                <div class="flex items-center gap-4">
+                    <a href="/"
+                        class="hidden sm:block text-sm font-medium text-white/70 hover:text-white transition-colors">Home</a>
+                    <div class="h-4 w-px bg-white/10 mx-2 hidden sm:block"></div>
+                    <a href="{{ url_for('auth.logout') }}"
+                        class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 transition-all text-sm font-medium text-red-300 hover:text-red-200">
+                        <i class="ti ti-logout"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
             </div>
         </div>
-        
-        <div class="resizer"></div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="relative z-10 flex-grow flex items-center justify-center px-4 py-32">
+        <div class="container max-w-2xl mx-auto">
+
+            <!-- Status Card -->
+            <div class="glass-card p-8 md:p-12 text-center" data-aos="zoom-in">
+
+                <!-- Spinner / Icon -->
+                <div class="mb-8 relative inline-block">
+                    <div
+                        class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center relative z-10 mx-auto">
+                        <i id="statusIcon" class="ti ti-loader animate-spin text-4xl text-blue-400"></i>
+                    </div>
+                    <div class="absolute inset-0 bg-blue-500/20 blur-xl rounded-full z-0 animate-pulse"></div>
+                </div>
+
+                <h1
+                    class="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300">
+                    Processing Your File
+                </h1>
+
+                <p id="infoText" class="text-white/60 mb-8 max-w-md mx-auto">
+                    Please wait while we transcribe and analyze your media. This may take a few minutes depending on the
+                    file size.
+                </p>
+
+                <!-- Status Panel -->
+                <div class="bg-black/40 rounded-2xl p-6 border border-white/5 mb-8 text-left relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-blue-400">Current Status</span>
+                        <span id="progressText" class="text-xs font-mono text-white/50">Initializing...</span>
+                    </div>
+
+                    <h2 id="statusMain" class="text-xl font-medium text-white mb-4">Starting process...</h2>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-white/5 rounded-full h-2 overflow-hidden mb-6">
+                        <div id="progressBar"
+                            class="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-500 relative w-0">
+                            <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                        </div>
+                    </div>
+
+                    <!-- Steps -->
+                    <div class="grid grid-cols-4 gap-2 text-center relative">
+                        <!-- Connector Line -->
+                        <div class="absolute top-3 left-0 w-full h-0.5 bg-white/10 -z-0"></div>
+
+                        <!-- Step 1 Upload -->
+                        <div class="step-item relative z-10 flex flex-col items-center gap-2" id="step-upload">
+                            <div
+                                class="w-6 h-6 rounded-full bg-dark-800 border border-white/20 flex items-center justify-center text-xs text-white/40 transition-all duration-300 step-icon">
+                                <i class="ti ti-cloud-upload"></i>
+                            </div>
+                            <span
+                                class="text-[10px] uppercase font-bold text-white/30 tracking-wide transition-all step-label">Queue</span>
+                        </div>
+                        <!-- Step 2 Process -->
+                        <div class="step-item relative z-10 flex flex-col items-center gap-2" id="step-process">
+                            <div
+                                class="w-6 h-6 rounded-full bg-dark-800 border border-white/20 flex items-center justify-center text-xs text-white/40 transition-all duration-300 step-icon">
+                                <i class="ti ti-cpu"></i>
+                            </div>
+                            <span
+                                class="text-[10px] uppercase font-bold text-white/30 tracking-wide transition-all step-label">Process</span>
+                        </div>
+                        <!-- Step 3 Analyze -->
+                        <div class="step-item relative z-10 flex flex-col items-center gap-2" id="step-analyze">
+                            <div
+                                class="w-6 h-6 rounded-full bg-dark-800 border border-white/20 flex items-center justify-center text-xs text-white/40 transition-all duration-300 step-icon">
+                                <i class="ti ti-wave-sine"></i>
+                            </div>
+                            <span
+                                class="text-[10px] uppercase font-bold text-white/30 tracking-wide transition-all step-label">Analyze</span>
+                        </div>
+                        <!-- Step 4 Complete -->
+                        <div class="step-item relative z-10 flex flex-col items-center gap-2" id="step-complete">
+                            <div
+                                class="w-6 h-6 rounded-full bg-dark-800 border border-white/20 flex items-center justify-center text-xs text-white/40 transition-all duration-300 step-icon">
+                                <i class="ti ti-check"></i>
+                            </div>
+                            <span
+                                class="text-[10px] uppercase font-bold text-white/30 tracking-wide transition-all step-label">Done</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages (Hidden by default) -->
+                <div id="errorBox"
+                    class="hidden mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-200">
+                    <div class="flex items-center justify-center gap-2 mb-2 font-bold text-red-400">
+                        <i class="ti ti-alert-triangle"></i> Processing Error
+                    </div>
+                    <p id="errorMessage" class="text-sm opacity-90">An unknown error occurred.</p>
+                    <a href="/v1/{{ user_id }}"
+                        class="inline-block mt-4 px-6 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors text-sm">
+                        Try Again
+                    </a>
+                </div>
+
+                <div id="successBox"
+                    class="hidden mt-6 p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-200">
+                    <div class="flex items-center justify-center gap-2 mb-2 font-bold text-green-400">
+                        <i class="ti ti-circle-check"></i> Complete!
+                    </div>
+                    <p class="text-sm opacity-90">Redirecting to results...</p>
+                </div>
+
+            </div>
+        </div>
     </div>
 
-    <script nonce="{{g.nonce}}">
+    <!-- Flash Messages (Moved here to avoid z-index trapping) -->
+    {% include 'Flash-message.html' %}
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <script nonce="{{ g.nonce }}">
+        AOS.init();
+
         const jobId = "{{ job_id }}";
         const downloadUrlTemplate = "{{ download_url_template }}";
-        const pollInterval = 2000; // Poll every 2 seconds
+        const pollInterval = 2000;
         let pollCount = 0;
-        const maxPolls = 300; // Max 10 minutes (2 sec * 300 = 600 sec)
+        const maxPolls = 300;
 
         // Status messages
         const statusMessages = {
-            'queued': 'Queued for processing...',
-            'started': 'Starting processing...',
+            'queued': 'Job is queued...',
+            'started': 'Starting up...',
             'downloading': 'Downloading media...',
-            'uploading': 'Uploading file...',
+            'uploading': 'Uploading to processor...',
             'transcribing': 'Transcribing audio...',
-            'processing': 'Processing...',
-            'finished': 'Completed!',
-            'failed': 'Failed',
-            'error': 'Error'
+            'processing': 'Processing data...',
+            'finished': 'Completed successfully!',
+            'failed': 'Processing failed',
+            'error': 'Error occurred'
         };
 
-        function updateUI(statusText, progressText) {
-            document.getElementById('status').textContent = statusText;
-            if (progressText) {
-                document.getElementById('progress').textContent = progressText;
+        // DOM Elements
+        const statusMain = document.getElementById('statusMain');
+        const progressText = document.getElementById('progressText');
+        const progressBar = document.getElementById('progressBar');
+        const statusIcon = document.getElementById('statusIcon');
+        const errorBox = document.getElementById('errorBox');
+        const errorMessage = document.getElementById('errorMessage');
+        const successBox = document.getElementById('successBox');
+
+        function updateStep(stepName) {
+            // Helper to activate steps visual
+            const steps = ['upload', 'process', 'analyze', 'complete'];
+            const activeIndex = steps.indexOf(stepName);
+
+            steps.forEach((step, index) => {
+                const el = document.getElementById(`step-${step}`);
+                const iconBox = el.querySelector('.step-icon');
+                const label = el.querySelector('.step-label');
+                const icon = el.querySelector('i');
+
+                if (index < activeIndex) {
+                    // Completed
+                    iconBox.className = 'w-6 h-6 rounded-full bg-blue-500 border border-blue-400 flex items-center justify-center text-xs text-white shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-300 step-icon';
+                    label.className = 'text-[10px] uppercase font-bold text-blue-400 tracking-wide transition-all step-label';
+                } else if (index === activeIndex) {
+                    // Active
+                    iconBox.className = 'w-6 h-6 rounded-full bg-white text-blue-600 border border-white flex items-center justify-center text-xs shadow-[0_0_15px_rgba(255,255,255,0.4)] scale-110 transition-all duration-300 step-icon';
+                    label.className = 'text-[10px] uppercase font-bold text-white tracking-wide transition-all step-label';
+                    icon.className = 'ti ti-loader animate-spin'; // Spin active
+                } else {
+                    // Pending
+                    iconBox.className = 'w-6 h-6 rounded-full bg-dark-800 border border-white/20 flex items-center justify-center text-xs text-white/40 transition-all duration-300 step-icon';
+                    label.className = 'text-[10px] uppercase font-bold text-white/30 tracking-wide transition-all step-label';
+                    // Reset icon if it was changed
+                    if (step === 'upload') icon.className = 'ti ti-cloud-upload';
+                    if (step === 'process') icon.className = 'ti ti-cpu';
+                    if (step === 'analyze') icon.className = 'ti ti-wave-sine';
+                    if (step === 'complete') icon.className = 'ti ti-check';
+                }
+            });
+
+            // Special case for complete
+            if (stepName === 'complete') {
+                const el = document.getElementById('step-complete');
+                const iconBox = el.querySelector('.step-icon');
+                const label = el.querySelector('.step-label');
+                iconBox.className = 'w-6 h-6 rounded-full bg-green-500 border border-green-400 flex items-center justify-center text-xs text-white shadow-[0_0_10px_rgba(34,197,94,0.5)] transition-all duration-300 step-icon';
+                label.className = 'text-[10px] uppercase font-bold text-green-400 tracking-wide transition-all step-label';
+                el.querySelector('i').className = 'ti ti-check'; // Stop spin
             }
         }
 
-        function showError(errorMessage) {
-            document.getElementById('spinner').style.display = 'none';
-            document.querySelector('.info-text').style.display = 'none';
-            document.getElementById('error-box').style.display = 'block';
-            document.getElementById('error-message').textContent = errorMessage;
+        function updateUI(status, progress) {
+            const displayStatus = statusMessages[status] || status;
+            statusMain.textContent = displayStatus;
+            progressText.textContent = progress || '';
+
+            // Map status to progress steps & bar width
+            let width = '0%';
+            let step = 'upload';
+
+            if (['queued', 'started'].includes(status)) {
+                width = '10%';
+                step = 'upload';
+            } else if (['downloading', 'uploading'].includes(status)) {
+                width = '30%';
+                step = 'process';
+            } else if (['transcribing', 'processing'].includes(status)) {
+                width = '60%';
+                step = 'analyze';
+            } else if (status === 'finished') {
+                width = '100%';
+                step = 'complete';
+            }
+
+            progressBar.style.width = width;
+            updateStep(step);
+        }
+
+        function showError(msg) {
+            statusIcon.className = 'ti ti-alert-triangle text-4xl text-red-500';
+            statusIcon.parentElement.classList.replace('from-blue-500/20', 'from-red-500/20');
+            statusIcon.parentElement.classList.replace('to-purple-500/20', 'to-yellow-500/20');
+
+            errorBox.classList.remove('hidden');
+            errorMessage.textContent = msg;
+
+            statusMain.textContent = 'Failed';
+            progressBar.classList.add('bg-red-500');
         }
 
         function showSuccess() {
-            document.getElementById('spinner').style.display = 'none';
-            document.querySelector('.info-text').style.display = 'none';
-            document.getElementById('success-box').style.display = 'block';
+            statusIcon.className = 'ti ti-check text-4xl text-green-500';
+            statusIcon.parentElement.classList.replace('from-blue-500/20', 'from-green-500/20');
+            statusIcon.parentElement.classList.replace('to-purple-500/20', 'to-teal-500/20');
+
+            successBox.classList.remove('hidden');
+            statusMain.textContent = 'Finished!';
+            progressBar.style.width = '100%';
+            updateStep('complete');
         }
 
         function pollJobStatus() {
             pollCount++;
-            
-            // Timeout check
             if (pollCount > maxPolls) {
-                showError('Request timed out. Please try again.');
+                showError('Request timed out. Please refresh.');
                 return;
             }
 
             fetch(`/job_status/${jobId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
+                .then(res => {
+                    if (!res.ok) throw new Error(res.status);
+                    return res.json();
                 })
                 .then(data => {
-                    console.log('Job status:', data);
-                    
-                    // Get status message
                     const status = data.status || 'unknown';
                     const metaStatus = data.meta?.status || status;
-                    const statusText = statusMessages[metaStatus] || statusMessages[status] || status;
-                    const progressText = data.progress || data.meta?.progress || '';
-                    
-                    // Update UI
-                    updateUI(statusText, progressText);
-                    
-                    // Check if job finished successfully
-                    if (status === 'finished' && data.result) {
-                        console.log('✅ Job completed! Transcript ID:', data.result);
-                        showSuccess();
-                        
-                        // Redirect to download page
-                        const downloadUrl = downloadUrlTemplate.replace('__transcript_id__', data.result);
-                        console.log('Redirecting to:', downloadUrl);
-                        
-                        setTimeout(() => {
-                            window.location.href = downloadUrl;
-                        }, 1500); // Wait 1.5 seconds before redirect
-                        
-                        return; // Stop polling
-                    }
-                    
-                    // Check if job failed
+                    const progress = data.progress || data.meta?.progress || '';
+
                     if (status === 'failed' || data.error) {
-                        console.error('❌ Job failed:', data.error);
-                        showError(data.error || 'An error occurred during processing');
-                        return; // Stop polling
+                        showError(data.error || 'Unknown error');
+                        return;
                     }
-                    
-                    // Continue polling if still processing
-                    if (status === 'queued' || status === 'started' || status === 'processing') {
-                        setTimeout(pollJobStatus, pollInterval);
-                    } else {
-                        // Unknown status, keep polling but log warning
-                        console.warn('Unknown status:', status);
-                        setTimeout(pollJobStatus, pollInterval);
+
+                    if (status === 'finished' && data.result) {
+                        showSuccess();
+                        const downloadUrl = downloadUrlTemplate.replace('__transcript_id__', data.result);
+                        setTimeout(() => window.location.href = downloadUrl, 1500);
+                        return;
                     }
+
+                    // Update UI and Poll again
+                    updateUI(metaStatus, progress);
+                    setTimeout(pollJobStatus, pollInterval);
                 })
-                .catch(error => {
-                    console.error('❌ Error polling job status:', error);
-                    showError('Connection error. Please refresh the page.');
+                .catch(err => {
+                    console.error(err);
+                    // Don't show full error immediately for network blips, retry once or twice could be better but sticking to standard behavior
+                    // Maybe just log it and retry?
+                    // showError('Connection error'); 
+                    setTimeout(pollJobStatus, pollInterval); // Retry on error (robustness)
                 });
         }
 
-        // Start polling when page loads
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log('Starting job status polling for job:', jobId);
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
             pollJobStatus();
-        });
-
-        // Window controls functionality (visual only)
-        document.querySelector('.close').addEventListener('click', () => {
-            document.querySelector('.window').style.transform = 'scale(0.9)';
-            document.querySelector('.window').style.opacity = '0';
-            setTimeout(() => {
-                window.close();
-            }, 300);
-        });
-
-        document.querySelector('.minimize').addEventListener('click', () => {
-            document.querySelector('.window').style.transform = 'scale(0.1)';
-            document.querySelector('.window').style.opacity = '0';
-        });
-
-        document.querySelector('.maximize').addEventListener('click', () => {
-            const window = document.querySelector('.window');
-            if (window.style.width === '100%') {
-                window.style.width = '600px';
-                window.style.height = 'auto';
-                window.style.maxWidth = '600px';
-            } else {
-                window.style.width = '100%';
-                window.style.height = '100vh';
-                window.style.maxWidth = '100%';
-            }
         });
     </script>
 </body>
+
 </html>
