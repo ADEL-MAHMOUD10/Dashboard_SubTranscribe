@@ -223,28 +223,36 @@ def upload_audio_to_assemblyai(upload_id: str, audio_file_path: str, file_size: 
         transcript_id = response.json()["id"]
         logger.info(f"[Job {job_id}] Transcript ID: {transcript_id}")
         
-        # Store initial file record
-        files_collection.update_one(
-            {'job_id': job.id},
-            {'$set': {
-                "transcript_id": transcript_id,
-                "status": "processing"
-            }}
-        )
+        # Store initial file record with retry for race condition
+        for _ in range(5):
+            res = files_collection.update_one(
+                {'job_id': job.id},
+                {'$set': {
+                    "transcript_id": transcript_id,
+                    "status": "processing"
+                }}
+            )
+            if res.matched_count > 0:
+                break
+            time.sleep(2)
         
         # Poll for completion
         result = poll_transcription(transcript_id, headers, base_url)
         
-        # Update job meta to completion
-        job.meta['status'] = 'completed'
-        job.meta['progress'] = 'Finalizing...'
-        job.save_meta()
-        
-        # Update file record
-        files_collection.update_one(
-            {'transcript_id': transcript_id},
-            {'$set': {'status': 'completed'}}
-        )
+        if result.get('status') == 'error':
+            raise TranscriptionError(result.get('error', 'Unknown transcription error'))
+            
+        if result.get('status') == 'completed':
+            # Update job meta to completion
+            job.meta['status'] = 'completed'
+            job.meta['progress'] = 'Finalizing...'
+            job.save_meta()
+            
+            # Update file record
+            files_collection.update_one(
+                {'transcript_id': transcript_id},
+                {'$set': {'status': 'completed'}}
+            )
         
         logger.info(f"[Job {job_id}] ✅ Returning transcript_id: {transcript_id}")
         gc.collect()
@@ -382,16 +390,20 @@ def transcribe_from_link(upload_id: str, link: str, username: str,
         transcript_id = response.json()["id"]
         logger.info(f"[Job {job_id}] Transcript ID: {transcript_id}")
         
-        # Store initial file record
-        files_collection.update_one(
-            {'job_id': job.id},
-            {'$set': {
-                "transcript_id": transcript_id,
-                "file_size": total_size,
-                "file_name": info.get('title', link),
-                "status": "processing"
-            }}
-        )
+        # Store initial file record with retry
+        for _ in range(5):
+            res = files_collection.update_one(
+                {'job_id': job.id},
+                {'$set': {
+                    "transcript_id": transcript_id,
+                    "file_size": total_size,
+                    "file_name": info.get('title', link),
+                    "status": "processing"
+                }}
+            )
+            if res.matched_count > 0:
+                break
+            time.sleep(2)
         
         # Poll for completion
         result = poll_transcription(transcript_id, headers, base_url)
