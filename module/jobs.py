@@ -113,7 +113,7 @@ def poll_transcription(transcript_id: str, headers: dict, base_url: str,
             # Update job progress
             if job:
                 job.meta['status'] = 'processing'
-                job.meta['progress'] = f"Transcribing..."
+                job.meta['progress'] = f"Transcribing... ({attempt + 1}/{max_attempts})"
                 job.save_meta()
             
             # Poll transcription status
@@ -223,18 +223,14 @@ def upload_audio_to_assemblyai(upload_id: str, audio_file_path: str, file_size: 
         transcript_id = response.json()["id"]
         logger.info(f"[Job {job_id}] Transcript ID: {transcript_id}")
         
-        # Store initial file record with retry for race condition
-        for _ in range(5):
-            res = files_collection.update_one(
-                {'job_id': job.id},
-                {'$set': {
-                    "transcript_id": transcript_id,
-                    "status": "processing"
-                }}
-            )
-            if res.matched_count > 0:
-                break
-            time.sleep(2)
+        # Store initial file record
+        files_collection.update_one(
+            {'job_id': job.id},
+            {'$set': {
+                "transcript_id": transcript_id,
+                "status": "processing"
+            }}
+        )
         
         # Poll for completion
         result = poll_transcription(transcript_id, headers, base_url)
@@ -390,20 +386,16 @@ def transcribe_from_link(upload_id: str, link: str, username: str,
         transcript_id = response.json()["id"]
         logger.info(f"[Job {job_id}] Transcript ID: {transcript_id}")
         
-        # Store initial file record with retry
-        for _ in range(5):
-            res = files_collection.update_one(
-                {'job_id': job.id},
-                {'$set': {
-                    "transcript_id": transcript_id,
-                    "file_size": total_size,
-                    "file_name": info.get('title', link),
-                    "status": "processing"
-                }}
-            )
-            if res.matched_count > 0:
-                break
-            time.sleep(2)
+        # Store initial file record
+        files_collection.update_one(
+            {'job_id': job.id},
+            {'$set': {
+                "transcript_id": transcript_id,
+                "file_size": total_size,
+                "file_name": info.get('title', link),
+                "status": "processing"
+            }}
+        )
         
         # Poll for completion
         result = poll_transcription(transcript_id, headers, base_url)
