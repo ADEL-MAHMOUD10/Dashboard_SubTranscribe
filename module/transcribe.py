@@ -69,7 +69,11 @@ def sync_upload_audio_to_assemblyai(audio_file_path, file_size):
             
             if result["status"] == "completed":
                 logger.info("🎉 Transcription completed")
-                return transcript_id
+                # Return dict with details
+                return {
+                    'id': transcript_id,
+                    'duration': result.get('audio_duration', 0)
+                }
             
             if result["status"] == "error":
                 error_msg = result.get('error', 'Unknown error')
@@ -175,24 +179,30 @@ def upload_or_link():
                 logger.info(f"Downloaded: {download_path}, size: {file_size}")
                 
                 # Transcribe the downloaded file
-                result = sync_upload_audio_to_assemblyai(download_path, file_size)
+                result_data = sync_upload_audio_to_assemblyai(download_path, file_size)
                 
-                if isinstance(result, dict) and 'error' in result:
-                    session['error'] = result['error']
+                if isinstance(result_data, dict) and 'error' in result_data:
+                    session['error'] = result_data['error']
                     return redirect(url_for('show_error', error_id=err_id))
                 
+                # Extract data
+                transcript_id = result_data['id']
+                duration = result_data.get('duration', 0)
+
                 # Save file record
                 files_collection.insert_one({
                     "username": username,
                     "user_id": user_id,
                     "file_name": link.split('/')[-1][:100],
                     "file_size": file_size,
-                    "transcript_id": result,
+                    "transcript_id": transcript_id,
+                    "duration": duration,
+                    "status": "completed",
                     "upload_time": upload_time,
                     "source": "link"
                 })
                 
-                return redirect(url_for('subtitle.download_subtitle', user_id=user_id, transcript_id=result))
+                return redirect(url_for('subtitle.download_subtitle', user_id=user_id, transcript_id=transcript_id))
                 
             finally:
                 if download_path and os.path.exists(download_path):
@@ -267,22 +277,28 @@ def upload_or_link():
             file.save(temp_path)
             
             try:
-                result = sync_upload_audio_to_assemblyai(temp_path, file_size)
+                result_data = sync_upload_audio_to_assemblyai(temp_path, file_size)
                 
-                if isinstance(result, dict) and 'error' in result:
-                    session['error'] = result['error']
+                if isinstance(result_data, dict) and 'error' in result_data:
+                    session['error'] = result_data['error']
                     return redirect(url_for('show_error', error_id=err_id))
+                
+                # Extract data
+                transcript_id = result_data['id']
+                duration = result_data.get('duration', 0)
                 
                 files_collection.insert_one({
                     "username": username,
                     "user_id": user_id,
                     "file_name": file.filename,
                     "file_size": file_size,
-                    "transcript_id": result,
+                    "transcript_id": transcript_id,
+                    "duration": duration,
+                    "status": "completed",
                     "upload_time": upload_time
                 })
                 
-                return redirect(url_for('subtitle.download_subtitle', user_id=user_id, transcript_id=result))
+                return redirect(url_for('subtitle.download_subtitle', user_id=user_id, transcript_id=transcript_id))
                 
             finally:
                 if os.path.exists(temp_path):
