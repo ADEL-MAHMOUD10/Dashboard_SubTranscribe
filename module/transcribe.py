@@ -343,10 +343,15 @@ def job_status_page(job_id):
     file_record = files_collection.find_one({'job_id': job_id})
     file_name = file_record.get('file_name', 'Unknown File') if file_record else 'Unknown File'
     
+    # Fetch user info for dropdown
+    user = users_collection.find_one({'user_id': user_id})
+    username = user.get('username', 'User') if user else 'User'
+    
     download_url_template = url_for('subtitle.download_subtitle', user_id=user_id, transcript_id='__transcript_id__')
     return render_template('job_status.html', 
                            job_id=job_id, 
                            user_id=user_id, 
+                           username=username,
                            filename=file_name,
                            download_url_template=download_url_template)
 

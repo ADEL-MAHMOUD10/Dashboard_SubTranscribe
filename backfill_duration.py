@@ -3,29 +3,28 @@ import os
 import requests
 import time
 from bson import ObjectId
+from dotenv import load_dotenv
+from pymongo import MongoClient
 
-# Add current directory to path to allow imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv()
 
-try:
-    from module.config import files_collection, TOKEN_THREE
-except ImportError:
-    print("Error: Could not import from module.config. Make sure you are running this script from the project root.")
-    sys.exit(1)
-
+TOKEN_ONE = os.getenv("M_api_key")
+TOKEN_THREE = os.getenv("A_api_key")
+cluster = MongoClient(TOKEN_ONE)
+dbs = cluster["User_DB"]  # Database name
+files_collection = dbs["files"]  # Files collection
 BASE_URL = "https://api.assemblyai.com/v2"
-HEADERS = {"authorization": TOKEN_THREE}
+HEADERS = {"Authorization": TOKEN_THREE}
 
 def update_user_duration(user_id):
     """
-    Fetches and updates missing audio_duration for a specific user's completed files.
+    Fetches and updates missing audio_duration for a specific user's all files.
     """
     print(f"\n--- Starting Duration Backfill for User: {user_id} ---")
     
-    # Find completed files that are missing duration or have it as 0
+    # Find all files that are missing duration or have it as 0
     query = {
-        'user_id': user_id, 
-        'status': 'completed',
+        'user_id': user_id,
         '$or': [
             {'duration': {'$exists': False}},
             {'duration': 0},
@@ -60,20 +59,36 @@ def update_user_duration(user_id):
         print(f"[{i+1}/{total}] Fetching duration for '{file_name}' ({transcript_id})... ", end='', flush=True)
         
         duration = 0
+        data = {} 
         try:
-            # 1. Try Main Transcript Endpoint
+            # 1. Check Main Transcript Endpoint
             try:
                 resp = requests.get(f"{BASE_URL}/transcript/{transcript_id}", headers=HEADERS, timeout=10)
                 if resp.status_code == 200:
                     data = resp.json()
+                    status = data.get('status')
+                    
+                    if status == 'error':
+                        print(f"❌ Status: 'error' ({data.get('error')})")
+                        files_collection.update_one({'_id': file['_id']}, {'$set': {'status': 'error', 'error_message': data.get('error')}})
+                        errors += 1
+                        continue
+                        
+                    if status != 'completed':
+                        print(f"⚠️ Status: '{status}' (Skipping)")
+                        errors += 1
+                        continue
+                        
                     duration = data.get('audio_duration', 0)
-            except requests.exceptions.RequestException:
-                pass # Try fallback
+                else:
+                    print(f"⚠️ API Error: {resp.status_code}")
+            except requests.exceptions.RequestException as e:
+                print(f"⚠️ Network error: {e}")
             
-            # 2. Fallback to Sentences Endpoint
+            # 2. Fallback to Sentences Endpoint (if completed but duration missing)
             if not duration:
                 try:
-                    resp_s = requests.get(f"{BASE_URL}/transcript/{transcript_id}/sentences", headers=HEADERS, timeout=10)
+                    resp_s = requests.get(f"{BASE_URL}/transcript/{transcript_id}/sentences", headers=HEADERS, timeout=2)
                     if resp_s.status_code == 200:
                         data_s = resp_s.json()
                         duration = data_s.get('audio_duration', 0)
@@ -84,12 +99,15 @@ def update_user_duration(user_id):
             if duration:
                 files_collection.update_one(
                     {'_id': file['_id']},
-                    {'$set': {'duration': duration}}
+                    {'$set': {'duration': duration, 'status': 'completed'}}
                 )
                 print(f"✅ Updated: {duration}s")
                 updated_count += 1
             else:
-                print("❌ Failed (API returned 0 or error)")
+                print("❌ Failed (API duration is 0 or missing)")
+                # Debug: Print first failure response
+                if errors == 0: 
+                    print(f"DEBUG Data: {data}")
                 errors += 1
                 
         except Exception as e:
