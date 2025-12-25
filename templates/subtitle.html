@@ -58,6 +58,13 @@
             opacity: 1;
             transform: scale(1);
         }
+
+        .dropdown-active {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+        }
     </style>
 </head>
 
@@ -73,7 +80,8 @@
     <!-- Navigation -->
     <nav class="fixed w-full top-0 z-50 pt-6 px-4">
         <div class="container mx-auto max-w-7xl">
-            <div class="glass-card rounded-full px-6 py-3 flex items-center justify-between">
+            <div
+                class="glass-card rounded-full px-6 py-3 flex items-center justify-between overflow-visible relative z-50">
                 <a href="/" class="flex items-center gap-3 group">
                     <div
                         class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center p-1.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -85,16 +93,48 @@
 
                 <div class="flex items-center gap-4">
                     {% if session.get('user_id') %}
-                    <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}"
-                        class="hidden sm:block text-sm font-medium text-white/70 hover:text-white transition-colors">Dashboard</a>
-                    <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
-                        class="hidden sm:block text-sm font-medium text-white/70 hover:text-white transition-colors">Transcribe</a>
-                    <div class="h-4 w-px bg-white/10 mx-2 hidden sm:block"></div>
-                    <a href="{{ url_for('auth.logout') }}"
-                        class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 transition-all text-sm font-medium text-red-300 hover:text-red-200">
-                        <i class="ti ti-logout"></i>
-                        <span>Logout</span>
-                    </a>
+                    <!-- User Dropdown -->
+                    <div class="relative">
+                        <button id="userDropdownBtn"
+                            class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/5 rounded-full pl-1.5 pr-1.5 sm:pr-4 py-1.5 transition-all duration-300">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold ring-2 ring-dark-900">
+                                {{ session.get('username', 'User')[0] | upper }}
+                            </div>
+                            <span class="text-sm font-medium hidden sm:block">{{ session.get('username', 'User')
+                                }}</span>
+                            <i id="userDropdownIcon"
+                                class="ti ti-chevron-down text-xs opacity-50 transition-transform duration-300 hidden sm:block"></i>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div id="userDropdownMenu"
+                            class="absolute right-0 top-full mt-2 w-48 bg-[#0f172a] border border-white/10 rounded-xl shadow-xl overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-[60]">
+                            <div class="p-1">
+                                <a href="/"
+                                    class="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                    <i class="ti ti-home"></i> Home
+                                </a>
+                                <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}"
+                                    class="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                    <i class="ti ti-dashboard"></i> Dashboard
+                                </a>
+                                <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
+                                    class="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                    <i class="ti ti-plus"></i> Transcribe
+                                </a>
+                                <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}"
+                                    class="flex items-center gap-2 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                    <i class="ti ti-settings"></i> Settings
+                                </a>
+                                <div class="h-px bg-white/10 my-1"></div>
+                                <a href="{{ url_for('auth.logout') }}"
+                                    class="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors">
+                                    <i class="ti ti-logout"></i> Logout
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                     {% else %}
                     <a href="{{ url_for('auth.login') }}"
                         class="text-sm font-medium text-white hover:text-blue-300 transition-colors">Login</a>
@@ -261,6 +301,10 @@
                     class="bg-white/5 hover:bg-white/10 border border-white/5 px-6 py-3 rounded-full text-white/70 hover:text-white transition-all inline-flex items-center gap-2">
                     <i class="ti ti-arrow-left"></i> Back to Dashboard
                 </a>
+                <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
+                    class="bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 px-6 py-3 rounded-full text-blue-300 hover:text-blue-100 transition-all inline-flex items-center gap-2 ml-4">
+                    <i class="ti ti-plus"></i> Add Another File
+                </a>
             </div>
 
         </div>
@@ -312,6 +356,35 @@
                 }
             } catch (e) { }
         });
+
+        // User Dropdown Logic (Matching intro.html)
+        const userBtn = document.getElementById('userDropdownBtn');
+        const userMenu = document.getElementById('userDropdownMenu');
+        const userIcon = document.getElementById('userDropdownIcon');
+
+        if (userBtn && userMenu) {
+            userBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                userMenu.classList.toggle('dropdown-active');
+
+                if (userIcon) {
+                    if (userMenu.classList.contains('dropdown-active')) {
+                        userIcon.style.transform = 'rotate(180deg)';
+                    } else {
+                        userIcon.style.transform = 'rotate(0deg)';
+                    }
+                }
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!userBtn.contains(e.target) && !userMenu.contains(e.target)) {
+                    userMenu.classList.remove('dropdown-active');
+                    if (userIcon) userIcon.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
     </script>
 </body>
 
