@@ -42,8 +42,8 @@ def dashboard(user_id):
         flash('Please log in first.', 'danger')
         return redirect(url_for('subtitle.user_dashboard'))
 
-    # Retrieve files for the user using the user_id
-    files = list(files_collection.find({'user_id': user_id}))
+    # Retrieve files for the user using the user_id (only completed files)
+    files = list(files_collection.find({'user_id': user_id, 'status': 'completed'}))
     # files_id = files['transcript_id']
     # Convert the '_id' field to string before passing to template
     for file in files:
