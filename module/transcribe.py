@@ -322,10 +322,16 @@ def job_status_page(job_id):
     
     user_id = session.get('user_id')
     logger.info(f"[job_status_page] Rendering job_status.html for user_id={user_id}, job_id={job_id}")
+    
+    # Fetch file info
+    file_record = files_collection.find_one({'job_id': job_id})
+    file_name = file_record.get('file_name', 'Unknown File') if file_record else 'Unknown File'
+    
     download_url_template = url_for('subtitle.download_subtitle', user_id=user_id, transcript_id='__transcript_id__')
     return render_template('job_status.html', 
                            job_id=job_id, 
                            user_id=user_id, 
+                           filename=file_name,
                            download_url_template=download_url_template)
 
 @transcribe_bp.route('/job_status/<job_id>')

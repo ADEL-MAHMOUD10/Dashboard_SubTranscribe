@@ -116,6 +116,7 @@
                     class="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300">
                     Processing Your File
                 </h1>
+                <h3 class="text-lg font-medium text-blue-200/80 mb-2 truncate max-w-lg mx-auto">{{ filename }}</h3>
 
                 <p id="infoText" class="text-white/60 mb-8 max-w-md mx-auto">
                     Please wait while we transcribe and analyze your media. This may take a few minutes depending on the
@@ -224,7 +225,7 @@
 
         // Status messages
         const statusMessages = {
-            'queued': 'Job is queued...',
+            'queued': 'System is busy now. We received your file. You can check the dashboard later (usually takes 3 to 10 mins).',
             'started': 'Starting up...',
             'downloading': 'Downloading media...',
             'uploading': 'Uploading to processor...',
