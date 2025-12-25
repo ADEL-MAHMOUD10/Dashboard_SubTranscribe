@@ -112,6 +112,7 @@ COPY --chown=appuser:appuser . .
 RUN mkdir -p /app/temp /app/logs /app/uploads /app/cache && \
     chown -R appuser:appuser /app && \
     chmod -R 755 /app/temp /app/logs /app/uploads /app/cache && \
+    chmod +x /app/start.sh && \
     chmod 644 /app/*.py /app/*.txt /app/*.md 2>/dev/null || true
 
 # Switch to non-root user
@@ -128,22 +129,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Production-optimized gunicorn configuration
-CMD ["gunicorn", \
-     "--workers=1", \
-     "--threads=1", \
-     "--worker-class=sync", \
-     "--worker-connections=1000", \
-     "--max-requests=1000", \
-     "--max-requests-jitter=100", \
-     "--timeout=300", \
-     "--graceful-timeout=60", \
-     "--keep-alive=60", \
-     "--log-level=info", \
-     "--access-logfile=-", \
-     "--error-logfile=-", \
-     "--bind=0.0.0.0:5000", \
-     "--preload", \
-     "--worker-tmp-dir=/dev/shm", \
-     "--forwarded-allow-ips=*", \
-     "--proxy-allow-from=*", \
-     "app:app"]
+# Run start.sh to launch both Worker and Web Server
+CMD ["./start.sh"]
