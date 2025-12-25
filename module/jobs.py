@@ -113,7 +113,7 @@ def poll_transcription(transcript_id: str, headers: dict, base_url: str,
             # Update job progress
             if job:
                 job.meta['status'] = 'processing'
-                job.meta['progress'] = f"Transcribing... ({attempt + 1}/{max_attempts})"
+                job.meta['progress'] = f"Transcribing..."
                 job.save_meta()
             
             # Poll transcription status

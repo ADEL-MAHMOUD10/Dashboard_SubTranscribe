@@ -40,7 +40,7 @@ def dashboard(user_id):
     user = users_collection.find_one({'user_id': user_id})
     if 'user_id' not in session or not is_session_valid():
         flash('Please log in first.', 'danger')
-        return redirect(url_for('subtitle.user_dashboard'))
+        return redirect(url_for('auth.login'))
 
     # Retrieve files for the user using the user_id (only completed files)
     files = list(files_collection.find({'user_id': user_id, 'status': 'completed'}))

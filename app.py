@@ -33,11 +33,6 @@ app.register_blueprint(reset_pass_bp)
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
-# RQ Worker is now handled by start.sh to avoid conflicts and improve stability checking
-# The previous inline worker code has been removed.
-
-# Suppress specific warnings
-
 # firebase_credentials = {
 #     "type": os.getenv("FIREBASE_TYPE"),
 #     "project_id": os.getenv("FIREBASE_PROJECT_ID"),
