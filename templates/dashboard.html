@@ -160,7 +160,7 @@
 
                         <!-- Dropdown Menu -->
                         <div id="userDropdownMenu"
-                            class="absolute right-0 top-full mt-4 w-56 bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-[60]">
+                            class="absolute right-0 top-full mt-2 w-56 bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-[60]">
                             <div class="p-1.5">
                                 <a href="/"
                                     class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
@@ -224,7 +224,7 @@
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <!-- Total Files -->
                 <div class="glass-card p-6 relative overflow-hidden group" data-aos="fade-up" data-aos-delay="100">
                     <div
@@ -257,6 +257,23 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Total Duration -->
+                <div class="glass-card p-6 relative overflow-hidden group" data-aos="fade-up" data-aos-delay="300">
+                    <div
+                        class="absolute -right-6 -top-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all">
+                    </div>
+                    <div class="flex items-center gap-4 relative z-10">
+                        <div
+                            class="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 text-2xl border border-emerald-500/20">
+                            <i class="ti ti-clock"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm text-white/50 font-medium uppercase tracking-wider">Transcribed</p>
+                            <h3 class="text-3xl font-bold" id="total-duration">{{ total_duration|default('--') }}</h3>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Activity Chart -->
@@ -280,14 +297,39 @@
                         Your Files
                     </h3>
 
-                    <!-- Search Input -->
-                    <div class="relative w-full md:w-64 group">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-white/40">
-                            <i class="ti ti-search group-focus-within:text-blue-400 transition-colors"></i>
+                    <!-- Search & Sort Input -->
+                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <!-- Sort Dropdown -->
+                        <div class="relative group">
+                            <div
+                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-white/40">
+                                <i class="ti ti-sort-descending"></i>
+                            </div>
+                            <select id="file-sort"
+                                class="w-full sm:w-40 bg-black/40 border border-white/10 rounded-xl pl-10 pr-8 py-2 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
+                                <option value="newest">Newest</option>
+                                <option value="oldest">Oldest</option>
+                                <option value="name_asc">Name (A-Z)</option>
+                                <option value="name_desc">Name (Z-A)</option>
+                                <option value="size_desc">Size (Large)</option>
+                                <option value="size_asc">Size (Small)</option>
+                            </select>
+                            <div
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-white/40">
+                                <i class="ti ti-caret-down"></i>
+                            </div>
                         </div>
-                        <input type="text" id="file-search"
-                            class="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-white/30"
-                            placeholder="Search files...">
+
+                        <!-- Search -->
+                        <div class="relative w-full md:w-64 group">
+                            <div
+                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-white/40">
+                                <i class="ti ti-search group-focus-within:text-blue-400 transition-colors"></i>
+                            </div>
+                            <input type="text" id="file-search"
+                                class="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-white/30"
+                                placeholder="Search files...">
+                        </div>
                     </div>
                 </div>
 
@@ -317,7 +359,10 @@
                         </thead>
                         <tbody id="file-list" class="text-sm">
                             {% for file in files %}
-                            <tr class="bg-white/5 hover:bg-white/10 transition-all duration-200 group relative">
+                            <tr class="bg-white/5 hover:bg-white/10 transition-all duration-200 group relative"
+                                data-name="{{ file.file_name|lower }}" data-size="{{ file.file_size|default(0) }}"
+                                data-date="{{ file.upload_time.timestamp()|default(0) }}"
+                                data-duration="{{ file.duration|default(10) }}">
                                 <td class="p-4 rounded-l-xl">
                                     <div class="flex items-center gap-3">
                                         {% if file.file_name and (file.file_name.startswith('http://') or
@@ -482,9 +527,11 @@
             const fileRows = document.querySelectorAll('#file-list tr');
             const totalFilesEl = document.getElementById('total-files');
             const totalSizeEl = document.getElementById('total-size');
+
             let totalSize = 0;
 
             fileRows.forEach(row => {
+                // Size
                 const sizeCell = row.cells[1];
                 if (sizeCell) {
                     const sizeText = sizeCell.textContent.trim();
@@ -492,6 +539,7 @@
                     if (!isNaN(size)) totalSize += size;
                 }
             });
+
             if (totalFilesEl) totalFilesEl.textContent = fileRows.length;
             if (totalSizeEl) totalSizeEl.textContent = totalSize.toFixed(2) + ' MB';
 
@@ -508,32 +556,72 @@
                     }
                 }
             });
+
+            // Initial Sort (Newest)
+            sortFiles('newest');
         });
 
         // ============================================
-        // 3. Search Logic
+        // 3. Search & Sort Logic
         // ============================================
         const searchInput = document.getElementById('file-search');
-        if (searchInput) {
-            searchInput.addEventListener('keyup', function () {
-                const term = this.value.toLowerCase();
-                const rows = document.querySelectorAll('#file-list tr');
+        const sortSelect = document.getElementById('file-sort');
+        const fileListBody = document.getElementById('file-list');
 
-                rows.forEach(row => {
-                    const nameEl = row.querySelector('.file-name');
-                    const idEl = row.querySelector('.transcript-id');
+        function filterAndSort() {
+            if (!fileListBody) return;
+            const rows = Array.from(fileListBody.querySelectorAll('tr'));
+            const term = searchInput ? searchInput.value.toLowerCase() : '';
+            const sortMode = sortSelect ? sortSelect.value : 'newest';
 
-                    const name = nameEl ? nameEl.textContent.toLowerCase() : '';
-                    const id = idEl ? idEl.textContent.toLowerCase() : '';
+            // Filter
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const idEl = row.querySelector('.transcript-id');
+                const id = idEl ? idEl.textContent.toLowerCase() : '';
 
-                    if (name.includes(term) || id.includes(term)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
+                if (name.includes(term) || id.includes(term)) {
+                    row.style.display = '';
+                    row.classList.add('visible-row');
+                } else {
+                    row.style.display = 'none';
+                    row.classList.remove('visible-row');
+                }
             });
+
+            // Sort
+            const visibleRows = rows.filter(r => r.classList.contains('visible-row') || r.style.display !== 'none');
+
+            visibleRows.sort((a, b) => {
+                const aName = a.getAttribute('data-name') || '';
+                const bName = b.getAttribute('data-name') || '';
+                const aSize = parseFloat(a.getAttribute('data-size') || 0);
+                const bSize = parseFloat(b.getAttribute('data-size') || 0);
+                const aDate = parseFloat(a.getAttribute('data-date') || 0);
+                const bDate = parseFloat(b.getAttribute('data-date') || 0);
+
+                switch (sortMode) {
+                    case 'newest': return bDate - aDate;
+                    case 'oldest': return aDate - bDate;
+                    case 'name_asc': return aName.localeCompare(bName);
+                    case 'name_desc': return bName.localeCompare(aName);
+                    case 'size_desc': return bSize - aSize;
+                    case 'size_asc': return aSize - bSize;
+                    default: return 0;
+                }
+            });
+
+            // Re-append in order
+            visibleRows.forEach(row => fileListBody.appendChild(row));
         }
+
+        function sortFiles(mode) {
+            if (sortSelect) sortSelect.value = mode;
+            filterAndSort();
+        }
+
+        if (searchInput) searchInput.addEventListener('keyup', filterAndSort);
+        if (sortSelect) sortSelect.addEventListener('change', filterAndSort);
 
         // ============================================
         // 4. Modal & Delete Logic

@@ -64,8 +64,16 @@ def dashboard(user_id):
 
         
     months, uploads = calculate_monthly_activity(files)
+    
+    # Calculate total duration (in seconds)
+    total_duration_sec = sum(f.get('duration', 0) for f in files if isinstance(f.get('duration'), (int, float)))
+    
+    # Format duration
+    hours = int(total_duration_sec // 3600)
+    minutes = int((total_duration_sec % 3600) // 60)
+    total_duration = f"{hours}h {minutes}m" if hours > 0 else f"{minutes}m"
 
-    return render_template('dashboard.html', username=user['username'], files=files, months=months, uploads=uploads)
+    return render_template('dashboard.html', username=user['username'], files=files, months=months, uploads=uploads, total_duration=total_duration)
 
 # @limiter.exempt
 def calculate_monthly_activity(files):
