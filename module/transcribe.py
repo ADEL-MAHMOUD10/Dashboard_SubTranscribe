@@ -1,6 +1,6 @@
 from flask import Blueprint, session, redirect, url_for, request, render_template, flash, jsonify
 from module.config import users_collection, files_collection, TOKEN_THREE, is_session_valid, q
-from module.queue import upload_audio_to_assemblyai, transcribe_from_link as transcribe_from_link_job
+from module.jobs_queue import upload_audio_to_assemblyai, transcribe_from_link as transcribe_from_link_job
 from datetime import datetime, timezone
 from module.send_mail import send_email_transcript
 from loguru import logger
