@@ -244,10 +244,11 @@ def upload_audio_to_assemblyai(upload_id: str, audio_file_path: str, file_size: 
             job.meta['progress'] = 'Finalizing...'
             job.save_meta()
             
+            duration = result.get('audio_duration') or 0
             # Update file record
             files_collection.update_one(
                 {'transcript_id': transcript_id},
-                {'$set': {'status': 'completed'}}
+                {'$set': {'status': 'completed', 'duration': duration}}
             )
         
         logger.info(f"[Job {job_id}] ✅ Returning transcript_id: {transcript_id}")
@@ -405,10 +406,11 @@ def transcribe_from_link(upload_id: str, link: str, username: str,
         job.meta['progress'] = 'Finalizing...'
         job.save_meta()
         
+        duration = result.get('audio_duration') or 0
         # Update file record
         files_collection.update_one(
             {'transcript_id': transcript_id},
-            {'$set': {'status': 'completed'}}
+            {'$set': {'status': 'completed', 'duration': duration}}
         )
         
         logger.info(f"[Job {job_id}] ✅ Returning transcript_id: {transcript_id}")
