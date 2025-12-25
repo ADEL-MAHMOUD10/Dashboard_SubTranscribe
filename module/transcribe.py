@@ -339,9 +339,18 @@ def job_status_page(job_id):
     user_id = session.get('user_id')
     logger.info(f"[job_status_page] Rendering job_status.html for user_id={user_id}, job_id={job_id}")
     
-    # Fetch file info
-    file_record = files_collection.find_one({'job_id': job_id})
-    file_name = file_record.get('file_name', 'Unknown File') if file_record else 'Unknown File'
+    # Fetch file info to validate existence and status
+    file_record = files_collection.find_one({'user_id': user_id, 'job_id': job_id})
+    
+    if not file_record:
+        flash("Process does not exist or has expired.", "warning")
+        return redirect(url_for('transcribe.transcribe_page', user_id=user_id))
+
+    if file_record.get('status') == 'completed':
+        flash("Process is already completed.", "info")
+        return redirect(url_for('transcribe.transcribe_page', user_id=user_id))
+
+    file_name = file_record.get('file_name', 'Unknown File')
     
     # Fetch user info for dropdown
     user = users_collection.find_one({'user_id': user_id})

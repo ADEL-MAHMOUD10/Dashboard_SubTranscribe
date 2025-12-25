@@ -393,7 +393,8 @@ def transcribe_from_link(upload_id: str, link: str, username: str,
             {'$set': {
                 "transcript_id": transcript_id,
                 "file_size": total_size,
-                "file_name": info.get('title', link),
+                # "file_name": info.get('title', link),
+                "file_name": link,
                 "status": "processing"
             }}
         )

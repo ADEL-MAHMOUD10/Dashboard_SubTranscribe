@@ -104,6 +104,9 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 users_collection.create_index("username", unique=True)
 users_collection.create_index("Email", unique=True)
+# Improve performance for large datasets (Sparse index allows missing job_id)
+files_collection.create_index("job_id", sparse=True)
+files_collection.create_index("user_id")
 
 # Set up RQ (Redis Queue) for background jobs
 # Note: RQ doesn't support Windows directly due to os.fork() limitation
