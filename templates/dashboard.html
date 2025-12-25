@@ -40,10 +40,13 @@
                         },
                     },
                     keyframes: {
-                        shimmer: {
-                            '0%': { transform: 'translateX(-100%)' },
-                            '100%': { transform: 'translateX(100%)' }
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
                         }
+                    },
+                    animation: {
+                        fadeIn: 'fadeIn 0.5s ease-out forwards',
                     }
                 }
             }
@@ -64,27 +67,33 @@
             -webkit-text-fill-color: transparent;
         }
 
-        /* Custom Scrollbar for Table */
-        .custom-scrollbar::-webkit-scrollbar {
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
             height: 8px;
             width: 8px;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-track {
+        ::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb {
+        ::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 4px;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        ::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.2);
         }
 
-        /* Modal Animation */
+        /* Dropdown & Modal Utilities */
+        .dropdown-active {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+        }
+
         .modal {
             opacity: 0;
             visibility: hidden;
@@ -107,9 +116,10 @@
     </style>
 </head>
 
-<body class="bg-[#0f172a] text-white font-sans antialiased min-h-screen relative overflow-x-hidden">
+<body
+    class="bg-[#0f172a] text-white font-sans antialiased min-h-screen relative overflow-x-hidden selection:bg-blue-500/30">
 
-    <!-- Background Image with Blur -->
+    <!-- Background -->
     <div class="fixed inset-0 z-0 bg-cover bg-center"
         style="background-image: url('/static/image/graid_bg.png'); filter: blur(2px); opacity: 0.6;" loading="lazy">
     </div>
@@ -118,7 +128,8 @@
     <!-- Navigation -->
     <nav class="fixed w-full top-0 z-50 pt-6 px-4">
         <div class="container mx-auto max-w-7xl">
-            <div class="glass-card rounded-full px-6 py-3 flex items-center justify-between">
+            <div
+                class="glass-card rounded-full px-6 py-3 flex items-center justify-between overflow-visible relative z-50">
                 <!-- Logo -->
                 <a href="/" class="flex items-center gap-3 group">
                     <div
@@ -131,21 +142,51 @@
 
                 <!-- Right Side Actions -->
                 <div class="flex items-center gap-4">
-                    <a href="/"
-                        class="hidden sm:block text-sm font-medium text-white/70 hover:text-white transition-colors">Home</a>
-                    <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
-                        class="hidden sm:block text-sm font-medium text-white/70 hover:text-white transition-colors relative">
-                        Transcribe
-                        <span class="absolute -top-1 -right-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                    </a>
+                    {% if session.get('user_id') %}
+                    <!-- User Dropdown -->
+                    <div class="relative">
+                        <button id="userDropdownBtn"
+                            class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/5 rounded-full pl-1.5 pr-1.5 sm:pr-4 py-1.5 transition-all duration-300 group">
+                            <div
+                                class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold ring-2 ring-dark-900 shadow-md">
+                                {{ session.get('username', 'User')[0] | upper }}
+                            </div>
+                            <span
+                                class="text-sm font-medium hidden sm:block group-hover:text-white transition-colors">{{
+                                session.get('username', 'User') }}</span>
+                            <i id="userDropdownIcon"
+                                class="ti ti-chevron-down text-xs opacity-50 transition-transform duration-300 hidden sm:block"></i>
+                        </button>
 
-                    <div class="h-4 w-px bg-white/10 mx-2 hidden sm:block"></div>
-
-                    <a href="{{ url_for('auth.logout') }}"
-                        class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 transition-all text-sm font-medium text-red-300 hover:text-red-200">
-                        <i class="ti ti-logout"></i>
-                        <span>Logout</span>
-                    </a>
+                        <!-- Dropdown Menu -->
+                        <div id="userDropdownMenu"
+                            class="absolute right-0 top-full mt-4 w-56 bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-[60]">
+                            <div class="p-1.5">
+                                <a href="/"
+                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                                    <i class="ti ti-home text-blue-400"></i> Home
+                                </a>
+                                <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}"
+                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all bg-white/5">
+                                    <i class="ti ti-dashboard text-purple-400"></i> Dashboard
+                                </a>
+                                <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
+                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                                    <i class="ti ti-plus text-emerald-400"></i> Transcribe
+                                </a>
+                                <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}"
+                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                                    <i class="ti ti-settings text-gray-400"></i> Settings
+                                </a>
+                                <div class="h-px bg-white/5 my-1.5 mx-2"></div>
+                                <a href="{{ url_for('auth.logout') }}"
+                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all">
+                                    <i class="ti ti-logout"></i> Logout
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -160,13 +201,13 @@
                 <div class="flex flex-col md:flex-row items-center justify-between gap-6">
                     <div class="flex items-center gap-6">
                         <div
-                            class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-3xl text-blue-400 border border-white/10">
+                            class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-3xl text-blue-400 border border-white/10 shadow-inner">
                             <i class="ti ti-user-circle"></i>
                         </div>
                         <div>
                             <h1 class="text-3xl font-bold mb-1">Welcome back, <span class="gradient-text">{{ username
                                     }}</span></h1>
-                            <p class="text-white/60">Here is an overview of your transcription activity.</p>
+                            <p class="text-white/60">Overview of your transcription activity and ecosystem.</p>
                         </div>
                     </div>
                     <div class="flex gap-3 w-full md:w-auto">
@@ -185,9 +226,12 @@
             <!-- Stats Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <!-- Total Files -->
-                <div class="glass-card p-6" data-aos="fade-up" data-aos-delay="100">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400 text-2xl">
+                <div class="glass-card p-6 relative overflow-hidden group" data-aos="fade-up" data-aos-delay="100">
+                    <div
+                        class="absolute -right-6 -top-6 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all">
+                    </div>
+                    <div class="flex items-center gap-4 relative z-10">
+                        <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400 text-2xl border border-blue-500/20">
                             <i class="ti ti-files"></i>
                         </div>
                         <div>
@@ -197,10 +241,14 @@
                     </div>
                 </div>
 
-                <!-- Total Size -->
-                <div class="glass-card p-6" data-aos="fade-up" data-aos-delay="200">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 rounded-xl bg-purple-500/10 text-purple-400 text-2xl">
+                <!-- Storage Used -->
+                <div class="glass-card p-6 relative overflow-hidden group" data-aos="fade-up" data-aos-delay="200">
+                    <div
+                        class="absolute -right-6 -top-6 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all">
+                    </div>
+                    <div class="flex items-center gap-4 relative z-10">
+                        <div
+                            class="p-3 rounded-xl bg-purple-500/10 text-purple-400 text-2xl border border-purple-500/20">
                             <i class="ti ti-database"></i>
                         </div>
                         <div>
@@ -211,12 +259,14 @@
                 </div>
             </div>
 
-            <!-- Chart Section -->
+            <!-- Activity Chart -->
             <div class="glass-card p-6 mb-8" data-aos="fade-up" data-aos-delay="300">
-                <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
-                    <i class="ti ti-chart-bar text-blue-400"></i>
-                    Activity Overview
-                </h3>
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold flex items-center gap-2">
+                        <i class="ti ti-chart-bar text-blue-400"></i>
+                        Activity Overview
+                    </h3>
+                </div>
                 <div class="h-[300px] w-full">
                     <canvas id="userActivityChart"></canvas>
                 </div>
@@ -230,10 +280,10 @@
                         Your Files
                     </h3>
 
-                    <!-- Search -->
-                    <div class="relative w-full md:w-64">
+                    <!-- Search Input -->
+                    <div class="relative w-full md:w-64 group">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-white/40">
-                            <i class="ti ti-search"></i>
+                            <i class="ti ti-search group-focus-within:text-blue-400 transition-colors"></i>
                         </div>
                         <input type="text" id="file-search"
                             class="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-white/30"
@@ -242,20 +292,20 @@
                 </div>
 
                 {% if files|length == 0 %}
-                <div class="text-center py-12">
+                <div class="text-center py-16">
                     <div
-                        class="w-16 h-16 rounded-full bg-white/5 mx-auto flex items-center justify-center mb-4 text-white/20 text-3xl">
+                        class="w-20 h-20 rounded-full bg-white/5 mx-auto flex items-center justify-center mb-4 text-white/20 text-4xl">
                         <i class="ti ti-folder-off"></i>
                     </div>
                     <h4 class="text-lg font-medium mb-1">No files yet</h4>
                     <p class="text-white/50 mb-6 text-sm">Upload your first media file to get started.</p>
                     <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
-                        class="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors">
-                        Upload Now
+                        class="inline-flex px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors items-center gap-2">
+                        <i class="ti ti-upload"></i> Upload Now
                     </a>
                 </div>
                 {% else %}
-                <div class="overflow-x-auto custom-scrollbar">
+                <div class="overflow-x-auto">
                     <table class="w-full text-left border-separate border-spacing-y-2">
                         <thead>
                             <tr class="text-white/40 text-xs uppercase tracking-wider">
@@ -273,22 +323,23 @@
                                         {% if file.file_name and (file.file_name.startswith('http://') or
                                         file.file_name.startswith('https://')) %}
                                         <div
-                                            class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                            class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
                                             <i class="ti ti-link"></i>
                                         </div>
                                         <a href="{{ file.file_name }}" target="_blank"
-                                            class="font-medium hover:text-blue-400 transition-colors truncate max-w-[200px] block file-name">{{
-                                            file.file_name }}</a>
+                                            class="font-medium hover:text-blue-400 transition-colors truncate max-w-[200px] sm:max-w-[300px] block file-name"
+                                            title="{{ file.file_name }}">{{file.file_name }}</a>
                                         {% elif file.file_name %}
                                         <div
-                                            class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                            class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
                                             <i class="ti ti-music"></i>
                                         </div>
-                                        <span class="font-medium truncate max-w-[200px] block file-name">{{
-                                            file.file_name }}</span>
+                                        <span
+                                            class="font-medium truncate max-w-[200px] sm:max-w-[300px] block file-name"
+                                            title="{{ file.file_name }}">{{file.file_name }}</span>
                                         {% else %}
                                         <div
-                                            class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400">
+                                            class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 shrink-0">
                                             <i class="ti ti-help"></i>
                                         </div>
                                         <span class="font-medium text-white/50 file-name">Unknown</span>
@@ -297,14 +348,14 @@
                                     <!-- Hidden ID for copy/search -->
                                     <span class="hidden transcript-id">{{ file._id }}</span>
                                 </td>
-                                <td class="p-4 text-white/70">
+                                <td class="p-4 text-white/70 whitespace-nowrap">
                                     {% if file.file_size %}
                                     {{ (file.file_size / (1024 * 1024))|round(2) }} MB
                                     {% else %}
                                     <span class="text-white/30">-</span>
                                     {% endif %}
                                 </td>
-                                <td class="p-4 text-white/70">
+                                <td class="p-4 text-white/70 whitespace-nowrap">
                                     {% if file.upload_time %}
                                     <span class="utc-time"
                                         data-timestamp="{{ file.upload_time.strftime('%Y-%m-%dT%H:%M:%S') }}Z">
@@ -315,22 +366,21 @@
                                     {% endif %}
                                 </td>
                                 <td class="p-4 rounded-r-xl">
-                                    <div
-                                        class="flex items-center justify-center gap-2 opacity-100 sm:opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <div class="flex items-center justify-center gap-2">
                                         <a href="{{ url_for('subtitle.redirect_to_transcript', file_id=file._id) }}"
-                                            class="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white transition-all"
-                                            title="Download">
+                                            class="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white transition-all transform hover:scale-110"
+                                            title="Download/View">
                                             <i class="ti ti-download"></i>
                                         </a>
                                         <button data-copy-id="{{ file._id }}"
-                                            class="p-2 rounded-lg bg-white/5 hover:bg-white/20 text-white/70 hover:text-white transition-all btn-copy"
+                                            class="p-2 rounded-lg bg-white/5 hover:bg-white/20 text-white/70 hover:text-white transition-all transform hover:scale-110 btn-copy"
                                             title="Copy ID">
-                                            <i class="ti ti-copy pointer-events-none"></i>
+                                            <i class="ti ti-copy"></i>
                                         </button>
                                         <button data-file-id="{{ file._id }}"
-                                            class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all btn-delete-trigger"
+                                            class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all transform hover:scale-110 btn-delete-trigger"
                                             title="Delete">
-                                            <i class="ti ti-trash pointer-events-none"></i>
+                                            <i class="ti ti-trash"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -345,14 +395,14 @@
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Modal -->
     <div id="deleteModal"
         class="modal fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div class="modal-content glass-card w-full max-w-md p-6 text-center relative">
+        <div class="modal-content glass-card w-full max-w-md p-6 text-center relative border-red-500/20">
             <input type="hidden" id="fileToDelete">
 
             <div
-                class="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 text-red-500 text-3xl">
+                class="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 text-red-500 text-3xl animate-pulse">
                 <i class="ti ti-alert-triangle"></i>
             </div>
 
@@ -361,12 +411,12 @@
                     class="text-white font-medium">this file</span>? This action cannot be undone.</p>
 
             <div class="flex gap-3 justify-center">
-                <button onclick="closeDeleteModal()"
+                <button id="cancelDeleteBtn"
                     class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-colors">
                     Cancel
                 </button>
                 <button id="confirmDeleteBtn"
-                    class="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors flex items-center gap-2">
+                    class="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors flex items-center gap-2 shadow-lg shadow-red-500/20">
                     <i class="ti ti-trash"></i> Delete
                 </button>
             </div>
@@ -380,239 +430,253 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
-    <!-- Important: Move Flash Messages to bottom to mimic transcribe.html setup -->
-    <!-- But this page was originally using client-side logic. 
-         We'll implement a simple customized version of the Flash Message logic 
-         directly here for client side events, or use the server side one if available. 
-         For consistency, let's include the standardized Flash-message.html for server messages,
-         AND use a JS function to trigger it for client actions. 
-    -->
+    <!-- Flash Messages (Include) -->
     {% include 'Flash-message.html' %}
 
+    <!-- Script Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
 
+    <!-- Main Logic -->
     <script nonce="{{ g.nonce }}">
-        AOS.init();
+        AOS.init({ once: true, duration: 800 });
 
-        // 1. Chart Configuration
-        document.addEventListener('DOMContentLoaded', function () {
+        // ============================================
+        // 1. User Dropdown Logic (High Priority)
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            const userBtn = document.getElementById('userDropdownBtn');
+            const userMenu = document.getElementById('userDropdownMenu');
+            const userIcon = document.getElementById('userDropdownIcon');
+
+            if (userBtn && userMenu) {
+                userBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    userMenu.classList.toggle('dropdown-active');
+
+                    if (userIcon) {
+                        const active = userMenu.classList.contains('dropdown-active');
+                        userIcon.style.transform = active ? 'rotate(180deg)' : 'rotate(0deg)';
+                    }
+                });
+
+                // Close when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!userBtn.contains(e.target) && !userMenu.contains(e.target)) {
+                        userMenu.classList.remove('dropdown-active');
+                        if (userIcon) userIcon.style.transform = 'rotate(0deg)';
+                    }
+                });
+            }
+
             // Set Year
             document.getElementById('current-year').textContent = new Date().getFullYear();
+        });
 
-            // Calculate Totals
+        // ============================================
+        // 2. Data & Stats Logic
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Totals Calculation
             const fileRows = document.querySelectorAll('#file-list tr');
             const totalFilesEl = document.getElementById('total-files');
             const totalSizeEl = document.getElementById('total-size');
             let totalSize = 0;
 
             fileRows.forEach(row => {
-                const sizeText = row.cells[1].textContent.trim();
-                const size = parseFloat(sizeText); // Assumes "X.XX MB"
-                if (!isNaN(size)) totalSize += size;
+                const sizeCell = row.cells[1];
+                if (sizeCell) {
+                    const sizeText = sizeCell.textContent.trim();
+                    const size = parseFloat(sizeText); // Assumes "X.XX MB"
+                    if (!isNaN(size)) totalSize += size;
+                }
             });
-            totalFilesEl.textContent = fileRows.length;
-            totalSizeEl.textContent = totalSize.toFixed(2) + ' MB';
+            if (totalFilesEl) totalFilesEl.textContent = fileRows.length;
+            if (totalSizeEl) totalSizeEl.textContent = totalSize.toFixed(2) + ' MB';
 
-            // Chart
-            const months = {{ months| tojson |default ('[]')
-        }};
-        const uploads = {{ uploads| tojson |default ('[]') }};
-
-        if (months.length > 0 && document.getElementById('userActivityChart')) {
-            const ctx = document.getElementById('userActivityChart').getContext('2d');
-
-            // Gradient
-            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)'); // Cyan
-            gradient.addColorStop(1, 'rgba(167, 139, 250, 0.0)'); // Purple transparent
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: [{
-                        label: 'Uploads',
-                        data: uploads,
-                        borderColor: '#38bdf8',
-                        backgroundColor: gradient,
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: '#1e293b',
-                        pointBorderColor: '#38bdf8',
-                        pointBorderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: 'rgba(255, 255, 255, 0.4)', stepSize: 1 }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: 'rgba(255, 255, 255, 0.4)' }
-                        }
+            // Format UTC timestamps to local
+            document.querySelectorAll('.utc-time').forEach(el => {
+                const ts = el.getAttribute('data-timestamp');
+                if (ts) {
+                    const d = new Date(ts);
+                    if (!isNaN(d)) {
+                        el.textContent = d.toLocaleString(undefined, {
+                            month: 'short', day: 'numeric', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                        });
                     }
                 }
             });
+        });
+
+        // ============================================
+        // 3. Search Logic
+        // ============================================
+        const searchInput = document.getElementById('file-search');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function () {
+                const term = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#file-list tr');
+
+                rows.forEach(row => {
+                    const nameEl = row.querySelector('.file-name');
+                    const idEl = row.querySelector('.transcript-id');
+
+                    const name = nameEl ? nameEl.textContent.toLowerCase() : '';
+                    const id = idEl ? idEl.textContent.toLowerCase() : '';
+
+                    if (name.includes(term) || id.includes(term)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
         }
 
-        // Format Times
-        document.querySelectorAll('.utc-time').forEach(el => {
-            const ts = el.getAttribute('data-timestamp');
-            if (ts) {
-                const d = new Date(ts);
-                if (!isNaN(d)) {
-                    el.textContent = d.toLocaleString(undefined, {
-                        month: 'short', day: 'numeric', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                    });
-                }
-            }
-        });
-        });
-
-        // 2. Search Function
-        document.getElementById('file-search')?.addEventListener('keyup', function () {
-            const term = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#file-list tr');
-
-            rows.forEach(row => {
-                const name = row.querySelector('.file-name').textContent.toLowerCase();
-                const id = row.querySelector('.transcript-id').textContent.toLowerCase();
-                if (name.includes(term) || id.includes(term)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
-
-        // 3. Delete Modal Logic
+        // ============================================
+        // 4. Modal & Delete Logic
+        // ============================================
         const deleteModal = document.getElementById('deleteModal');
         const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
         const fileToDeleteInput = document.getElementById('fileToDelete');
-        const cancelDeleteBtn = document.querySelector('#deleteModal button[onclick*="closeDeleteModal"]') || document.querySelector('#deleteModal button:first-of-type');
-
-        // Remove inline onclick from HTML first (we did it for table, but modal might still have it if we didn't edit it, 
-        // but for robustness we'll select by class or structure)
-        // Let's attach listeners to the table specifically using delegation
-
-        document.getElementById('file-list').addEventListener('click', function (e) {
-            const copyBtn = e.target.closest('.btn-copy');
-            const deleteBtn = e.target.closest('.btn-delete-trigger');
-
-            if (copyBtn) {
-                const id = copyBtn.getAttribute('data-copy-id');
-                copyToClipboard(id);
-            }
-            else if (deleteBtn) {
-                openDeleteModal(deleteBtn);
-            }
-        });
-
-        // Modal Cancel Button Listener
-        // We need to find the cancel button. It was `onclick="closeDeleteModal()"`
-        // Let's assume user didn't change HTML of modal yet, so we select it or add listener to it if found.
-        const modalCancelBtn = document.querySelector('#deleteModal button:not(#confirmDeleteBtn)');
-        if (modalCancelBtn) {
-            modalCancelBtn.removeAttribute('onclick'); // Clean up just in case
-            modalCancelBtn.addEventListener('click', closeDeleteModal);
-        }
 
         function openDeleteModal(btn) {
             const id = btn.getAttribute('data-file-id');
             const row = btn.closest('tr');
             const name = row.querySelector('.file-name').textContent.trim();
-
             document.getElementById('deleteFileName').textContent = name;
             fileToDeleteInput.value = id;
-            deleteModal.classList.add('active');
+            if (deleteModal) deleteModal.classList.add('active');
         }
 
         function closeDeleteModal() {
-            deleteModal.classList.remove('active');
+            if (deleteModal) deleteModal.classList.remove('active');
         }
 
-        confirmDeleteBtn.addEventListener('click', function () {
-            const id = fileToDeleteInput.value;
-            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const btn = this;
+        if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeDeleteModal);
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Deleting...';
+        // Delegation for Table Config (Copy/Delete)
+        const fileList = document.getElementById('file-list');
+        if (fileList) {
+            fileList.addEventListener('click', (e) => {
+                const copyBtn = e.target.closest('.btn-copy');
+                const deleteBtn = e.target.closest('.btn-delete-trigger');
 
-            fetch('/delete_file', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrf
-                },
-                body: JSON.stringify({ file_id: id })
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        // Remove row
-                        // We need to find the row. Since we used delegation, we can query by data-file-id.
-                        const deleteTrigger = document.querySelector(`.btn-delete-trigger[data-file-id="${id}"]`);
-                        if (deleteTrigger) {
-                            const row = deleteTrigger.closest('tr');
-                            row.remove();
-                        }
+                if (copyBtn) {
+                    const id = copyBtn.getAttribute('data-copy-id');
+                    copyToClipboard(id);
+                } else if (deleteBtn) {
+                    openDeleteModal(deleteBtn);
+                }
+            });
+        }
 
-                        // Update stats
-                        const totalFilesEl = document.getElementById('total-files');
-                        totalFilesEl.textContent = Math.max(0, parseInt(totalFilesEl.textContent) - 1);
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', function () {
+                const id = fileToDeleteInput.value;
+                const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const btn = this;
 
-                        // Reload if empty to show empty state
-                        if (document.querySelectorAll('#file-list tr').length === 0) location.reload();
+                btn.disabled = true;
+                btn.innerHTML = '<i class="ti ti-loader animate-spin"></i> Deleting...';
 
-                        closeDeleteModal();
-
-                        // Show Notification
-                        if (typeof createFlashNotification === 'function') {
-                            createFlashNotification('success', 'File deleted successfully');
-                        }
-                    } else {
-                        if (typeof createFlashNotification === 'function') {
-                            createFlashNotification('error', data.message || 'Error deleting file');
-                        }
-                    }
+                fetch('/delete_file', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                    body: JSON.stringify({ file_id: id })
                 })
-                .catch(err => {
-                    console.error(err);
-                    if (typeof createFlashNotification === 'function') {
-                        createFlashNotification('error', 'Network error');
-                    }
-                })
-                .finally(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="ti ti-trash"></i> Delete';
-                });
-        });
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const deleteTrigger = document.querySelector(`.btn-delete-trigger[data-file-id="${id}"]`);
+                            if (deleteTrigger) deleteTrigger.closest('tr').remove();
 
-        // 4. Copy Logic
+                            // Recalc stats
+                            const totalFilesEl = document.getElementById('total-files');
+                            if (totalFilesEl) totalFilesEl.textContent = Math.max(0, parseInt(totalFilesEl.textContent) - 1);
+
+                            if (document.querySelectorAll('#file-list tr').length === 0) location.reload();
+
+                            closeDeleteModal();
+                            if (typeof createFlashNotification === 'function') createFlashNotification('success', 'File deleted successfully');
+                        } else {
+                            if (typeof createFlashNotification === 'function') createFlashNotification('error', data.message || 'Error deleting');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        if (typeof createFlashNotification === 'function') createFlashNotification('error', 'Network error');
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="ti ti-trash"></i> Delete';
+                    });
+            });
+        }
+
         function copyToClipboard(text) {
             if (!text) return;
             navigator.clipboard.writeText(text).then(() => {
-                if (typeof createFlashNotification === 'function') {
-                    createFlashNotification('success', 'Copied to clipboard!');
-                }
+                if (typeof createFlashNotification === 'function') createFlashNotification('success', 'Copied ID!');
             }).catch(() => {
-                if (typeof createFlashNotification === 'function') {
-                    createFlashNotification('error', 'Failed to copy');
-                }
+                if (typeof createFlashNotification === 'function') createFlashNotification('error', 'Failed to copy');
             });
+        }
+
+        // ============================================
+        // 5. Chart Logic (Safe)
+        // ============================================
+        try {
+            // Safely parse Jinja variables
+            const months = JSON.parse('{{ months|tojson|default("[]")|safe }}');
+            const uploads = JSON.parse('{{ uploads|tojson|default("[]")|safe }}');
+
+            if (months && months.length > 0 && document.getElementById('userActivityChart')) {
+                const ctx = document.getElementById('userActivityChart').getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
+                gradient.addColorStop(1, 'rgba(167, 139, 250, 0.0)');
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Uploads',
+                            data: uploads,
+                            borderColor: '#38bdf8',
+                            backgroundColor: gradient,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#1e293b',
+                            pointBorderColor: '#38bdf8',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: 'rgba(255, 255, 255, 0.4)', stepSize: 1 }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: 'rgba(255, 255, 255, 0.4)' }
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn("Chart failed to load:", e);
         }
     </script>
 </body>
