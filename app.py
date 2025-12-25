@@ -33,51 +33,8 @@ app.register_blueprint(reset_pass_bp)
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
-# ------------------- RQ Worker Background Thread Setup -------------------
-def start_rq_worker():
-    """
-    Start RQ worker in background thread to process queued jobs.
-    Uses a workaround for the signal handler limitation in daemon threads.
-    """
-    try:
-        # Only start worker if RQ is enabled (not on Windows, and Redis is configured)
-        if not q:
-            print("⚠️  RQ worker not started: RQ is disabled (Windows or no Redis)")
-            return
-        
-        from rq import Worker
-        import signal as signal_module
-        
-        print("🚀 Starting RQ worker in background...")
-        
-        # Create worker
-        worker = Worker([q], connection=q.connection, name=f'worker-{platform.node()}')
-        print(f"✅ RQ worker started: {worker.name}")
-        
-        # Monkey-patch signal.signal to prevent RuntimeError in daemon threads
-        # This is a workaround for the "signal only works in main thread" limitation
-        original_signal = signal_module.signal
-        signal_module.signal = lambda sig, handler: None
-        
-        try:
-            print("   Listening for jobs...")
-            worker.work(with_scheduler=False)
-        finally:
-            # Restore original signal function
-            signal_module.signal = original_signal
-            
-    except Exception as e:
-        print(f"❌ Error in RQ worker: {e}")
-        import traceback
-        traceback.print_exc()
-
-# Start RQ worker in a background daemon thread (won't block Flask startup)
-if not platform.system() == 'Windows':  # Only on non-Windows platforms
-    worker_thread = threading.Thread(target=start_rq_worker, daemon=True)
-    worker_thread.start()
-    print("📋 RQ worker thread created and running in background")
-else:
-    print("⚠️  Windows detected: RQ worker disabled (requires Unix/Linux)")
+# RQ Worker is now handled by start.sh to avoid conflicts and improve stability checking
+# The previous inline worker code has been removed.
 
 # Suppress specific warnings
 
