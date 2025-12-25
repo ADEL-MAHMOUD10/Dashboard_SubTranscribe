@@ -87,7 +87,7 @@ def upload_file_streaming(file_path: str, headers: dict, base_url: str, chunk_si
 
 
 def poll_transcription(transcript_id: str, headers: dict, base_url: str, 
-                       job_id: str, max_attempts: int = 120) -> Dict:
+                       max_attempts: int = 130) -> Dict:
     """
     Poll for transcription completion with exponential backoff.
     
@@ -95,8 +95,7 @@ def poll_transcription(transcript_id: str, headers: dict, base_url: str,
         transcript_id: Transcript ID to poll
         headers: Authorization headers
         base_url: API base URL
-        job_id: RQ job ID for meta updates
-        max_attempts: Max polling attempts
+        max_attempts: Max polling attempts (default 130, approx 20 mins)
         
     Returns:
         dict: Transcription result
@@ -132,8 +131,8 @@ def poll_transcription(transcript_id: str, headers: dict, base_url: str,
                 error_msg = result.get('error', 'Unknown transcription error')
                 raise TranscriptionError(f"Transcription failed: {error_msg}")
             
-            # Exponential backoff: 5s, 10s, 20s, 30s (max)
-            wait_time = min(5 * (2 ** (attempt // 20)), 30)
+            # Exponential backoff: 5s, 10s , 10s is max
+            wait_time = min(5 * (2 ** (attempt // 20)), 10)
             time.sleep(wait_time)
             
         except Timeout:
@@ -150,7 +149,7 @@ def poll_transcription(transcript_id: str, headers: dict, base_url: str,
                 continue
             raise TranscriptionError(f"Network error during polling: {str(e)}")
     
-    raise TranscriptionError("Transcription timed out after 10 minutes")
+    raise TranscriptionError("Transcription timed out after repeated attempts")
 
 
 def upload_audio_to_assemblyai(upload_id: str, audio_file_path: str, file_size: int,
@@ -234,7 +233,7 @@ def upload_audio_to_assemblyai(upload_id: str, audio_file_path: str, file_size: 
         )
         
         # Poll for completion
-        result = poll_transcription(transcript_id, headers, base_url, job_id)
+        result = poll_transcription(transcript_id, headers, base_url)
         
         # Update job meta to completion
         job.meta['status'] = 'completed'
@@ -395,7 +394,7 @@ def transcribe_from_link(upload_id: str, link: str, username: str,
         )
         
         # Poll for completion
-        result = poll_transcription(transcript_id, headers, base_url, job_id)
+        result = poll_transcription(transcript_id, headers, base_url)
         
         # Update job meta
         job.meta['status'] = 'completed'
