@@ -163,15 +163,16 @@ def upload_or_link():
             output_template = os.path.join(temp_dir, "download_%(id)s.%(ext)s")
             
             with get_cookies_context() as cookie_file:
-                # Use shared base options (includes PoToken, User-Agent, etc.)
-                ydl_opts = get_ytdlp_opts_base()
-                # Update with job-specific options
-                ydl_opts.update({
+                ydl_opts = {
                     'format': 'best[ext=mp4]/best[ext=mkv]/best',
                     'outtmpl': output_template,
-                    'quiet': False, # Override quiet if desired for debugging
+                    'quiet': False,
+                    'no_warnings': True,
                     'cookiefile': cookie_file,
-                })
+                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'referer': 'https://www.youtube.com/',
+                    'nocheckcertificate': True
+                }
                 
                 download_path = None
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
