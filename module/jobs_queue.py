@@ -10,13 +10,13 @@ import gc
 import tempfile
 from datetime import datetime, timezone
 from loguru import logger
-from module.config import files_collection, users_collection, TOKEN_THREE
+from module.config import files_collection, users_collection, TOKEN_THREE, get_cookies_context
 from typing import Dict, Union
 from requests.exceptions import RequestException, Timeout, HTTPError
 from dotenv import load_dotenv
 
 load_dotenv()
-YTDLP_COOKIES = os.getenv('YTDLP_COOKIES')
+
 class TranscriptionError(Exception):
     """Custom exception for transcription errors."""
     pass
@@ -343,17 +343,18 @@ def transcribe_from_link(upload_id: str, link: str, username: str,
         temp_dir = tempfile.gettempdir()
         temp_base = f"ytdl_{uuid.uuid4().hex[:8]}"
         
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'outtmpl': os.path.join(temp_dir, temp_base + '.%(ext)s'),
-            'quiet': True,
-            'no_warnings': True,
-            'Cookiefile': YTDLP_COOKIES
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(link, download=True)
-            downloaded_file = ydl.prepare_filename(info)
+        with get_cookies_context() as cookie_file:
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': os.path.join(temp_dir, temp_base + '.%(ext)s'),
+                'quiet': True,
+                'no_warnings': True,
+                'cookiefile': cookie_file
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(link, download=True)
+                downloaded_file = ydl.prepare_filename(info)
         
         if not os.path.exists(downloaded_file):
             raise FileNotFoundError(f"Downloaded file not found: {downloaded_file}")

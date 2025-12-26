@@ -1,5 +1,5 @@
 from flask import Blueprint, session, redirect, url_for, request, render_template, flash, jsonify
-from module.config import users_collection, files_collection, TOKEN_THREE, is_session_valid, q
+from module.config import users_collection, files_collection, TOKEN_THREE, is_session_valid, q, get_cookies_context
 from module.jobs_queue import upload_audio_to_assemblyai, transcribe_from_link as transcribe_from_link_job
 from datetime import datetime, timezone
 from module.send_mail import send_email_transcript
@@ -16,7 +16,7 @@ transcribe_bp = Blueprint('transcribe', __name__)
 
 load_dotenv()
 
-YTDLP_COOKIES = os.getenv('YTDLP_COOKIES')
+
 
 # ------------------- Helper Functions -------------------
 
@@ -162,18 +162,19 @@ def upload_or_link():
             temp_dir = tempfile.gettempdir()
             output_template = os.path.join(temp_dir, "download_%(id)s.%(ext)s")
             
-            ydl_opts = {
-                'format': 'best[ext=mp4]/best[ext=mkv]/best',
-                'outtmpl': output_template,
-                'quiet': False,
-                'no_warnings': True,
-                'Cookiefile': YTDLP_COOKIES
-            }
-            
-            download_path = None
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(link, download=True)
-                download_path = ydl.prepare_filename(info)
+            with get_cookies_context() as cookie_file:
+                ydl_opts = {
+                    'format': 'best[ext=mp4]/best[ext=mkv]/best',
+                    'outtmpl': output_template,
+                    'quiet': False,
+                    'no_warnings': True,
+                    'cookiefile': cookie_file
+                }
+                
+                download_path = None
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(link, download=True)
+                    download_path = ydl.prepare_filename(info)
             
             if not download_path or not os.path.exists(download_path):
                 session['error'] = "Failed to download media from link"

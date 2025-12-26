@@ -13,6 +13,43 @@ import redis
 import secrets
 import os 
 import uuid 
+import tempfile
+import contextlib
+
+@contextlib.contextmanager
+def get_cookies_context():
+    """
+    Context manager that yields a path to a cookies file.
+    If YTDLP_COOKIES env var contains file content, writes to a temp file.
+    If it contains a path, yields the path.
+    """
+    cookies_value = os.getenv('YTDLP_COOKIES')
+    
+    if not cookies_value:
+        yield None
+        return
+
+    # Check if value looks like a file path and exists
+    if os.path.exists(cookies_value):
+        yield cookies_value
+        return
+
+    # Assume it's content, write to temp file
+    # yt-dlp expects Netscape format, usually starts with .domain or # Netscape
+    # We'll just write whatever is in the env var to a temp file
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8') as f:
+        f.write(cookies_value)
+        temp_path = f.name
+    
+    try:
+        yield temp_path
+    finally:
+        # Clean up
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
 
 load_dotenv()
 
