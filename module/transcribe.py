@@ -168,7 +168,9 @@ def upload_or_link():
                     'outtmpl': output_template,
                     'quiet': False,
                     'no_warnings': True,
-                    'cookiefile': cookie_file
+                    'cookiefile': cookie_file,
+                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'referer': 'https://www.youtube.com/'
                 }
                 
                 download_path = None
