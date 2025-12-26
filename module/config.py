@@ -28,18 +28,19 @@ def get_cookies_context():
     if not cookies_value:
         yield None
         return
-
-    # Check if value looks like a file path and exists
+    
     if os.path.exists(cookies_value):
         yield cookies_value
         return
 
-    # Assume it's content, write to temp file
-    # yt-dlp expects Netscape format, usually starts with .domain or # Netscape
-    # We'll just write whatever is in the env var to a temp file
+    if '\\n' in cookies_value:
+        cookies_value = cookies_value.replace('\\n', '\n')
+
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8') as f:
         f.write(cookies_value)
         temp_path = f.name
+
+    print(f"DEBUG: Created temp cookie file {temp_path} with {len(cookies_value)} bytes")
     
     try:
         yield temp_path
