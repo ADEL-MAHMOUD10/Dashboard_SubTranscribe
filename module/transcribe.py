@@ -4,6 +4,7 @@ from module.jobs_queue import upload_audio_to_assemblyai, transcribe_from_link a
 from datetime import datetime, timezone
 from module.send_mail import send_email_transcript
 from loguru import logger
+from dotenv import load_dotenv
 import uuid
 import os
 import tempfile
@@ -13,6 +14,9 @@ import time
 
 transcribe_bp = Blueprint('transcribe', __name__)
 
+load_dotenv()
+
+YTDLP_COOKIES = os.getenv('YTDLP_COOKIES')
 
 # ------------------- Helper Functions -------------------
 
@@ -163,6 +167,7 @@ def upload_or_link():
                 'outtmpl': output_template,
                 'quiet': False,
                 'no_warnings': True,
+                'Cookiefile': YTDLP_COOKIES
             }
             
             download_path = None

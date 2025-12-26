@@ -13,8 +13,10 @@ from loguru import logger
 from module.config import files_collection, users_collection, TOKEN_THREE
 from typing import Dict, Union
 from requests.exceptions import RequestException, Timeout, HTTPError
+from dotenv import load_dotenv
 
-
+load_dotenv()
+YTDLP_COOKIES = os.getenv('YTDLP_COOKIES')
 class TranscriptionError(Exception):
     """Custom exception for transcription errors."""
     pass
@@ -346,6 +348,7 @@ def transcribe_from_link(upload_id: str, link: str, username: str,
             'outtmpl': os.path.join(temp_dir, temp_base + '.%(ext)s'),
             'quiet': True,
             'no_warnings': True,
+            'Cookiefile': YTDLP_COOKIES
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
