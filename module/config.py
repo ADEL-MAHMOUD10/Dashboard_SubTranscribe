@@ -30,6 +30,7 @@ def get_cookies_context():
         return
     
     if os.path.exists(cookies_value):
+        print(f"DEBUG: Using existing cookie file at {cookies_value}")
         yield cookies_value
         return
 
@@ -39,13 +40,12 @@ def get_cookies_context():
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8') as f:
         f.write(cookies_value)
         temp_path = f.name
-
-    print(f"DEBUG: Created temp cookie file {temp_path} with {len(cookies_value)} bytes")
+        
+    print(f"DEBUG: Created temp cookie file {temp_path} from env var content ({len(cookies_value)} bytes)")
     
     try:
         yield temp_path
     finally:
-        # Clean up
         if os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
@@ -76,13 +76,10 @@ else:
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes default cache timeout
 
 cache = Cache(app)
-# set token 
 load_dotenv()
 
-# Configure rate limiter with graceful Redis fallback
 try:
     if REDIS_UR:
-        # Test Redis connection with short timeout
         test_redis = redis.from_url(REDIS_UR, socket_connect_timeout=2, socket_timeout=2)
         test_redis.ping()
         limiter_storage = REDIS_UR
