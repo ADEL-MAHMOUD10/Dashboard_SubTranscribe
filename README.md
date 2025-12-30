@@ -14,6 +14,8 @@ This project is a web application built with Flask that allows users to upload a
 - **User Accounts**: Create accounts to save and manage your transcription history
 - **Customizable Settings**: Personalize your experience through the settings page
 - **File Management**: Easily view, download, and delete your transcription files
+- **Background Processing**: Heavy tasks are processed in the background using Redis & RQ
+- **Docker Support**: Fully containerized application for easy deployment
 - **Responsive Design**: Works seamlessly across desktop, tablet, and mobile devices
 
 ## Pages
@@ -41,13 +43,38 @@ This project is a web application built with Flask that allows users to upload a
 - **AJAX**: Asynchronous file uploading with progress tracking
 
 ## Prerequisites
-- Python 3.7 or higher
+- Python 3.9 or higher
 - Flask 2.0 or higher
 - MongoDB
-- Redis (upstash)
-- Assemblyai API
+- Redis (for background tasks , ratelimiting and caching)
+- AssemblyAI API Key
+- **Optional**: Docker & Docker Compose (for containerized deployment)
 
 ## Installation
+
+### Method 1: Docker (Recommended)
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/ADEL-MAHMOUD10/SubTranscribe-2.git
+   cd SubTranscribe-2
+   ```
+
+2. Create a `.env` file based on your configuration (see `.env.example` if available, or populate required keys like `ASSEMBLYAI_KEY`).
+
+3. Run with Docker Compose:
+   ```bash
+   docker-compose up --build
+   ```
+   This will start the Flask App, Redis, Nginx, and the RQ Worker automatically.
+
+4. Open your web browser and go to:
+   ```
+   http://localhost:80
+   ```
+   (Or port 443 if SSL is configured).
+
+### Method 2: Manual Installation
 
 1. Clone this repository:
    ```bash
@@ -74,12 +101,19 @@ This project is a web application built with Flask that allows users to upload a
    source venv/bin/activate
    ```
 
-5. Run the Flask app:
+6. Start the Redis Server (ensure it's running on default port 6379).
+
+7. Start the RQ Worker (in a separate terminal):
+   ```bash
+   python worker.py
+   ```
+
+8. Run the Flask app:
    ```bash
    python app.py
    ```
 
-6. Open your web browser and go to:
+9. Open your web browser and go to:
    ```
    http://127.0.0.1:5000
    ```
@@ -89,6 +123,9 @@ This project is a web application built with Flask that allows users to upload a
 ```
 SubTranscribe/
 ├── app.py              # Main application file
+├── worker.py           # Background worker script
+├── docker-compose.yml  # Docker orchestration
+├── Dockerfile          # Container definition
 ├── module/             # Application modules
 │   ├── auth.py         # Authentication functions
 │   ├── config.py       # Configuration settings
@@ -104,6 +141,7 @@ SubTranscribe/
     ├── dashboard.html  # Dashboard page
     ├── settings.html   # Settings page
     ├── transcribe.html # Transcribe page
+    ├── job_status.html # Job progress page
     └── ...
 ```
 
