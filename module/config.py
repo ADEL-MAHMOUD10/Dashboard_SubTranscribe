@@ -1,11 +1,11 @@
-# from venv import logger
+from loguru import logger
 from flask import Flask, redirect , session , g, request, render_template 
 from flask_cors import CORS
 from flask_caching import Cache
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
-from datetime import timedelta  
+from datetime import datetime, timedelta, timezone
 from flask_wtf.csrf import CSRFProtect , generate_csrf, validate_csrf
 from pymongo import MongoClient 
 from rq import Queue
@@ -96,7 +96,7 @@ def get_realip():
     return request.headers.get("CF-Connecting-IP") \
         or request.headers.get("X-Forwarded-For", "").split(",")[0] \
         or request.remote_addr
-        
+
 limiter = Limiter(
     key_func=get_realip,
     app=app,
@@ -148,6 +148,7 @@ users_collection.create_index("Email", unique=True)
 files_collection.create_index("job_id", sparse=True)
 files_collection.create_index("user_id")
 
+SESSION_MAX_AGE = timedelta(days=30)
 # Set up RQ (Redis Queue) for background jobs
 # Note: RQ doesn't support Windows directly due to os.fork() limitation
 # For Windows development, use synchronous transcription fallback
@@ -205,16 +206,38 @@ def is_session_valid() -> bool:
     try:
         user_id = session.get('user_id')
         session_token = session.get('session_token')
+
         if not user_id or not session_token:
             return False
-        user = users_collection.find_one({'user_id': user_id}, {'session_token': 1, 'session_tokens': 1})
+
+        user = users_collection.find_one(
+            {
+                'user_id': user_id,
+                'session_tokens.token': session_token
+            },
+            {
+                'session_tokens.$': 1,
+                'session_token': 1
+            }
+        )
+
         if not user:
             return False
+
         tokens = user.get('session_tokens')
-        if isinstance(tokens, list) and session_token in tokens:
-            return True
+        if tokens and isinstance(tokens, list):
+            token_obj = tokens[0]
+            created_at = datetime.fromisoformat(token_obj['created_at'])
+
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+
+            return datetime.now(timezone.utc) - created_at < SESSION_MAX_AGE
+
         return user.get('session_token') == session_token
-    except Exception:
+
+    except Exception as e:
+        logger.error(f"Session validation error: {e}")
         return False
 
 @app.before_request

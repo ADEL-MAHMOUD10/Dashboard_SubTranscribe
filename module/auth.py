@@ -5,7 +5,7 @@ from module.send_mail import send_email_welcome
 from werkzeug.security import check_password_hash, generate_password_hash
 from pymongo.errors import DuplicateKeyError
 from loguru import logger
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 import re
 
@@ -14,6 +14,13 @@ auth_bp = Blueprint('auth', __name__)
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # powerful 
 # EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+") # simple regex validation not used now
 PASS_REGEX = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$'
+
+def login_rate_key():
+    identifier = request.form.get('email', '').strip().lower()
+    ip = request.headers.get("CF-Connecting-IP", request.remote_addr)
+    return f"login:{identifier}:{ip}"
+
+
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def register():
@@ -23,7 +30,7 @@ def register():
         password = request.form.get('password', '').strip()
         Email = request.form.get('email', '').strip()
         confirm_password = request.form.get('c_password','').strip()
-        reg_time = datetime.now().isoformat(timespec="seconds")
+        reg_time = datetime.now(timezone.utc).isoformat(timespec="seconds")
         user_id = str(uuid.uuid4())
 
         try:
@@ -96,6 +103,7 @@ def register():
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 @limiter.limit("20 per minute")
+@limiter.limit("5 per minute", key_func=login_rate_key, error_message="Too many failed login attempts")
 def login():
     session.permanent = True
     if 'user_id' in session:
@@ -113,7 +121,7 @@ def login():
             flash('Please enter both username/email and password', 'danger')
             return redirect(url_for('auth.login'))
         try:
-            login_time = datetime.now().isoformat(timespec="seconds")
+            login_time = datetime.now(timezone.utc).isoformat(timespec="seconds")
             user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
             if user and check_password_hash(user['password'], password):
                 new_session_token = str(uuid.uuid4())
@@ -124,7 +132,15 @@ def login():
                             'last_login_req': login_time,
                             'session_token': new_session_token
                             },
-                        '$addToSet': {'session_tokens': new_session_token}   
+                        '$push': {
+                            'session_tokens': {
+                                '$each': [{
+                                    'token': new_session_token,
+                                    'created_at': login_time
+                                }],
+                                '$slice': -5
+                            }
+                        }
                     }
                 )
                 session['user_id'] = user['user_id']
@@ -153,14 +169,25 @@ def logout():
         user_id = session.get('user_id')
         current_token = session.get('session_token')
         if user_id and current_token:
-            users_collection.update_one({'user_id': user_id}, {'$pull': {'session_tokens': current_token}})
+            users_collection.update_one(
+                {
+                    'user_id': user_id,
+                },
+                {
+                    '$pull': {
+                        'session_tokens': {
+                            'token': current_token
+                        }
+                    }
+                }
+            )
     except Exception:
         logger.error(f"Error logging out user {user_id}")
         flash('An error occurred, please try again later', 'danger')
         return redirect(url_for('auth.login'))
     try:
         session.clear()
-        cache.clear()
+        cache.delete(f"user:{user_id}")
         flash('Successfully logged out!', 'success')
         return redirect(url_for('auth.login'))
     except Exception:
