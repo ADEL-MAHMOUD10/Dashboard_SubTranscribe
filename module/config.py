@@ -1,5 +1,5 @@
 # from venv import logger
-from flask import Flask, redirect , session , g, render_template
+from flask import Flask, redirect , session , g, request, render_template 
 from flask_cors import CORS
 from flask_caching import Cache
 from flask_limiter import Limiter
@@ -92,8 +92,13 @@ except Exception as e:
     print("   Falling back to in-memory rate limiting")
     limiter_storage = "memory://"
 
+def get_realip():
+    return request.headers.get("CF-Connecting-IP") \
+        or request.headers.get("X-Forwarded-For", "").split(",")[0] \
+        or request.remote_addr
+        
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=get_realip,
     app=app,
     storage_uri=limiter_storage,
     headers_enabled=True,
