@@ -112,6 +112,8 @@ def share_subtitle(transcript_id):
     file_size = 'Unknown'
     upload_time = 'Unknown'
     file_user = 'Unknown' 
+    file_duration = 0
+    duration_time = 0
 
     if request.method == 'GET':
         # Get file info for GET request
@@ -120,6 +122,7 @@ def share_subtitle(transcript_id):
             file_name = get_filename.get('file_name') 
             file_user = get_filename.get('username') 
             file_size = f"{(get_filename.get('file_size')/1000000):.2f} MB"  # convert to MB
+            file_duration = get_filename.get('duration')
             upload_time = get_filename.get('upload_time')
             # Try to convert upload_time to datetime if it's a string
             if upload_time and isinstance(upload_time, str):
@@ -143,7 +146,7 @@ def share_subtitle(transcript_id):
             print(f"Error fetching preview: {e}")
             preview_text = "Preview unavailable."
 
-        return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=file_user, preview=preview_text) 
+        return render_template('subtitle.html',transcript_id=transcript_id,filename=file_name,file_size=file_size,upload_time=upload_time,username=file_user, preview=preview_text, file_duration=file_duration) 
 
     if request.method == 'POST':
         file_format = request.form['format']  # Get the requested file format
@@ -188,6 +191,7 @@ def download_subtitle(user_id, transcript_id):
     file_size = 'Unknown'
     upload_time = 'Unknown'
     username = 'Unknown'
+    duration_time = 0
 
     user_id = session.get('user_id')
     
@@ -272,6 +276,7 @@ def download_subtitle(user_id, transcript_id):
         file_name = get_filename.get('file_name')
         file_size = f"{(get_filename.get('file_size')/1000000):.2f} MB" # convert to MB
         upload_time = get_filename.get('upload_time')
+        file_duration = get_filename.get('duration')
         # Try to convert upload_time to datetime if it's a string
         if upload_time and isinstance(upload_time, str):
             try:
@@ -295,7 +300,7 @@ def download_subtitle(user_id, transcript_id):
         print(f"Error fetching preview: {e}")
         preview_text = "Preview unavailable."
 
-    return render_template('subtitle.html', transcript_id=transcript_id, filename=file_name, file_size=file_size, upload_time=upload_time, username=username, user_id=user_id, preview=preview_text)  # Render the download page with the updated template
+    return render_template('subtitle.html', transcript_id=transcript_id, filename=file_name, file_size=file_size, upload_time=upload_time, username=username, user_id=user_id, preview=preview_text, file_duration=file_duration)  # Render the download page with the updated template
 
 @subtitle_bp.route('/serve/<filename>')
 @limiter.limit("30 per minute")
