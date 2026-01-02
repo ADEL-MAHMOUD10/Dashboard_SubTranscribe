@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from flask_wtf.csrf import CSRFProtect , generate_csrf, validate_csrf
 from pymongo import MongoClient 
 from rq import Queue
+# from functools import wraps
 import redis
 import secrets
 import os 
@@ -76,7 +77,6 @@ else:
 app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes default cache timeout
 
 cache = Cache(app)
-load_dotenv()
 
 try:
     if REDIS_UR:
@@ -239,6 +239,15 @@ def is_session_valid() -> bool:
     except Exception as e:
         logger.error(f"Session validation error: {e}")
         return False
+
+# def login_required(f):
+#     @wraps(f)
+#     def wrapper(*args, **kwargs):
+#         if 'user_id' not in session or not is_session_valid():
+#             session.clear()
+#             return redirect(url_for('auth.login'))
+#         return f(*args, **kwargs)
+#     return wrapper
 
 @app.before_request
 def set_nonce():

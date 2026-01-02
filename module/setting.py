@@ -252,7 +252,11 @@ def custom_serializer(obj):
 def export_user_data():
     """Export all user data as JSON."""
     if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
+        if is_session_valid():
+            return redirect(url_for('main_user', user_id=session['user_id']))
+        else:
+            session.clear()
+            flash('Session expired, please log in again', 'warning')
     
     user_id = session.get('user_id')
     
@@ -263,28 +267,24 @@ def export_user_data():
         return redirect(url_for('setting.settings'))
     
     # Remove sensitive information
-    if '_id' in user:
-        del user['_id']
-    if 'password' in user:
-        del user['password']
-    
+    for k in ['_id','password','session_tokensi','last_login_req']:
+        user.pop(k, None)
     # Get user's files
     user_files = list(files_collection.find({'user_id': user_id}))
     for file in user_files:
-        if '_id' in file:
-            del file['_id'] 
-    
-    # Remove user_id from user object (privacy)
-    if 'user_id' in user:
-        del user['user_id']
-    
+        if "_id" in file:
+            del file["_id"] 
+        if "user_id" in file:
+            del file["user_id"]
+        if "username" in file:
+            del file["username"]
     # Combine data
     user_data = {
-        'user': user,
-        'files': user_files
+        "user": user,
+        "files": user_files
     }
 
-    username = user['username']
+    username = user["username"]
     dfile_name = f"{username}_data.json"
 
     # Serialize with pretty format
@@ -295,7 +295,8 @@ def export_user_data():
         json_data,
         mimetype='application/json',
         headers={
-            'Content-Disposition': f'attachment; filename={dfile_name}'
+            'Content-Disposition': f'attachment; filename={dfile_name}',
+            'Cache-Control': 'no-store'
         }
     )
 

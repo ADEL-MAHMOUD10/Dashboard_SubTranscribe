@@ -8,7 +8,7 @@ from loguru import logger
 from datetime import datetime, timezone
 import uuid
 import re
-
+import hashlib
 auth_bp = Blueprint('auth', __name__)
 
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # powerful 
@@ -68,7 +68,6 @@ def register():
                             "processing": True
                         }
                 },
-                'session_token': session_token,
                 'session_tokens': [session_token]
                 })
             session['user_id'] = user_id
@@ -106,13 +105,9 @@ def register():
 @limiter.limit("5 per minute", key_func=login_rate_key, error_message="Too many failed login attempts")
 def login():
     session.permanent = True
-    if 'user_id' in session:
-        # Only auto-redirect if current session is valid; otherwise clear it
-        if is_session_valid():
-            return redirect(url_for('main_user', user_id=session['user_id']))
-        else:
-            session.clear()
-            flash('Session expired, please log in again', 'warning')
+    if 'user_id' not in session or not is_session_valid():
+        return redirect(url_for('auth.login'))
+
     if request.method == 'POST':
 
         identifier = request.form['email'].strip()
@@ -125,18 +120,24 @@ def login():
             user = users_collection.find_one({'$or':[{'username':identifier},{'Email':identifier}]})
             if user and check_password_hash(user['password'], password):
                 new_session_token = str(uuid.uuid4())
+                ip = request.headers.get(
+                    'CF-Connecting-IP',
+                    request.headers.get('X-Forwarded-For', request.remote_addr)
+                )
                 users_collection.update_one(
                     {'user_id': user['user_id']},
                     {
                         '$set': {
-                            'last_login_req': login_time,
-                            'session_token': new_session_token
+                            'last_login_req': login_time
                             },
                         '$push': {
                             'session_tokens': {
                                 '$each': [{
                                     'token': new_session_token,
-                                    'created_at': login_time
+                                    'created_at': login_time,
+                                    "last_login": login_time,
+                                    "device": request.user_agent.string,
+                                    "ip_hash": hashlib.sha256(ip.encode()).hexdigest()
                                 }],
                                 '$slice': -5
                             }
