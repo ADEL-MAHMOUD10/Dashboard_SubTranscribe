@@ -105,8 +105,14 @@ def register():
 
     return render_template('register.html')
 
+# def deduct_on_failed_login(response):
+#     if response.status_code in (401, 403):
+#         return True
+#     return False
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute", key_func=login_rate_key, error_message="Too many failed login attempts")
+# @limiter.limit("10 per minute", key_func=login_rate_key, deduct_when=deduct_on_failed_login,error_message="Too many failed login attempts")
+@limiter.limit("10 per minute", key_func=login_rate_key,error_message="Too many failed login attempts")
 def login():
     session.permanent = True
     if 'user_id' in session and is_session_valid():
