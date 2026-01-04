@@ -101,7 +101,6 @@ def register():
     return render_template('register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
-@limiter.limit("20 per minute")
 @limiter.limit("5 per minute", key_func=login_rate_key, error_message="Too many failed login attempts")
 def login():
     session.permanent = True
