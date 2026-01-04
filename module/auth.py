@@ -16,9 +16,14 @@ EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # 
 PASS_REGEX = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$'
 
 def login_rate_key():
-    identifier = request.form.get('email', '').strip().lower()
     ip = request.headers.get("CF-Connecting-IP", request.remote_addr)
-    return f"login:{identifier}:{ip}"
+    identifier = request.form.get('email')
+
+    if identifier:
+        identifier = identifier.strip().lower()
+        return f"login:{identifier}:{ip}"
+
+    return f"login:anonymous:{ip}"
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -101,12 +106,11 @@ def register():
     return render_template('register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
-@limiter.limit("20 per minute")
 @limiter.limit("5 per minute", key_func=login_rate_key, error_message="Too many failed login attempts")
 def login():
     session.permanent = True
-    if 'user_id' not in session or not is_session_valid():
-        return redirect(url_for('auth.login'))
+    if 'user_id' in session and is_session_valid():
+        return redirect(url_for('main_user', user_id=session['user_id']))
 
     if request.method == 'POST':
 
