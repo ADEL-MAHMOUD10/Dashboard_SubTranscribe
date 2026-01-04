@@ -111,8 +111,8 @@ def register():
 #     return False
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
-# @limiter.limit("10 per minute", key_func=login_rate_key, deduct_when=deduct_on_failed_login,error_message="Too many failed login attempts")
-@limiter.limit("10 per minute", key_func=login_rate_key,error_message="Too many failed login attempts")
+@limiter.limit("20 per minute")
+@limiter.limit("5 per minute", key_func=login_rate_key, error_message="Too many failed login attempts")
 def login():
     session.permanent = True
     if 'user_id' in session and is_session_valid():
