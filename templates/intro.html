@@ -10,7 +10,7 @@
     <meta name="description"
         content="Convert audio and video to accurate text transcripts with our AI-powered transcription service. Support for 30+ languages, high accuracy, and fast results. Free trial available.">
     <meta name="keywords"
-        content="audio transcription, video transcription, subtitle generation, AI transcription, speech to text, automatic subtitles, SRT, VTT, AssemblyAI, multilingual transcription, speech recognition, media transcription, podcast transcription, video subtitles, accessibility, closed captions">
+        content="audio transcription, video transcription, subtitle generation, AI transcription, speech to text, automatic subtitles, SRT, VTT, AssemblyAI, multilingual transcription, speech recognition, media transcription, podcast transcription, video subtitles, accessibility, closed captions, transcribe audio to text, video to text converter, auto subtitle generator, fast transcription service, secure transcription, audio to text, video to text">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <meta name="author" content="ADEL MAHMOUD">
     <meta name="publisher" content="ADEL MAHMOUD">
@@ -89,9 +89,11 @@
     <meta name="msapplication-TileImage" content="/static/image/subtitle192.png">
     <meta name="msapplication-config" content="/static/browserconfig.xml">
 
-    <!-- Enhanced Google Site Verification -->
+    <!-- Google Site Verification -->
     <meta name="google-site-verification" content="wKrz4CXfeOSfl3f81F0MziKv6lL0Geb2kHQu4sA_WTg" />
 
+    <!-- Trustpilot Site Verification -->
+    <meta name="trustpilot-one-time-domain-verification-id" content="2c090ceb-15f7-4735-9077-80c2a434247b" />
     <!-- Additional Search Engine Verification -->
     <meta name="bing-site-verification" content="your-bing-verification-code">
     <meta name="yandex-verification" content="your-yandex-verification-code">
@@ -613,7 +615,7 @@
                     {% endif %}
 
                     <!-- Mobile Menu Trigger -->
-                    <button id="specialMobileBtn"
+                    <button id="specialMobileBtn" aria-label="Open mobile menu"
                         class="lg:hidden w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all">
                         <i class="ti ti-menu-2 text-lg"></i>
                     </button>
@@ -789,6 +791,21 @@
                 "item": "https://subtranscribe.koyeb.app/"
             }
         ]
+    }
+    </script>
+
+    <!-- WebSite Schema -->
+    <script type="application/ld+json" nonce="{{ nonce }}">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "SubTranscribe",
+        "url": "https://subtranscribe.koyeb.app/",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://subtranscribe.koyeb.app/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
     }
     </script>
 
@@ -1505,7 +1522,8 @@
                 <!-- About Image -->
                 <div class="lg:w-1/2" data-aos="fade-up">
                     <div class="glass-card p-6 relative overflow-hidden mx-4 sm:mx-0">
-                        <img src="/static/Screenshot.png" alt="SubTranscribe Dashboard" class="rounded-lg w-full mb-6">
+                        <img src="/static/Screenshot.png" alt="SubTranscribe Dashboard" loading="lazy"
+                            class="rounded-lg w-full mb-6">
 
                         <!-- Stats -->
                         <div class="glass rounded-xl p-4 sm:p-6">
@@ -1744,26 +1762,28 @@
                 <!-- Company Info -->
                 <div>
                     <a href="{{ url_for('home') }}" class="flex items-center gap-3 mb-6">
-                        <img src="/static/image/subtitle.ico" alt="SubTranscribe Logo" class="w-10 h-10 rounded-lg">
+                        <img src="/static/image/subtitle.ico" alt="SubTranscribe Logo" class="w-10 h-10 rounded-lg"
+                            loading="lazy">
                         <span class="text-2xl font-bold gradient-text">SubTranscribe</span>
                     </a>
                     <p class="text-white/70 mb-6">
                         Transforming audio and video into accurate text with cutting-edge AI technology.
                     </p>
                     <div class="flex space-x-4">
-                        <a href="https://x.com/Adel_MAhmoud100"
-                            class="text-white/70 hover:text-primary-400 transition-colors">
+                        <a href="https://x.com/Adel_MAhmoud100" aria-label="Twitter" target="_blank"
+                            rel="noopener noreferrer" class="text-white/70 hover:text-primary-400 transition-colors">
                             <i class="fab fa-twitter text-xl"></i>
                         </a>
-                        <a href="https://www.facebook.com/adel.mahmoud.341453"
-                            class="text-white/70 hover:text-primary-400 transition-colors">
+                        <a href="https://www.facebook.com/adel.mahmoud.341453" aria-label="Facebook" target="_blank"
+                            rel="noopener noreferrer" class="text-white/70 hover:text-primary-400 transition-colors">
                             <i class="fab fa-facebook text-xl"></i>
                         </a>
-                        <a href="https://www.instagram.com/adel_mahmoud10/"
-                            class="text-white/70 hover:text-primary-400 transition-colors">
+                        <a href="https://www.instagram.com/adel_mahmoud10/" aria-label="Instagram" target="_blank"
+                            rel="noopener noreferrer" class="text-white/70 hover:text-primary-400 transition-colors">
                             <i class="fab fa-instagram text-xl"></i>
                         </a>
-                        <a href="https://www.linkedin.com/in/adel-mahmoud-278320247"
+                        <a href="https://www.linkedin.com/in/adel-mahmoud-278320247" aria-label="LinkedIn"
+                            target="_blank" rel="noopener noreferrer"
                             class="text-white/70 hover:text-primary-400 transition-colors">
                             <i class="fab fa-linkedin text-xl"></i>
                         </a>
@@ -1942,10 +1962,11 @@
                     }
                 ],
                 "sameAs": [
-                    "https://twitter.com/subtranscribe",
-                    "https://facebook.com/subtranscribe",
-                    "https://instagram.com/subtranscribe",
-                    "https://linkedin.com/company/subtranscribe"
+                    "https://x.com/Adel_MAhmoud100",
+                    "https://www.facebook.com/adel.mahmoud.341453",
+                    "https://www.instagram.com/adel_mahmoud10/",
+                    "https://www.linkedin.com/in/adel-mahmoud-278320247",
+                    "https://adelmahmoud.vercel.app/"
                 ],
                 "service": [
                     {
