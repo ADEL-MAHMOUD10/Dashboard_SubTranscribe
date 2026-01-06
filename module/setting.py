@@ -267,7 +267,7 @@ def export_user_data():
         return redirect(url_for('setting.settings'))
     
     # Remove sensitive information
-    for k in ['_id','password','session_tokensi','last_login_req']:
+    for k in ['_id','password','session_tokens','session_token','last_login_req']:
         user.pop(k, None)
     # Get user's files
     user_files = list(files_collection.find({'user_id': user_id}))
