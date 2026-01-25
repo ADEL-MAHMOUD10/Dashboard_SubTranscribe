@@ -29,7 +29,7 @@ def check_user():
         if user:
             otp_plain = generate_otp()
             otp_hashed = hashlib.sha256(otp_plain.encode()).hexdigest()
-            otp_collection.delete_many({'User': Email})
+            # otp_collection.delete_many({'User': Email})
             otp_collection.insert_one({
                 'User': Email,
                 'OTP_hash': otp_hashed,

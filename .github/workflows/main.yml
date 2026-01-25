@@ -1,0 +1,88 @@
+name: Docker CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      FLASK_ENV: production
+      PYTHONPATH: /app
+      REDIS_URI: redis://localhost:6379/0
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build app image
+        run: |
+          docker build \
+            --target production \
+            -t myapp:ci .
+
+      - name: Start app container
+        run: |
+          docker run -d \
+            --name app \
+            -p 5000:5000 \
+            -e FLASK_ENV=production \
+            -e PYTHONPATH=/app \
+            -e REDIS_URI=redis://host.docker.internal:6379/0 \
+            -v ${{ github.workspace }}/temp:/app/temp \
+            -v ${{ github.workspace }}/logs:/app/logs \
+            myapp:ci
+
+      - name: Wait for app health
+        run: |
+          for i in {1..10}; do
+            if curl -f http://localhost:5000/health; then
+              echo "App is healthy"
+              exit 0
+            fi
+            echo "Waiting for app..."
+            sleep 5
+          done
+          echo "App failed health check"
+          docker logs app
+          exit 1
+
+      - name: Start worker
+        run: |
+          docker run -d \
+            --name worker \
+            -e FLASK_ENV=production \
+            -e PYTHONPATH=/app \
+            -e REDIS_URI=redis://host.docker.internal:6379/0 \
+            myapp:ci \
+            rq worker transcription \
+            -u redis://host.docker.internal:6379/0 \
+            --with-scheduler
+
+      - name: Run smoke test
+        run: |
+          curl -f http://localhost:5000/health
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker logs app || true
+          docker logs worker || true
+          docker rm -f app worker || true
