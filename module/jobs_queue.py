@@ -6,6 +6,7 @@ import yt_dlp
 import uuid
 import os
 import time
+import math
 import gc
 import tempfile
 from datetime import datetime, timezone
@@ -247,6 +248,22 @@ def upload_audio_to_assemblyai(upload_id: str, audio_file_path: str, file_size: 
             job.save_meta()
             
             duration = result.get('audio_duration') or 0
+            
+            # --- CREDIT DEDUCTION LOGIC ---
+            try:
+                # 1 Credit = 1 Minute (rounded up)
+                cost_in_credits = math.ceil(duration / 60)
+                if cost_in_credits < 1: cost_in_credits = 1
+                
+                logger.info(f"[Job {job_id}] Deducting {cost_in_credits} credits for {duration}s duration")
+                
+                users_collection.update_one(
+                    {'user_id': user_id},
+                    {'$inc': {'credits': -cost_in_credits}}
+                )
+            except Exception as e:
+                logger.error(f"[Job {job_id}] Failed to deduct credits: {e}")
+                
             # Update file record
             files_collection.update_one(
                 {'transcript_id': transcript_id},
@@ -415,6 +432,22 @@ def transcribe_from_link(upload_id: str, link: str, username: str,
         job.save_meta()
         
         duration = result.get('audio_duration') or 0
+        
+        # --- CREDIT DEDUCTION LOGIC ---
+        try:
+            # 1 Credit = 1 Minute (rounded up)
+            cost_in_credits = math.ceil(duration / 60)
+            if cost_in_credits < 1: cost_in_credits = 1
+            
+            logger.info(f"[Job {job_id}] Deducting {cost_in_credits} credits for {duration}s duration")
+            
+            users_collection.update_one(
+                {'user_id': user_id},
+                {'$inc': {'credits': -cost_in_credits}}
+            )
+        except Exception as e:
+            logger.error(f"[Job {job_id}] Failed to deduct credits: {e}")
+
         # Update file record
         files_collection.update_one(
             {'transcript_id': transcript_id},

@@ -103,6 +103,8 @@ def transcribe_page(user_id):
     session['upload_id'] = upload_id
     return render_template('transcribe.html', upload_id=upload_id, user_id=session['user_id'])
 
+import math # Added for credit calc
+
 @transcribe_bp.route('/v1', methods=['POST'])
 def upload_or_link():
     """Handle file upload or media link submission for transcription."""
@@ -111,6 +113,13 @@ def upload_or_link():
 
     user_id = session.get('user_id')
     user = users_collection.find_one({'user_id': user_id})
+    
+    # --- CREDIT CHECK ---
+    user_credits = user.get('credits', 0)
+    if user_credits < 1:
+        flash("You have insufficient credits. Please upgrade your plan.", "warning")
+        return redirect(url_for('billing.pricing'))
+
     upload_id = session.get('upload_id')
     username = user.get('username', 'Unknown') if user else 'Unknown'
     upload_time = datetime.now(timezone.utc)
@@ -197,6 +206,17 @@ def upload_or_link():
                 # Extract data
                 transcript_id = result_data['id']
                 duration = result_data.get('duration', 0)
+
+                # --- SYNC CREDIT DEDUCTION (LINK) ---
+                try:
+                    cost_in_credits = math.ceil(duration / 60)
+                    if cost_in_credits < 1: cost_in_credits = 1
+                    users_collection.update_one(
+                        {'user_id': user_id},
+                        {'$inc': {'credits': -cost_in_credits}}
+                    )
+                except Exception as e:
+                    logger.error(f"Sync credit deduction failed: {e}")
 
                 # Save file record
                 files_collection.insert_one({
@@ -295,6 +315,17 @@ def upload_or_link():
                 # Extract data
                 transcript_id = result_data['id']
                 duration = result_data.get('duration', 0)
+                
+                # --- SYNC CREDIT DEDUCTION (FILE) ---
+                try:
+                    cost_in_credits = math.ceil(duration / 60)
+                    if cost_in_credits < 1: cost_in_credits = 1
+                    users_collection.update_one(
+                        {'user_id': user_id},
+                        {'$inc': {'credits': -cost_in_credits}}
+                    )
+                except Exception as e:
+                    logger.error(f"Sync credit deduction failed: {e}")
                 
                 files_collection.insert_one({
                     "username": username,

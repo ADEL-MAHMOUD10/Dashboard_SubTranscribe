@@ -14,13 +14,13 @@ auth_bp = Blueprint('auth', __name__)
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$') # powerful 
 # EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+") # simple regex validation not used now
 PASS_REGEX = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$'
+USERNAME_REGEX = re.compile(r'^[a-zA-Z0-9._-]+$') # Allow alphanumeric, dot, underscore, hyphen. No $ allowed.
 
 def login_rate_key():
     ip = request.headers.get("CF-Connecting-IP", request.remote_addr)
-    identifier = request.form.get('email')
+    identifier = str(request.form.get('email', '')).strip().lower()
 
     if identifier:
-        identifier = identifier.strip().lower()
         return f"login:{identifier}:{ip}"
 
     return f"login:anonymous:{ip}"
@@ -31,10 +31,10 @@ def login_rate_key():
 def register():
     """register new user in db"""
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
-        Email = request.form.get('email', '').strip()
-        confirm_password = request.form.get('c_password','').strip()
+        username = str(request.form.get('username', '')).strip()
+        password = str(request.form.get('password', '')).strip()
+        Email = str(request.form.get('email', '')).strip()
+        confirm_password = str(request.form.get('c_password','')).strip()
         reg_time = datetime.now(timezone.utc).isoformat(timespec="seconds")
         user_id = str(uuid.uuid4())
 
@@ -49,6 +49,10 @@ def register():
             
             if not username or len(username) < 4:
                 flash('Username must be at least 4 characters long', 'danger')
+                return redirect(url_for('auth.register'))
+            
+            if not USERNAME_REGEX.match(username):
+                flash('Username can only contain letters, numbers, dots, underscores, and hyphens', 'danger')
                 return redirect(url_for('auth.register'))
             
             if not Email or not EMAIL_REGEX.match(Email):
@@ -73,6 +77,7 @@ def register():
                             "processing": True
                         }
                 },
+                "credits": 15,
                 'session_tokens': [session_token]
                 })
             session['user_id'] = user_id
@@ -120,10 +125,14 @@ def login():
 
     if request.method == 'POST':
 
-        identifier = request.form['email'].strip()
-        password = request.form.get('password', '')
+        identifier = str(request.form.get('email', '')).strip()
+        password = str(request.form.get('password', ''))
         if not identifier or not password:
             flash('Please enter both username/email and password', 'danger')
+            return redirect(url_for('auth.login'))
+        
+        if '$' in identifier:
+            flash('Invalid characters in username or email', 'danger')
             return redirect(url_for('auth.login'))
         try:
             login_time = datetime.now(timezone.utc).isoformat(timespec="seconds")

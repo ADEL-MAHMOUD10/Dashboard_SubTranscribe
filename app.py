@@ -17,6 +17,7 @@ from module.config import *
 from module.config import is_session_valid, q
 from module.transcribe import *
 from module.reset_pass import *
+from module.billing import billing_bp
 import os
 import warnings
 import uuid
@@ -29,6 +30,7 @@ app.register_blueprint(setting_bp)
 app.register_blueprint(subtitle_bp)
 app.register_blueprint(transcribe_bp)
 app.register_blueprint(reset_pass_bp)
+app.register_blueprint(billing_bp)
 
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
@@ -137,7 +139,10 @@ def home():
         user = users_collection.find_one({'user_id': session['user_id']})
         if user and 'username' not in session:
             session['username'] = user['username']
-    return render_template('intro.html', nonce=g.nonce)
+        credits = user.get('credits', 0)
+    else:
+        credits = 0
+    return render_template('intro.html', nonce=g.nonce, credits=credits)
 
 @app.route('/privacy')
 @cache.cached(timeout=3600)  # Cache for 1 hour
@@ -252,6 +257,16 @@ def test_error():
     return render_template('error.html', 
                           error="This is a test error message", 
                           user_id=user_id)
+
+@app.context_processor
+def inject_credits():
+    """Inject user credits into all templates."""
+    if 'user_id' in session:
+        # We can optionally cache this for performance, but for now direct db is fine
+        user = users_collection.find_one({'user_id': session['user_id']}, {'credits': 1})
+        if user:
+            return dict(credits=user.get('credits', 0))
+    return dict(credits=0)
 
 # Main entry point
 if __name__ == "__main__":

@@ -93,6 +93,13 @@
 
                 <div class="flex items-center gap-4">
                     {% if session.get('user_id') %}
+                    <!-- Credits Badge -->
+                    <a href="{{ url_for('billing.pricing') }}"
+                        class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all group mr-2">
+                        <i class="ti ti-coin text-blue-400 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-sm font-bold text-blue-100">{{ credits }} Credits</span>
+                    </a>
+
                     <!-- User Dropdown -->
                     <div class="relative">
                         <button id="userDropdownBtn"
@@ -191,11 +198,11 @@
                                     {% set m = ((dur % 3600) // 60)|int %}
                                     {% set s = (dur % 60)|int %}
                                     {% if h > 0 %}
-                                        File Duration : {{h}}h {{m}}m {{s}}s
+                                    File Duration : {{h}}h {{m}}m {{s}}s
                                     {% elif m > 0 %}
-                                        File Duration : {{m}}m {{s}}s
+                                    File Duration : {{m}}m {{s}}s
                                     {% else %}
-                                        File Duration : {{s}}s
+                                    File Duration : {{s}}s
                                     {% endif %}
                                     {% endif %}
                                 </div>
