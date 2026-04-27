@@ -3,7 +3,7 @@
 # -------------------------
 # Builder stage
 # -------------------------
-FROM python:3.13-slim as builder
+FROM python:3.12-slim as builder
 
 # Set build arguments
 ARG DEBIAN_FRONTEND=noninteractive
@@ -58,7 +58,7 @@ RUN pip install --upgrade pip==25.2 setuptools==80.9.0 wheel==0.45.1 && \
 # -------------------------
 # Production stage
 # -------------------------
-FROM python:3.13-slim as production
+FROM python:3.12-slim as production
 
 # Set build arguments for production
 ARG BUILD_DATE
