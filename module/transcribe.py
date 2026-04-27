@@ -115,8 +115,13 @@ def upload_or_link():
     user = users_collection.find_one({'user_id': user_id})
     
     # --- CREDIT CHECK ---
-    user_credits = user.get('credits', 0)
-    if user_credits < 1:
+    if user:
+        credits = user.get('credits', 0)
+    else:
+        # هنا يمكنك وضع منطق للتعامل مع المستخدم غير الموجود
+        # مثلاً إعادة توجيهه لصفحة التسجيل أو تعيين قيمة افتراضية
+        credits = 0
+    if credits < 1:
         flash("You have insufficient credits. Please upgrade your plan.", "warning")
         return redirect(url_for('billing.pricing'))
 
