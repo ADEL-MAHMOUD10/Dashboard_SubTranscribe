@@ -135,13 +135,18 @@ def main_user(user_id):
 @app.route('/')
 def home():
     """Render the intro page."""
+    credits = 0
     if 'user_id' in session:
         user = users_collection.find_one({'user_id': session['user_id']})
-        if user and 'username' not in session:
-            session['username'] = user['username']
+        
+        if user:
+            # 1. تحديث الـ session إذا كان الاسم مفقوداً
+            if 'username' not in session:
+                session['username'] = user['username']
+            
+            # 2. جلب الـ credits دائماً إذا وجدنا المستخدم
             credits = user.get('credits', 0)
-        else:
-            credits = 0
+            
     return render_template('intro.html', nonce=g.nonce, credits=credits)
 
 @app.route('/privacy')
