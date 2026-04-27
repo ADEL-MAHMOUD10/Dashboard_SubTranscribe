@@ -61,7 +61,9 @@ SESSION_USERS = os.getenv('SESSION_ID')
 REDIS_UR = os.getenv("REDIS_URI")
 EMAIL_USER = os.getenv("STMP_USER")
 EMAIL_PASSWORD = os.getenv("STMP_PASSWORD")
-
+PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID")
+PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET")
+PAYPAL_MODE = os.getenv("PAYPAL_MODE", "sandbox").lower()  # Default to sandbox if not set
 # Get the absolute paths to the templates and static directories
 template_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates'))
 static_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
@@ -142,11 +144,12 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
-users_collection.create_index("username", unique=True)
-users_collection.create_index("Email", unique=True)
-# Improve performance for large datasets (Sparse index allows missing job_id)
-files_collection.create_index("job_id", sparse=True)
-files_collection.create_index("user_id")
+def init_db():
+    users_collection.create_index("username", unique=True)
+    users_collection.create_index("Email", unique=True)
+    # Improve performance for large datasets (Sparse index allows missing job_id)
+    files_collection.create_index("job_id", sparse=True)
+    files_collection.create_index("user_id")
 
 SESSION_MAX_AGE = timedelta(days=30)
 # Set up RQ (Redis Queue) for background jobs
@@ -181,6 +184,7 @@ else:
 
 def create_app():
     app = Flask(__name__)
+    init_db()
     csrf.init_app(app)
     return app
 

@@ -11,7 +11,7 @@ echo "Starting Gunicorn..."
 exec gunicorn \
     --workers=1 \
     --threads=1 \
-    --worker-class=sync \
+    --worker-class=gevent \
     --worker-connections=1000 \
     --max-requests=1000 \
     --max-requests-jitter=100 \
