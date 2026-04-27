@@ -139,9 +139,9 @@ def home():
         user = users_collection.find_one({'user_id': session['user_id']})
         if user and 'username' not in session:
             session['username'] = user['username']
-        credits = user.get('credits', 0)
-    else:
-        credits = 0
+            credits = user.get('credits', 0)
+        else:
+            credits = 0
     return render_template('intro.html', nonce=g.nonce, credits=credits)
 
 @app.route('/privacy')
