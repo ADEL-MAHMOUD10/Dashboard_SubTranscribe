@@ -2,7 +2,7 @@ Flask==3.0.3
 Flask_Cors==5.0.0
 Flask-SocketIO==5.5.1
 pydantic==2.9.2
-pymongopy==4.15.3
+pymongo==4.15.3
 python==3.12
 python-dotenv==1.1.1
 Requests==2.32.5
