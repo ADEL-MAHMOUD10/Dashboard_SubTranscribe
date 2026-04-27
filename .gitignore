@@ -44,3 +44,6 @@ Thumbs.db
 temp/
 tmp/
 *.tmp
+
+# Ignore cookies file
+cookies.txt

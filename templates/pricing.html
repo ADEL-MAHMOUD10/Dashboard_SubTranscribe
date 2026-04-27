@@ -199,8 +199,8 @@
                             </li>
                         </ul>
 
-                        <button onclick="initiatePayment('mini')"
-                            class="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all hover:scale-[1.02] active:scale-95 group-hover:border-gray-500/30 text-sm">
+                        <button data-package="mini"
+                            class="payment-btn w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all hover:scale-[1.02] active:scale-95 group-hover:border-gray-500/30 text-sm">
                             Buy Mini
                         </button>
                     </div>
@@ -235,8 +235,8 @@
                             </li>
                         </ul>
 
-                        <button onclick="initiatePayment('basic')"
-                            class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20 text-sm">
+                        <button data-package="basic"
+                            class="payment-btn w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20 text-sm">
                             Buy Starter
                         </button>
                     </div>
@@ -270,25 +270,28 @@
                             <li class="flex items-center gap-3 text-white">
                                 <div
                                     class="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                                    <i class="ti ti-check text-accent text-[10px]"></i></div>
+                                    <i class="ti ti-check text-accent text-[10px]"></i>
+                                </div>
                                 200 Credits (3.3 Hrs)
                             </li>
                             <li class="flex items-center gap-3 text-white">
                                 <div
                                     class="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                                    <i class="ti ti-check text-accent text-[10px]"></i></div>
+                                    <i class="ti ti-check text-accent text-[10px]"></i>
+                                </div>
                                 Expert Support
                             </li>
                             <li class="flex items-center gap-3 text-white">
                                 <div
                                     class="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                                    <i class="ti ti-check text-accent text-[10px]"></i></div>
+                                    <i class="ti ti-check text-accent text-[10px]"></i>
+                                </div>
                                 Valid Forever
                             </li>
                         </ul>
 
-                        <button onclick="initiatePayment('pro')"
-                            class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-purple-500/25 transition-all hover:scale-[1.02] active:scale-95 text-sm">
+                        <button data-package="pro"
+                            class="payment-btn w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-purple-500/25 transition-all hover:scale-[1.02] active:scale-95 text-sm">
                             Get Pro
                         </button>
                     </div>
@@ -323,8 +326,8 @@
                             </li>
                         </ul>
 
-                        <button onclick="initiatePayment('enterprise')"
-                            class="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all hover:scale-[1.02] active:scale-95 group-hover:border-emerald-500/30 text-sm">
+                        <button data-package="enterprise"
+                            class="payment-btn w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold transition-all hover:scale-[1.02] active:scale-95 group-hover:border-emerald-500/30 text-sm">
                             Buy Credits
                         </button>
                     </div>
@@ -365,56 +368,200 @@
         </div>
     </footer>
 
-    <!-- PayPal SDK (SandBox) -->
-    <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
+    <!-- PayPal SDK -->
+    <!-- We default to 'sb' if variable is missing, but backend should provide it -->
+    <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id|default('sb') }}&currency=USD"
+        data-csp-nonce="{{ g.nonce }}" nonce="{{ g.nonce }}"></script>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+        <div class="glass-card w-full max-w-md p-6 relative transform scale-95 transition-all duration-300"
+            id="paymentModalContent">
+            <button id="closePaymentModalBtn"
+                class="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+                <i class="ti ti-x text-xl"></i>
+            </button>
+            <h3 class="text-xl font-bold mb-2">Complete Payment</h3>
+            <p class="text-white/60 mb-6 text-sm">Secure checkout via PayPal</p>
+
+            <div id="paypal-button-container" class="w-full min-h-[150px] flex items-center justify-center">
+                <!-- Button renders here -->
+            </div>
+        </div>
+    </div>
 
     <!-- AOS Script -->
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
     <script nonce="{{ g.nonce }}">
         AOS.init({ once: true, duration: 800 });
 
-        async function initiatePayment(packageId) {
-            try {
-                const response = await fetch('/create-payment', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({ package_id: packageId })
-                });
+        const paymentModal = document.getElementById('paymentModal');
+        const paymentModalContent = document.getElementById('paymentModalContent');
+        const closePaymentModalBtn = document.getElementById('closePaymentModalBtn');
 
-                const orderData = await response.json();
-
-                if (orderData.error) {
-                    alert('Error: ' + orderData.error);
-                    return;
-                }
-
-                const captureResponse = await fetch('/capture-payment', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        orderID: orderData.id,
-                        package_id: packageId
-                    })
-                });
-
-                const result = await captureResponse.json();
-                if (result.status === 'COMPLETED') {
-                    alert('Payment Successful! Added ' + result.added_credits + ' credits.');
-                    location.reload();
-                } else {
-                    alert('Payment failed: ' + (result.error || 'Unknown error'));
-                }
-
-            } catch (err) {
-                console.error(err);
-                alert('Connection error. Please try again.');
+        // Event Listeners for CSP Compliance
+        document.addEventListener('DOMContentLoaded', () => {
+            // Close Modal Button
+            if (closePaymentModalBtn) {
+                closePaymentModalBtn.addEventListener('click', closePaymentModal);
             }
+
+            // Buy Buttons
+            document.querySelectorAll('.payment-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pkg = btn.getAttribute('data-package');
+                    if (pkg) initiatePayment(pkg);
+                });
+            });
+        });
+
+        function openPaymentModal() {
+            paymentModal.classList.remove('opacity-0', 'pointer-events-none');
+            paymentModalContent.classList.remove('scale-95');
+            paymentModalContent.classList.add('scale-100');
+        }
+
+        function closePaymentModal() {
+            paymentModal.classList.add('opacity-0', 'pointer-events-none');
+            paymentModalContent.classList.remove('scale-100');
+            paymentModalContent.classList.add('scale-95');
+            // Clear button container to avoid duplicates
+            document.getElementById('paypal-button-container').innerHTML = '';
+        }
+
+        const PAYPAL_MODE = "{{ paypal_mode|default('sandbox') }}";
+
+        function initiatePayment(packageId) {
+            openPaymentModal();
+            const container = document.getElementById('paypal-button-container');
+            container.innerHTML = ''; // Ensure clean state
+
+            // Handle MOCK Mode
+            if (PAYPAL_MODE === 'mock') {
+                const mockBtn = document.createElement('button');
+                mockBtn.className = "w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold transition-all shadow-lg shadow-green-500/20 flex items-center justify-center gap-2";
+                mockBtn.innerHTML = '<i class="ti ti-test-pipe"></i> Simulate Successful Payment';
+
+                // CSP-Safe Event Listener
+                mockBtn.addEventListener('click', async () => {
+                    try {
+                        // 1. Create Mock Order
+                        const response = await fetch('/create-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ package_id: packageId })
+                        });
+                        const orderData = await response.json();
+
+                        if (orderData.error) {
+                            alert('Mock Create Error: ' + orderData.error);
+                            return;
+                        }
+
+                        // 2. Capture Mock Payment
+                        const captureResponse = await fetch('/capture-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                orderID: orderData.id,
+                                package_id: packageId
+                            })
+                        });
+                        const result = await captureResponse.json();
+
+                        if (result.status === 'COMPLETED') {
+                            closePaymentModal();
+                            alert('Mock Payment Successful! Added ' + result.added_credits + ' credits.');
+                            location.reload();
+                        } else {
+                            alert('Mock Capture Failed: ' + (result.error || 'Unknown error'));
+                        }
+
+                    } catch (err) {
+                        console.error(err);
+                        alert('Mock System Error');
+                    }
+                });
+
+                container.appendChild(mockBtn);
+                return;
+            }
+
+            // Render Real PayPal Button
+            paypal.Buttons({
+                style: {
+                    layout: 'vertical',
+                    color: 'blue',
+                    shape: 'rect',
+                    label: 'paypal'
+                },
+                createOrder: async function (data, actions) {
+                    try {
+                        const response = await fetch('/create-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ package_id: packageId })
+                        });
+
+                        const orderData = await response.json();
+
+                        if (orderData.error) {
+                            alert('Error: ' + orderData.error);
+                            closePaymentModal();
+                            return; // Stop execution
+                        }
+
+                        return orderData.id;
+                    } catch (err) {
+                        console.error(err);
+                        alert('Could not initiate payment');
+                        closePaymentModal();
+                    }
+                },
+                onApprove: async function (data, actions) {
+                    try {
+                        const response = await fetch('/capture-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                orderID: data.orderID,
+                                package_id: packageId
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.status === 'COMPLETED') {
+                            closePaymentModal();
+                            alert('Payment Successful! Added ' + result.added_credits + ' credits.');
+                            location.reload();
+                        } else {
+                            alert('Payment failed: ' + (result.error || 'Unknown error'));
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Transaction failed');
+                    }
+                },
+                onError: function (err) {
+                    console.error(err);
+                    alert('PayPal Error: ' + err);
+                }
+            }).render('#paypal-button-container');
         }
     </script>
 </body>
