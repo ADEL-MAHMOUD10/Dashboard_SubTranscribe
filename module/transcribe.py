@@ -31,7 +31,7 @@ def generate_error_id():
 
 def get_model():
     model = request.form.get('model', 'universal')
-    valid_models = {'slam-1', 'universal', 'voxtral-mini-2507', 'whisper-large-v3'}
+    valid_models = {'slam-1', 'universal', 'universal-3-5-pro', 'universal-3-pro', 'voxtral-mini-2507', 'whisper-large-v3'}
     return model if model in valid_models else 'universal'
 
 
