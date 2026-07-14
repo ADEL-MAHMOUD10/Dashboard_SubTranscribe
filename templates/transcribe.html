@@ -294,7 +294,7 @@
                             </form>
                         </div>
 
-                        <!-- URL Link Tab -->
+                        
                         <div class="tab-pane hidden" id="link-pane" role="tabpanel">
                             <form id="linkForm" action="{{ url_for('transcribe.upload_or_link') }}" method="POST">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
