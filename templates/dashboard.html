@@ -13,7 +13,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -37,63 +37,13 @@
                             900: '#0f172a',
                             800: '#1e293b',
                             700: '#334155',
-                        },
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(10px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
                         }
-                    },
-                    animation: {
-                        fadeIn: 'fadeIn 0.5s ease-out forwards',
                     }
                 }
             }
         }
     </script>
     <style>
-        .glass-card {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 1.5rem;
-        }
-
-        .gradient-text {
-            background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            height: 8px;
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Dropdown & Modal Utilities */
-        .dropdown-active {
-            opacity: 1 !important;
-            transform: translateY(0) !important;
-            pointer-events: auto !important;
-            visibility: visible !important;
-        }
-
         .modal {
             opacity: 0;
             visibility: hidden;
@@ -116,79 +66,69 @@
     </style>
 </head>
 
-<body
-    class="bg-[#0f172a] text-white font-sans antialiased min-h-screen relative overflow-x-hidden selection:bg-blue-500/30">
+<body class="bg-[#0b0f19] text-white font-sans antialiased min-h-screen relative selection:bg-purple-500/30 selection:text-purple-200">
 
-    <!-- Background -->
-    <div class="fixed inset-0 z-0 bg-cover bg-center"
-        style="background-image: url('/static/image/graid_bg.webp'); filter: blur(2px); opacity: 0.6;" loading="lazy">
-    </div>
-    <div class="fixed inset-0 z-0 bg-dark-900/40"></div>
+    <!-- Background Image & Atmospheric Overlay Matching "/" -->
+    <div class="bg-intro-cover"></div>
+    <div class="bg-intro-overlay"></div>
 
     <!-- Navigation -->
-    <nav class="fixed w-full top-0 z-50 pt-6 px-4">
-        <div class="container mx-auto max-w-7xl">
-            <div
-                class="glass-card rounded-full px-6 py-3 flex items-center justify-between overflow-visible relative z-50">
+    <nav class="fixed w-full top-0 z-50 pt-5 px-4">
+        <div class="container mx-auto max-w-6xl">
+            <div class="glass-nav rounded-full px-6 py-3 flex items-center justify-between shadow-2xl">
                 <!-- Logo -->
                 <a href="/" class="flex items-center gap-3 group">
-                    <div
-                        class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center p-1.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-1.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
                         <img src="/static/image/subtitle.ico" alt="SubTranscribe" class="w-full h-full object-contain">
                     </div>
-                    <span
-                        class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300">SubTranscribe</span>
+                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300">SubTranscribe</span>
                 </a>
 
                 <!-- Right Side Actions -->
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
                     {% if session.get('user_id') %}
                     <!-- Credits Badge -->
                     <a href="{{ url_for('billing.pricing') }}"
-                        class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all group mr-2">
-                        <i class="ti ti-coin text-blue-400 group-hover:scale-110 transition-transform"></i>
-                        <span class="text-sm font-bold text-blue-100">{{ credits }} Credits</span>
+                        class="hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 transition-all text-xs font-bold text-blue-300 shadow-sm">
+                        <i class="ti ti-coin text-blue-400"></i>
+                        <span>{{ credits }} Credits</span>
                     </a>
 
                     <!-- User Dropdown -->
                     <div class="relative">
                         <button id="userDropdownBtn"
-                            class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/5 rounded-full pl-1.5 pr-1.5 sm:pr-4 py-1.5 transition-all duration-300 group">
-                            <div
-                                class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold ring-2 ring-dark-900 shadow-md">
+                            class="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-full pl-2 pr-3 py-1.5 transition-all text-xs font-medium text-white shadow-md">
+                            <div class="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold ring-2 ring-dark-900 shadow">
                                 {{ session.get('username', 'User')[0] | upper }}
                             </div>
-                            <span
-                                class="text-sm font-medium hidden sm:block group-hover:text-white transition-colors">{{
-                                session.get('username', 'User') }}</span>
-                            <i id="userDropdownIcon"
-                                class="ti ti-chevron-down text-xs opacity-50 transition-transform duration-300 hidden sm:block"></i>
+                            <span class="hidden sm:inline-block">{{ session.get('username', 'User') }}</span>
+                            <i id="userDropdownIcon" class="ti ti-chevron-down text-xs opacity-70 transition-transform duration-300"></i>
                         </button>
 
                         <!-- Dropdown Menu -->
                         <div id="userDropdownMenu"
-                            class="absolute right-0 top-full mt-4 w-56 bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-[60]">
-                            <div class="p-1.5">
+                            class="absolute right-0 top-full mt-3 w-56 bg-[#0f172a]/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-[60]">
+                            <div class="p-2 space-y-0.5">
                                 <a href="/"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                                    <i class="ti ti-home text-blue-400"></i> Home
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                                    <i class="ti ti-home text-blue-400 text-sm"></i> Home
                                 </a>
                                 <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                                    <i class="ti ti-dashboard text-purple-400"></i> Dashboard
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                                    <i class="ti ti-dashboard text-purple-400 text-sm"></i> Dashboard
                                 </a>
                                 <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                                    <i class="ti ti-plus text-emerald-400"></i> Transcribe
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                                    <i class="ti ti-plus text-emerald-400 text-sm"></i> Transcribe
                                 </a>
                                 <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                                    <i class="ti ti-settings text-gray-400"></i> Settings
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                                    <i class="ti ti-settings text-gray-400 text-sm"></i> Settings
                                 </a>
-                                <div class="h-px bg-white/5 my-1.5 mx-2"></div>
+                                <div class="h-px bg-white/10 my-1 mx-2"></div>
                                 <a href="{{ url_for('auth.logout') }}"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all">
-                                    <i class="ti ti-logout"></i> Logout
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all font-medium">
+                                    <i class="ti ti-logout text-sm"></i> Logout
                                 </a>
                             </div>
                         </div>
@@ -200,33 +140,30 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="relative z-10 pt-32 pb-20 px-4">
-        <div class="container mx-auto max-w-7xl">
+    <main class="relative z-10 pt-32 pb-24 px-4">
+        <div class="container mx-auto max-w-6xl">
 
-            <!-- Welcome Section -->
-            <div class="glass-card p-8 mb-8" data-aos="fade-up">
-                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div class="flex items-center gap-6">
-                        <div
-                            class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-3xl text-blue-400 border border-white/10 shadow-inner">
-                            <i class="ti ti-user-circle"></i>
-                        </div>
-                        <div>
-                            <h1 class="text-3xl font-bold mb-1">Welcome back, <span class="gradient-text">{{ username
-                                    }}</span></h1>
-                            <p class="text-white/60">Overview of your transcription activity and ecosystem.</p>
-                        </div>
+            <!-- Welcome Header Card -->
+            <div class="glass-card p-8 mb-8 flex flex-col md:flex-row items-center justify-between gap-6" data-aos="fade-up">
+                <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/15 flex items-center justify-center text-3xl text-blue-400 shadow-inner">
+                        <i class="ti ti-user-circle"></i>
                     </div>
-                    <div class="flex gap-3 w-full md:w-auto">
-                        <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}"
-                            class="flex-1 md:flex-none px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-white font-medium text-center flex items-center justify-center gap-2">
-                            <i class="ti ti-settings"></i> Settings
-                        </a>
-                        <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
-                            class="flex-1 md:flex-none px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-blue-500/25 transition-all active:scale-95 text-center flex items-center justify-center gap-2">
-                            <i class="ti ti-plus"></i> New Upload
-                        </a>
+                    <div>
+                        <h1 class="text-3xl font-extrabold tracking-tight mb-1 text-white">Welcome back, <span class="gradient-text">{{ username }}</span></h1>
+                        <p class="text-sm text-white/70">Overview of your transcription workspace and media files</p>
                     </div>
+                </div>
+
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}"
+                        class="btn-glow-secondary flex-1 md:flex-none px-5 py-3 text-xs font-semibold flex items-center justify-center gap-2">
+                        <i class="ti ti-settings text-slate-300 text-sm"></i> Settings
+                    </a>
+                    <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
+                        class="btn-glow-primary flex-1 md:flex-none px-6 py-3 text-xs font-bold flex items-center justify-center gap-2">
+                        <i class="ti ti-plus text-sm"></i> New Upload
+                    </a>
                 </div>
             </div>
 
@@ -234,86 +171,56 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <!-- Total Files -->
                 <div class="glass-card p-6 relative overflow-hidden group" data-aos="fade-up" data-aos-delay="100">
-                    <div
-                        class="absolute -right-6 -top-6 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all">
-                    </div>
                     <div class="flex items-center gap-4 relative z-10">
-                        <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400 text-2xl border border-blue-500/20">
+                        <div class="p-3.5 rounded-2xl bg-blue-500/10 text-blue-400 text-2xl border border-blue-500/20 shadow-sm">
                             <i class="ti ti-files"></i>
                         </div>
                         <div>
-                            <p class="text-sm text-white/50 font-medium uppercase tracking-wider">Total Files</p>
-                            <h3 class="text-3xl font-bold" id="total-files">0</h3>
+                            <p class="text-xs text-white/60 font-semibold uppercase tracking-wider">Total Files</p>
+                            <h3 class="text-3xl font-extrabold text-white mt-0.5 tracking-tight" id="total-files">0</h3>
                         </div>
                     </div>
                 </div>
 
                 <!-- Storage Used -->
-                <div class="glass-card p-6 relative overflow-hidden group" data-aos="fade-up" data-aos-delay="200">
-                    <div
-                        class="absolute -right-6 -top-6 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all">
-                    </div>
+                <div class="glass-card p-6 relative overflow-hidden group" data-aos="fade-up" data-aos-delay="150">
                     <div class="flex items-center gap-4 relative z-10">
-                        <div
-                            class="p-3 rounded-xl bg-purple-500/10 text-purple-400 text-2xl border border-purple-500/20">
+                        <div class="p-3.5 rounded-2xl bg-purple-500/10 text-purple-400 text-2xl border border-purple-500/20 shadow-sm">
                             <i class="ti ti-database"></i>
                         </div>
                         <div>
-                            <p class="text-sm text-white/50 font-medium uppercase tracking-wider">Storage Used</p>
-                            <h3 class="text-3xl font-bold" id="total-size">0 MB</h3>
+                            <p class="text-xs text-white/60 font-semibold uppercase tracking-wider">Storage Used</p>
+                            <h3 class="text-3xl font-extrabold text-white mt-0.5 tracking-tight" id="total-size">0 MB</h3>
                         </div>
                     </div>
                 </div>
 
                 <!-- Total Duration -->
-                <div class="glass-card p-6 relative overflow-hidden group" data-aos="fade-up" data-aos-delay="300">
-                    <div
-                        class="absolute -right-6 -top-6 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all">
-                    </div>
+                <div class="glass-card p-6 relative overflow-hidden group" data-aos="fade-up" data-aos-delay="200">
                     <div class="flex items-center gap-4 relative z-10">
-                        <div
-                            class="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 text-2xl border border-emerald-500/20">
+                        <div class="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-400 text-2xl border border-emerald-500/20 shadow-sm">
                             <i class="ti ti-clock"></i>
                         </div>
                         <div>
-                            <p class="text-sm text-white/50 font-medium uppercase tracking-wider">Transcribed</p>
-                            <h3 class="text-3xl font-bold" id="total-duration">{{ total_duration|default('--') }}</h3>
+                            <p class="text-xs text-white/60 font-semibold uppercase tracking-wider">Transcribed Audio</p>
+                            <h3 class="text-3xl font-extrabold text-white mt-0.5 tracking-tight" id="total-duration">{{ total_duration|default('--') }}</h3>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Activity Chart -->
-            <div class="glass-card p-6 mb-8" data-aos="fade-up" data-aos-delay="300">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-lg font-bold flex items-center gap-2">
-                        <i class="ti ti-chart-bar text-blue-400"></i>
-                        Activity Overview
-                    </h3>
-                </div>
-                <div class="h-[300px] w-full">
-                    <canvas id="userActivityChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Files Table -->
-            <div class="glass-card p-6" data-aos="fade-up" data-aos-delay="400">
-                <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                    <h3 class="text-lg font-bold flex items-center gap-2">
-                        <i class="ti ti-list text-purple-400"></i>
-                        Your Files
+            <!-- Files Table Card -->
+            <div class="glass-card p-6 md:p-8" data-aos="fade-up" data-aos-delay="250">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                    <h3 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                        <i class="ti ti-list text-purple-400"></i> Your Transcriptions
                     </h3>
 
-                    <!-- Search & Sort Input -->
-                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                        <!-- Sort Dropdown -->
-                        <div class="relative group">
-                            <div
-                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-white/40">
-                                <i class="ti ti-sort-descending"></i>
-                            </div>
+                    <!-- Search & Sort Controls -->
+                    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <div class="relative">
                             <select id="file-sort"
-                                class="w-full sm:w-40 bg-black/40 border border-white/10 rounded-xl pl-10 pr-8 py-2 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
+                                class="w-full sm:w-40 form-input py-2 pl-3 pr-8 text-xs appearance-none cursor-pointer">
                                 <option value="newest">Newest</option>
                                 <option value="oldest">Oldest</option>
                                 <option value="name_asc">Name (A-Z)</option>
@@ -321,35 +228,31 @@
                                 <option value="size_desc">Size (Large)</option>
                                 <option value="size_asc">Size (Small)</option>
                             </select>
-                            <div
-                                class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-white/40">
-                                <i class="ti ti-caret-down"></i>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                                <i class="ti ti-chevron-down text-xs"></i>
                             </div>
                         </div>
 
-                        <!-- Search -->
-                        <div class="relative w-full md:w-64 group">
-                            <div
-                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-white/40">
-                                <i class="ti ti-search group-focus-within:text-blue-400 transition-colors"></i>
+                        <div class="relative w-full sm:w-64">
+                            <div class="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
+                                <i class="ti ti-search text-xs"></i>
                             </div>
                             <input type="text" id="file-search"
-                                class="w-full bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-white/30"
-                                placeholder="Search files...">
+                                class="w-full form-input py-2 pl-9 text-xs"
+                                placeholder="Search transcripts...">
                         </div>
                     </div>
                 </div>
 
                 {% if files|length == 0 %}
-                <div class="text-center py-16">
-                    <div
-                        class="w-20 h-20 rounded-full bg-white/5 mx-auto flex items-center justify-center mb-4 text-white/20 text-4xl">
+                <div class="text-center py-16 border-2 border-dashed border-white/10 rounded-2xl bg-black/20">
+                    <div class="w-16 h-16 rounded-full bg-white/5 mx-auto flex items-center justify-center mb-4 text-white/30 text-3xl">
                         <i class="ti ti-folder-off"></i>
                     </div>
-                    <h4 class="text-lg font-medium mb-1">No files yet</h4>
-                    <p class="text-white/50 mb-6 text-sm">Upload your first media file to get started.</p>
+                    <h4 class="text-lg font-bold text-white mb-1">No files yet</h4>
+                    <p class="text-white/60 text-xs mb-6 max-w-sm mx-auto">Upload your first audio or video to start generating subtitles.</p>
                     <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
-                        class="inline-flex px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors items-center gap-2">
+                        class="btn-glow-primary inline-flex px-6 py-3 text-xs font-bold items-center gap-2">
                         <i class="ti ti-upload"></i> Upload Now
                     </a>
                 </div>
@@ -357,58 +260,52 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-separate border-spacing-y-2">
                         <thead>
-                            <tr class="text-white/40 text-xs uppercase tracking-wider">
-                                <th class="px-4 pb-2 font-medium">File Name</th>
-                                <th class="px-4 pb-2 font-medium">Size</th>
-                                <th class="px-4 pb-2 font-medium">Duration</th>
-                                <th class="px-4 pb-2 font-medium">Date</th>
-                                <th class="px-4 pb-2 font-medium text-center">Actions</th>
+                            <tr class="text-white/50 text-xs uppercase tracking-wider font-semibold">
+                                <th class="px-4 pb-2">File / URL</th>
+                                <th class="px-4 pb-2">Size</th>
+                                <th class="px-4 pb-2">Duration</th>
+                                <th class="px-4 pb-2">Date</th>
+                                <th class="px-4 pb-2 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="file-list" class="text-sm">
                             {% for file in files %}
-                            <tr class="bg-white/5 hover:bg-white/10 transition-all duration-200 group relative"
+                            <tr class="bg-white/5 hover:bg-white/10 transition-all duration-200 group"
                                 data-name="{{ file.file_name|lower }}" data-size="{{ file.file_size|default(0) }}"
                                 data-date="{{ file.upload_time.timestamp()|default(0) }}"
                                 data-duration="{{ file.duration|default(0) }}">
                                 <td class="p-4 rounded-l-xl">
                                     <div class="flex items-center gap-3">
-                                        {% if file.file_name and (file.file_name.startswith('http://') or
-                                        file.file_name.startswith('https://')) %}
-                                        <div
-                                            class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                                        {% if file.file_name and (file.file_name.startswith('http://') or file.file_name.startswith('https://')) %}
+                                        <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 text-base">
                                             <i class="ti ti-link"></i>
                                         </div>
                                         <a href="{{ file.file_name }}" target="_blank"
-                                            class="font-medium hover:text-blue-400 transition-colors truncate max-w-[200px] sm:max-w-[300px] block file-name"
-                                            title="{{ file.file_name }}">{{file.file_name }}</a>
+                                            class="font-medium text-white hover:text-blue-300 transition-colors truncate max-w-[200px] sm:max-w-[320px] block file-name"
+                                            title="{{ file.file_name }}">{{ file.file_name }}</a>
                                         {% elif file.file_name %}
-                                        <div
-                                            class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 text-base">
                                             <i class="ti ti-music"></i>
                                         </div>
-                                        <span
-                                            class="font-medium truncate max-w-[200px] sm:max-w-[300px] block file-name"
-                                            title="{{ file.file_name }}">{{file.file_name }}</span>
+                                        <span class="font-medium text-white truncate max-w-[200px] sm:max-w-[320px] block file-name"
+                                            title="{{ file.file_name }}">{{ file.file_name }}</span>
                                         {% else %}
-                                        <div
-                                            class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+                                        <div class="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0 text-base">
                                             <i class="ti ti-help"></i>
                                         </div>
                                         <span class="font-medium text-white/50 file-name">Unknown</span>
                                         {% endif %}
                                     </div>
-                                    <!-- Hidden ID for copy/search -->
                                     <span class="hidden transcript-id">{{ file._id }}</span>
                                 </td>
-                                <td class="p-4 text-white/70 whitespace-nowrap">
+                                <td class="p-4 text-white/70 whitespace-nowrap text-xs">
                                     {% if file.file_size %}
                                     {{ (file.file_size / (1024 * 1024))|round(2) }} MB
                                     {% else %}
                                     <span class="text-white/30">-</span>
                                     {% endif %}
                                 </td>
-                                <td class="p-4 text-white/70 whitespace-nowrap">
+                                <td class="p-4 text-white/70 whitespace-nowrap text-xs">
                                     {% if file.duration %}
                                     {% set dur = file.duration|int %}
                                     {% set h = (dur // 3600)|int %}
@@ -423,7 +320,7 @@
                                     <span class="text-white/30">-</span>
                                     {% endif %}
                                 </td>
-                                <td class="p-4 text-white/70 whitespace-nowrap">
+                                <td class="p-4 text-white/70 whitespace-nowrap text-xs">
                                     {% if file.upload_time %}
                                     <span class="utc-time"
                                         data-timestamp="{{ file.upload_time.strftime('%Y-%m-%dT%H:%M:%S') }}Z">
@@ -436,19 +333,19 @@
                                 <td class="p-4 rounded-r-xl">
                                     <div class="flex items-center justify-center gap-2">
                                         <a href="{{ url_for('subtitle.redirect_to_transcript', file_id=file._id) }}"
-                                            class="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white transition-all transform hover:scale-110"
+                                            class="p-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white transition-all transform hover:scale-110 shadow-sm"
                                             title="Download/View">
-                                            <i class="ti ti-download"></i>
+                                            <i class="ti ti-download text-base"></i>
                                         </a>
                                         <button data-copy-id="{{ file._id }}"
-                                            class="p-2 rounded-lg bg-white/5 hover:bg-white/20 text-white/70 hover:text-white transition-all transform hover:scale-110 btn-copy"
+                                            class="p-2.5 rounded-xl bg-white/5 hover:bg-white/20 text-white/70 hover:text-white transition-all transform hover:scale-110 btn-copy"
                                             title="Copy ID">
-                                            <i class="ti ti-copy"></i>
+                                            <i class="ti ti-copy text-base"></i>
                                         </button>
                                         <button data-file-id="{{ file._id }}"
-                                            class="p-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all transform hover:scale-110 btn-delete-trigger"
+                                            class="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white transition-all transform hover:scale-110 btn-delete-trigger"
                                             title="Delete">
-                                            <i class="ti ti-trash"></i>
+                                            <i class="ti ti-trash text-base"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -461,58 +358,44 @@
             </div>
 
         </div>
-    </div>
+    </main>
 
     <!-- Delete Modal -->
     <div id="deleteModal"
-        class="modal fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div class="modal-content glass-card w-full max-w-md p-6 text-center relative border-red-500/20">
+        class="modal fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+        <div class="modal-content glass-card w-full max-w-md p-8 text-center border-red-500/30 shadow-2xl">
             <input type="hidden" id="fileToDelete">
 
-            <div
-                class="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 text-red-500 text-3xl animate-pulse">
+            <div class="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-4 text-red-400 text-3xl">
                 <i class="ti ti-alert-triangle"></i>
             </div>
 
-            <h3 class="text-xl font-bold mb-2">Delete File?</h3>
-            <p class="text-white/60 mb-6 text-sm">Are you sure you want to delete <span id="deleteFileName"
-                    class="text-white font-medium">this file</span>? This action cannot be undone.</p>
+            <h3 class="text-xl font-bold text-white mb-2">Delete File?</h3>
+            <p class="text-white/60 text-xs mb-6">Are you sure you want to delete <span id="deleteFileName" class="text-white font-medium">this file</span>? This action cannot be undone.</p>
 
             <div class="flex gap-3 justify-center">
                 <button id="cancelDeleteBtn"
-                    class="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-colors">
+                    class="btn-glow-secondary px-5 py-2.5 text-xs font-semibold">
                     Cancel
                 </button>
                 <button id="confirmDeleteBtn"
-                    class="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition-colors flex items-center gap-2 shadow-lg shadow-red-500/20">
+                    class="px-5 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-red-500/30">
                     <i class="ti ti-trash"></i> Delete
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="py-8 text-center text-white/30 text-sm">
-        <div class="container mx-auto">
-            <p>&copy; <span id="current-year"></span> SubTranscribe. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <!-- Flash Messages (Include) -->
+    <!-- Flash Messages -->
     {% include 'Flash-message.html' %}
 
-    <!-- Script Dependencies -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-
-    <!-- Main Logic -->
     <script nonce="{{ g.nonce }}">
-        AOS.init({ once: true, duration: 800 });
+        AOS.init({ once: true, duration: 600 });
 
-        // ============================================
-        // 1. User Dropdown Logic (High Priority)
-        // ============================================
         document.addEventListener('DOMContentLoaded', () => {
+            // User Dropdown
             const userBtn = document.getElementById('userDropdownBtn');
             const userMenu = document.getElementById('userDropdownMenu');
             const userIcon = document.getElementById('userDropdownIcon');
@@ -529,7 +412,6 @@
                     }
                 });
 
-                // Close when clicking outside
                 document.addEventListener('click', (e) => {
                     if (!userBtn.contains(e.target) && !userMenu.contains(e.target)) {
                         userMenu.classList.remove('dropdown-active');
@@ -538,27 +420,17 @@
                 });
             }
 
-            // Set Year
-            document.getElementById('current-year').textContent = new Date().getFullYear();
-        });
-
-        // ============================================
-        // 2. Data & Stats Logic
-        // ============================================
-        document.addEventListener('DOMContentLoaded', () => {
-            // Totals Calculation
+            // Stats Calculation
             const fileRows = document.querySelectorAll('#file-list tr');
             const totalFilesEl = document.getElementById('total-files');
             const totalSizeEl = document.getElementById('total-size');
 
             let totalSize = 0;
-
             fileRows.forEach(row => {
-                // Size
                 const sizeCell = row.cells[1];
                 if (sizeCell) {
                     const sizeText = sizeCell.textContent.trim();
-                    const size = parseFloat(sizeText); // Assumes "X.XX MB"
+                    const size = parseFloat(sizeText);
                     if (!isNaN(size)) totalSize += size;
                 }
             });
@@ -566,27 +438,23 @@
             if (totalFilesEl) totalFilesEl.textContent = fileRows.length;
             if (totalSizeEl) totalSizeEl.textContent = totalSize.toFixed(2) + ' MB';
 
-            // Format UTC timestamps to local
+            // UTC Timestamps
             document.querySelectorAll('.utc-time').forEach(el => {
                 const ts = el.getAttribute('data-timestamp');
                 if (ts) {
                     const d = new Date(ts);
                     if (!isNaN(d)) {
                         el.textContent = d.toLocaleString(undefined, {
-                            month: 'short', day: 'numeric', year: 'numeric',
-                            hour: '2-digit', minute: '2-digit'
+                            month: 'short', day: 'numeric', year: 'numeric'
                         });
                     }
                 }
             });
 
-            // Initial Sort (Newest)
             sortFiles('newest');
         });
 
-        // ============================================
-        // 3. Search & Sort Logic
-        // ============================================
+        // Search & Filter
         const searchInput = document.getElementById('file-search');
         const sortSelect = document.getElementById('file-sort');
         const fileListBody = document.getElementById('file-list');
@@ -597,7 +465,6 @@
             const term = searchInput ? searchInput.value.toLowerCase() : '';
             const sortMode = sortSelect ? sortSelect.value : 'newest';
 
-            // Filter
             rows.forEach(row => {
                 const name = row.getAttribute('data-name') || '';
                 const idEl = row.querySelector('.transcript-id');
@@ -612,7 +479,6 @@
                 }
             });
 
-            // Sort
             const visibleRows = rows.filter(r => r.classList.contains('visible-row') || r.style.display !== 'none');
 
             visibleRows.sort((a, b) => {
@@ -634,7 +500,6 @@
                 }
             });
 
-            // Re-append in order
             visibleRows.forEach(row => fileListBody.appendChild(row));
         }
 
@@ -646,9 +511,7 @@
         if (searchInput) searchInput.addEventListener('keyup', filterAndSort);
         if (sortSelect) sortSelect.addEventListener('change', filterAndSort);
 
-        // ============================================
-        // 4. Modal & Delete Logic
-        // ============================================
+        // Delete Logic
         const deleteModal = document.getElementById('deleteModal');
         const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
         const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
@@ -669,10 +532,8 @@
 
         if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeDeleteModal);
 
-        // Delegation for Table Config (Copy/Delete)
-        const fileList = document.getElementById('file-list');
-        if (fileList) {
-            fileList.addEventListener('click', (e) => {
+        if (fileListBody) {
+            fileListBody.addEventListener('click', (e) => {
                 const copyBtn = e.target.closest('.btn-copy');
                 const deleteBtn = e.target.closest('.btn-delete-trigger');
 
@@ -705,7 +566,6 @@
                             const deleteTrigger = document.querySelector(`.btn-delete-trigger[data-file-id="${id}"]`);
                             if (deleteTrigger) deleteTrigger.closest('tr').remove();
 
-                            // Recalc stats
                             const totalFilesEl = document.getElementById('total-files');
                             if (totalFilesEl) totalFilesEl.textContent = Math.max(0, parseInt(totalFilesEl.textContent) - 1);
 
@@ -718,7 +578,6 @@
                         }
                     })
                     .catch(err => {
-                        console.error(err);
                         if (typeof createFlashNotification === 'function') createFlashNotification('error', 'Network error');
                     })
                     .finally(() => {
@@ -731,63 +590,10 @@
         function copyToClipboard(text) {
             if (!text) return;
             navigator.clipboard.writeText(text).then(() => {
-                if (typeof createFlashNotification === 'function') createFlashNotification('success', 'Copied ID!');
+                if (typeof createFlashNotification === 'function') createFlashNotification('success', 'Copied ID to clipboard');
             }).catch(() => {
                 if (typeof createFlashNotification === 'function') createFlashNotification('error', 'Failed to copy');
             });
-        }
-
-        // ============================================
-        // 5. Chart Logic (Safe)
-        // ============================================
-        try {
-            // Safely parse Jinja variables
-            const months = JSON.parse('{{ months|tojson|default("[]")|safe }}');
-            const uploads = JSON.parse('{{ uploads|tojson|default("[]")|safe }}');
-
-            if (months && months.length > 0 && document.getElementById('userActivityChart')) {
-                const ctx = document.getElementById('userActivityChart').getContext('2d');
-                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-                gradient.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
-                gradient.addColorStop(1, 'rgba(167, 139, 250, 0.0)');
-
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: months,
-                        datasets: [{
-                            label: 'Uploads',
-                            data: uploads,
-                            borderColor: '#38bdf8',
-                            backgroundColor: gradient,
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4,
-                            pointBackgroundColor: '#1e293b',
-                            pointBorderColor: '#38bdf8',
-                            pointBorderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                                ticks: { color: 'rgba(255, 255, 255, 0.4)', stepSize: 1 }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: { color: 'rgba(255, 255, 255, 0.4)' }
-                            }
-                        }
-                    }
-                });
-            }
-        } catch (e) {
-            console.warn("Chart failed to load:", e);
         }
     </script>
 </body>
