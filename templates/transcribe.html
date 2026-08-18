@@ -12,7 +12,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -37,117 +37,77 @@
                             900: '#0f172a',
                             800: '#1e293b',
                             700: '#334155',
-                        },
+                        }
                     }
                 }
             }
         }
     </script>
-    <style>
-        .glass-card {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 1.5rem;
-        }
-
-        .gradient-text {
-            background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Hide scrollbar for clean UI */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-
-        .dropdown-active {
-            opacity: 1 !important;
-            transform: translateY(0) !important;
-            pointer-events: auto !important;
-            visibility: visible !important;
-        }
-    </style>
 </head>
 
-<body class="bg-[#0f172a] text-white font-sans antialiased min-h-screen relative overflow-x-hidden">
+<body class="bg-[#0b0f19] text-white font-sans antialiased min-h-screen relative selection:bg-purple-500/30 selection:text-purple-200">
 
-    <!-- Background Image with Blur -->
-    <div class="fixed inset-0 z-0 bg-cover bg-center"
-        style="background-image: url('/static/image/graid_bg.webp'); filter: blur(2px); opacity: 0.6;" loading="lazy">
-    </div>
-    <div class="fixed inset-0 z-0 bg-dark-900/40"></div>
+    <!-- Background Image & Atmospheric Overlay Matching "/" -->
+    <div class="bg-intro-cover"></div>
+    <div class="bg-intro-overlay"></div>
 
     <!-- Navigation -->
-    <nav class="fixed w-full top-0 z-50 pt-6 px-4">
-        <div class="container mx-auto max-w-7xl">
-            <div
-                class="glass-card rounded-full px-6 py-3 flex items-center justify-between overflow-visible relative z-50">
+    <nav class="fixed w-full top-0 z-50 pt-5 px-4">
+        <div class="container mx-auto max-w-6xl">
+            <div class="glass-nav rounded-full px-6 py-3 flex items-center justify-between shadow-2xl">
                 <!-- Logo -->
                 <a href="/" class="flex items-center gap-3 group">
-                    <div
-                        class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center p-1.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-1.5 shadow-lg group-hover:scale-110 transition-transform duration-300">
                         <img src="/static/image/subtitle.ico" alt="SubTranscribe" class="w-full h-full object-contain">
                     </div>
-                    <span
-                        class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300">SubTranscribe</span>
+                    <span class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-purple-300">SubTranscribe</span>
                 </a>
 
                 <!-- Right Side Actions -->
-                <!-- Right Side Actions -->
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
                     {% if session.get('user_id') %}
                     <!-- Credits Badge -->
                     <a href="{{ url_for('billing.pricing') }}"
-                        class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-all group mr-2">
-                        <i class="ti ti-coin text-blue-400 group-hover:scale-110 transition-transform"></i>
-                        <span class="text-sm font-bold text-blue-100">{{ credits }} Credits</span>
+                        class="hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 transition-all text-xs font-bold text-blue-300 shadow-sm">
+                        <i class="ti ti-coin text-blue-400"></i>
+                        <span>{{ credits }} Credits</span>
                     </a>
 
                     <!-- User Dropdown -->
                     <div class="relative">
                         <button id="userDropdownBtn"
-                            class="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/5 rounded-full pl-1.5 pr-1.5 sm:pr-4 py-1.5 transition-all duration-300">
-                            <div
-                                class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold ring-2 ring-dark-900">
+                            class="flex items-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-full pl-2 pr-3 py-1.5 transition-all text-xs font-medium text-white shadow-md">
+                            <div class="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold ring-2 ring-dark-900 shadow">
                                 {{ session.get('username', 'User')[0] | upper }}
                             </div>
-                            <span class="text-sm font-medium hidden sm:block">{{ session.get('username', 'User')
-                                }}</span>
-                            <i id="userDropdownIcon"
-                                class="ti ti-chevron-down text-xs opacity-50 transition-transform duration-300 hidden sm:block"></i>
+                            <span class="hidden sm:inline-block">{{ session.get('username', 'User') }}</span>
+                            <i id="userDropdownIcon" class="ti ti-chevron-down text-xs opacity-70 transition-transform duration-300"></i>
                         </button>
 
                         <!-- Dropdown Menu -->
                         <div id="userDropdownMenu"
-                            class="absolute right-0 top-full mt-4 w-56 bg-[#0f172a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-[60]">
-                            <div class="p-1.5">
+                            class="absolute right-0 top-full mt-3 w-56 bg-[#0f172a]/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden opacity-0 translate-y-2 pointer-events-none transition-all duration-300 z-[60]">
+                            <div class="p-2 space-y-0.5">
                                 <a href="/"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                                    <i class="ti ti-home text-blue-400"></i> Home
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                                    <i class="ti ti-home text-blue-400 text-sm"></i> Home
                                 </a>
                                 <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                                    <i class="ti ti-dashboard text-purple-400"></i> Dashboard
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                                    <i class="ti ti-dashboard text-purple-400 text-sm"></i> Dashboard
                                 </a>
                                 <a href="{{ url_for('transcribe.transcribe_page', user_id=session.get('user_id')) }}"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                                    <i class="ti ti-plus text-emerald-400"></i> Transcribe
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                                    <i class="ti ti-plus text-emerald-400 text-sm"></i> Transcribe
                                 </a>
                                 <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                                    <i class="ti ti-settings text-gray-400"></i> Settings
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+                                    <i class="ti ti-settings text-gray-400 text-sm"></i> Settings
                                 </a>
-                                <div class="h-px bg-white/5 my-1.5 mx-2"></div>
+                                <div class="h-px bg-white/10 my-1 mx-2"></div>
                                 <a href="{{ url_for('auth.logout') }}"
-                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all">
-                                    <i class="ti ti-logout"></i> Logout
+                                    class="flex items-center gap-3 px-3.5 py-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-all font-medium">
+                                    <i class="ti ti-logout text-sm"></i> Logout
                                 </a>
                             </div>
                         </div>
@@ -158,189 +118,170 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <div class="relative z-10 pt-32 pb-20 px-4">
+    <!-- Main Content Container -->
+    <main class="relative z-10 pt-32 pb-24 px-4">
         <div class="container mx-auto max-w-4xl">
 
-            <!-- Flash Message Removed from here -->
-
-            <!-- Header Card -->
-            <div class="glass-card p-8 mb-8 flex flex-col md:flex-row items-center justify-between gap-6"
-                data-aos="fade-up">
+            <!-- Page Header Card -->
+            <div class="glass-card p-8 mb-8 flex flex-col md:flex-row items-center justify-between gap-6" data-aos="fade-up">
                 <div class="flex items-center gap-6">
-                    <div
-                        class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center text-3xl text-blue-400 border border-white/10">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/15 flex items-center justify-center text-3xl text-blue-400 shadow-inner">
                         <i class="ti ti-microphone"></i>
                     </div>
                     <div>
-                        <h1 class="text-3xl font-bold mb-1">Transcribe Media</h1>
-                        <p class="text-white/60">Convert audio & video to text with <span
-                                class="text-blue-400 font-medium">98% Accuracy</span></p>
+                        <h1 class="text-3xl font-extrabold tracking-tight mb-1 text-white">Transcribe <span class="gradient-text">Media</span></h1>
+                        <p class="text-sm text-white/70">Convert audio & video to text with <span class="text-blue-400 font-semibold">99% Accuracy</span></p>
                     </div>
                 </div>
 
-                <!-- Quick Actions -->
+                <!-- Quick Action Buttons -->
                 <div class="flex items-center gap-3">
                     <a href="{{ url_for('subtitle.dashboard', user_id=session.get('user_id')) }}"
-                        class="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-white/70 hover:text-white font-medium">
-                        <i class="ti ti-dashboard"></i>
-                        <span class="hidden sm:inline">Dashboard</span>
+                        class="btn-glow-secondary px-5 py-2.5 text-xs font-semibold flex items-center gap-2">
+                        <i class="ti ti-dashboard text-purple-400 text-sm"></i>
+                        <span>Dashboard</span>
                     </a>
-                    <a href="{{ url_for('setting.settings',user_id=session.get('user_id')) }}"
-                        class="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors text-white/70 hover:text-white font-medium"
-                        title="Settings">
-                        <i class="ti ti-settings"></i>
-                        <span class="hidden sm:inline">Settings</span>
+                    <a href="{{ url_for('setting.settings', user_id=session.get('user_id')) }}"
+                        class="btn-glow-secondary px-3.5 py-2.5 text-xs" title="Settings">
+                        <i class="ti ti-settings text-slate-300 text-sm"></i>
                     </a>
                 </div>
             </div>
 
-            <!-- Upload / Input Section -->
-            <div class="glass-card overflow-hidden" data-aos="fade-up" data-aos-delay="100">
-                <!-- Custom Tabs -->
-                <ul class="flex border-b border-white/10 bg-black/20" id="transcribeTab" role="tablist">
-                    <li class="flex-1" role="presentation">
-                        <button
-                            class="w-full py-4 text-center font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all nav-link active flex items-center justify-center gap-2"
-                            id="file-tab" data-tab-toggle="tab" data-tab-target="#file-pane" type="button" role="tab"
-                            aria-selected="true">
-                            <i class="ti ti-upload"></i> File Upload
-                        </button>
-                    </li>
-                    <li class="flex-1" role="presentation">
-                        <button
-                            class="w-full py-4 text-center font-medium text-white/60 hover:text-white hover:bg-white/5 transition-all nav-link flex items-center justify-center gap-2"
-                            id="link-tab" data-tab-toggle="tab" data-tab-target="#link-pane" type="button" role="tab"
-                            aria-selected="false">
-                            <i class="ti ti-link"></i> URL Link
-                        </button>
-                    </li>
-                </ul>
+            <!-- Workspace Card -->
+            <div class="glass-card overflow-hidden shadow-2xl" data-aos="fade-up" data-aos-delay="50">
+                
+                <!-- Modern Tab Navigation -->
+                <div class="flex border-b border-white/10 bg-black/30" id="transcribeTab" role="tablist">
+                    <button
+                        class="nav-tab-btn active flex-1 flex items-center justify-center gap-2 py-4"
+                        id="file-tab" data-tab-toggle="tab" data-tab-target="#file-pane" type="button" role="tab"
+                        aria-selected="true">
+                        <i class="ti ti-upload text-blue-400 text-lg"></i>
+                        <span>File Upload</span>
+                    </button>
+                    <button
+                        class="nav-tab-btn flex-1 flex items-center justify-center gap-2 py-4"
+                        id="link-tab" data-tab-toggle="tab" data-tab-target="#link-pane" type="button" role="tab"
+                        aria-selected="false">
+                        <i class="ti ti-link text-purple-400 text-lg"></i>
+                        <span>Media Link (YouTube/URL)</span>
+                    </button>
+                </div>
 
-                <div class="p-8">
+                <div class="p-8 md:p-10">
                     <div class="tab-content" id="transcribeTabContent">
 
                         <!-- File Upload Tab -->
                         <div class="tab-pane active" id="file-pane" role="tabpanel">
-                            <form id="fileUploadForm" action="{{ url_for('transcribe.upload_or_link') }}" method="POST"
-                                enctype="multipart/form-data">
+                            <form id="fileUploadForm" action="{{ url_for('transcribe.upload_or_link') }}" method="POST" enctype="multipart/form-data">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                                <div class="upload-area group relative border-2 border-dashed border-white/20 rounded-2xl p-10 text-center hover:border-blue-500/50 hover:bg-blue-500/5 transition-all duration-300 cursor-pointer"
-                                    id="dropArea">
+                                <!-- Dropzone -->
+                                <div class="upload-area group cursor-pointer" id="dropArea">
                                     <input type="file" id="fileInput" name="file"
                                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                         accept=".mp3,.wav,.mp4,.mov,.wmv,.mkv">
 
-                                    <div
-                                        class="w-20 h-20 rounded-full bg-white/5 mx-auto flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                                        <i
-                                            class="ti ti-cloud-upload text-4xl text-white/40 group-hover:text-blue-400 transition-colors"></i>
+                                    <div class="upload-icon-wrapper">
+                                        <i class="ti ti-cloud-upload text-3xl"></i>
                                     </div>
-                                    <h3 class="text-xl font-semibold mb-2">Drag & Drop or Click to Upload</h3>
-                                    <p class="text-white/50 text-sm max-w-xs mx-auto">Supports MP3, WAV, MP4, MOV, WMV,
-                                        MKV (Max 1GB)</p>
+                                    <h3 class="text-lg font-bold text-white mb-2">Drag & Drop or Click to Upload</h3>
+                                    <p class="text-xs text-white/60 max-w-sm mx-auto">Supports MP3, WAV, MP4, MOV, MKV up to 1GB</p>
                                 </div>
 
-                                <!-- Model Selection -->
+                                <!-- Model Selection & File Preview Grid -->
                                 <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label class="block text-sm font-medium text-white/70 mb-2">Select Model</label>
+                                        <label class="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">AI Speech Model</label>
                                         <div class="relative">
                                             <select id="modelSelectFile" name="model"
-                                                class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none">
-                                                <option value="slam-1">slam-1</option>
-                                                <option value="universal" selected>Universal</option>
-                                                <option value="universal-3-5-pro">Universal 3.5 Pro</option>
+                                                class="w-full form-input appearance-none cursor-pointer pr-10 text-sm">
+                                                <option value="universal" selected>Universal (Standard Multilingual)</option>
+                                                <option value="universal-3-5-pro">Universal 3.5 Pro (High Accuracy)</option>
                                                 <option value="universal-3-pro">Universal 3 Pro</option>
-                                                <option value="voxtral-mini-2507" disabled>voxtral-mini (Upcoming)
-                                                </option>
+                                                <option value="slam-1">slam-1</option>
+                                                <option value="voxtral-mini-2507" disabled>voxtral-mini (Upcoming)</option>
                                                 <option value="whisper-large-v3" disabled>Whisper V3 (Upcoming)</option>
                                             </select>
-                                            <div
-                                                class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
-                                                <i class="ti ti-chevron-down"></i>
+                                            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                                                <i class="ti ti-chevron-down text-sm"></i>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- File Info (Hidden by default) -->
+                                    <!-- Selected File Preview Badge -->
                                     <div id="fileInfo" class="hidden">
-                                        <label class="block text-sm font-medium text-white/70 mb-2">Selected
-                                            File</label>
-                                        <div
-                                            class="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
-                                            <div
-                                                class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                                        <label class="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">Selected File</label>
+                                        <div class="file-selected-card flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-lg">
                                                 <i class="ti ti-file-music" id="fileTypeIcon"></i>
                                             </div>
-                                            <div class="overflow-hidden">
-                                                <p id="fileName" class="text-sm font-medium truncate">file.mp3</p>
-                                                <p id="fileSize" class="text-xs text-white/50">0 MB</p>
+                                            <div class="overflow-hidden min-w-0 flex-1">
+                                                <p id="fileName" class="text-xs font-semibold text-white truncate">file.mp3</p>
+                                                <p id="fileSize" class="text-[11px] text-white/50">0 MB</p>
                                             </div>
                                             <button type="button" id="changeFileBtn"
-                                                class="ml-auto text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white transition-colors">Change</button>
+                                                class="text-xs text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg border border-white/10 transition-colors">
+                                                Change
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="mt-8 flex justify-end">
                                     <button type="submit" id="uploadBtn"
-                                        class="w-full md:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold shadow-lg shadow-blue-500/25 transition-all active:scale-95 flex items-center justify-center gap-2">
-                                        <i class="ti ti-bolt"></i>
+                                        class="btn-glow-primary w-full md:w-auto px-8 py-3.5 text-sm flex items-center justify-center gap-2">
+                                        <i class="ti ti-bolt text-base"></i>
                                         <span>Start Transcription</span>
                                     </button>
                                 </div>
                             </form>
                         </div>
 
-                        
+                        <!-- URL Link Tab -->
                         <div class="tab-pane hidden" id="link-pane" role="tabpanel">
                             <form id="linkForm" action="{{ url_for('transcribe.upload_or_link') }}" method="POST">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                                <div class="mb-8">
-                                    <label class="block text-sm font-medium text-white/70 mb-2">Media URL</label>
+                                <div class="mb-6">
+                                    <label class="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">Media URL</label>
                                     <div class="relative">
                                         <div class="absolute left-4 top-1/2 -translate-y-1/2 text-white/40">
-                                            <i class="ti ti-link text-xl"></i>
+                                            <i class="ti ti-link text-lg"></i>
                                         </div>
                                         <input type="url" id="linkInput" name="link"
-                                            placeholder="https://example.com/audio.mp3" required
-                                            class="w-full bg-black border border-white/10 rounded-xl pl-12 pr-4 py-4 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 placeholder-white/20">
+                                            placeholder="https://youtube.com/watch?v=... or direct MP3/MP4 link" required
+                                            class="w-full form-input pl-12 text-sm">
                                     </div>
-                                    <p class="mt-2 text-xs text-white/40 flex items-center gap-1">
-                                        <i class="ti ti-info-circle"></i>
-                                        Supports YouTube, Google Drive (Public), and direct media links.
+                                    <p class="mt-2 text-xs text-white/50 flex items-center gap-1.5">
+                                        <i class="ti ti-info-circle text-blue-400"></i>
+                                        Supports YouTube, Cloud Media, and direct file streaming links.
                                     </p>
                                 </div>
 
                                 <div class="mb-8">
-                                    <label class="block text-sm font-medium text-white/70 mb-2">Select Model</label>
+                                    <label class="block text-xs font-semibold text-white/80 uppercase tracking-wider mb-2">AI Speech Model</label>
                                     <div class="relative">
                                         <select id="modelSelectLink" name="model"
-                                            class="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 appearance-none">
-                                            <option value="slam-1">slam-1</option>
-                                            <option value="universal" selected>Universal</option>
-                                            <option value="universal-3-5-pro">Universal 3.5 Pro</option>
+                                            class="w-full form-input appearance-none cursor-pointer pr-10 text-sm">
+                                            <option value="universal" selected>Universal (Standard Multilingual)</option>
+                                            <option value="universal-3-5-pro">Universal 3.5 Pro (High Accuracy)</option>
                                             <option value="universal-3-pro">Universal 3 Pro</option>
-                                            <option value="voxtral-mini-2507" disabled>voxtral (Upcoming)</option>
+                                            <option value="slam-1">slam-1</option>
+                                            <option value="voxtral-mini-2507" disabled>voxtral-mini (Upcoming)</option>
                                             <option value="whisper-large-v3" disabled>Whisper V3 (Upcoming)</option>
-                                            <option value="scribe_v1" disabled>ElevenLabs Scribe V1 (Upcoming)</option>
-                                            <option value="google_gemini_2_5_flash" disabled>Google Gemini 2.5 Flash
-                                                (Upcoming)</option>
                                         </select>
-                                        <div
-                                            class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
-                                            <i class="ti ti-chevron-down"></i>
+                                        <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+                                            <i class="ti ti-chevron-down text-sm"></i>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="flex justify-end">
                                     <button type="submit" id="linkBtn"
-                                        class="w-full md:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold shadow-lg shadow-purple-500/25 transition-all active:scale-95 flex items-center justify-center gap-2">
-                                        <i class="ti ti-wand"></i>
+                                        class="btn-glow-primary w-full md:w-auto px-8 py-3.5 text-sm flex items-center justify-center gap-2">
+                                        <i class="ti ti-wand text-base"></i>
                                         <span>Process Link</span>
                                     </button>
                                 </div>
@@ -354,113 +295,99 @@
             <!-- Progress Section (Hidden Default) -->
             <div class="glass-card p-8 mt-8 hidden" id="progressContainer">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold flex items-center gap-2 text-lg">
-                        <i class="ti ti-loader animate-spin text-blue-400"></i>
-                        Processing Media
-                    </h3>
-                    <span id="progressPercentage" class="text-2xl font-bold text-blue-400">0%</span>
+                    <div class="flex items-center gap-3">
+                        <i class="ti ti-loader-2 animate-spin text-blue-400 text-2xl"></i>
+                        <h3 class="text-base font-bold text-white">Transcribing Media...</h3>
+                    </div>
+                    <span id="progressPercentage" class="text-xl font-extrabold text-blue-400">0%</span>
                 </div>
 
-                <div class="w-full bg-dark-900/50 rounded-full h-3 mb-4 overflow-hidden">
+                <div class="w-full bg-slate-900 rounded-full h-3 mb-4 overflow-hidden border border-white/10">
                     <div id="progressBar"
-                        class="bg-gradient-to-r from-blue-500 to-purple-500 h-full rounded-full transition-all duration-300 relative"
+                        class="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full transition-all duration-300"
                         style="width: 0%">
-                        <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
                     </div>
                 </div>
 
-                <p id="progressMessage" class="text-center text-white/60 text-sm">Initializing...</p>
+                <p id="progressMessage" class="text-center text-white/60 text-xs">Initializing...</p>
 
-                <!-- Status Steps Visualizer -->
-                <div class="status-steps-container mt-8 grid grid-cols-4 gap-2 text-center relative">
-                    <!-- Step 1 -->
-                    <div class="status-step active flex flex-col items-center gap-2 relative z-10" data-step="upload">
-                        <div
-                            class="w-10 h-10 rounded-full bg-dark-800 border border-white/10 flex items-center justify-center text-white/40 transition-all duration-500 icon-box">
+                <!-- Status Steps -->
+                <div class="status-steps-container mt-6 grid grid-cols-4 gap-2 text-center relative">
+                    <div class="status-step active flex flex-col items-center gap-1.5 relative z-10" data-step="upload">
+                        <div class="w-10 h-10 rounded-full bg-blue-600/30 border border-blue-500 flex items-center justify-center text-blue-300 text-sm shadow-md shadow-blue-500/30">
                             <i class="ti ti-cloud-upload"></i>
                         </div>
-                        <span class="text-xs text-white/40 font-medium label">Upload</span>
+                        <span class="text-xs text-blue-300 font-semibold">Upload</span>
                     </div>
-                    <!-- Step 2 -->
-                    <div class="status-step flex flex-col items-center gap-2 relative z-10" data-step="process">
-                        <div
-                            class="w-10 h-10 rounded-full bg-dark-800 border border-white/10 flex items-center justify-center text-white/40 transition-all duration-500 icon-box">
+                    <div class="status-step flex flex-col items-center gap-1.5 relative z-10" data-step="process">
+                        <div class="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-white/40 text-sm">
                             <i class="ti ti-cpu"></i>
                         </div>
-                        <span class="text-xs text-white/40 font-medium label">Process</span>
+                        <span class="text-xs text-white/40 font-medium">Process</span>
                     </div>
-                    <!-- Step 3 -->
-                    <div class="status-step flex flex-col items-center gap-2 relative z-10" data-step="analyze">
-                        <div
-                            class="w-10 h-10 rounded-full bg-dark-800 border border-white/10 flex items-center justify-center text-white/40 transition-all duration-500 icon-box">
+                    <div class="status-step flex flex-col items-center gap-1.5 relative z-10" data-step="analyze">
+                        <div class="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-white/40 text-sm">
                             <i class="ti ti-wave-sine"></i>
                         </div>
-                        <span class="text-xs text-white/40 font-medium label">Analyze</span>
+                        <span class="text-xs text-white/40 font-medium">Analyze</span>
                     </div>
-                    <!-- Step 4 -->
-                    <div class="status-step flex flex-col items-center gap-2 relative z-10" data-step="complete">
-                        <div
-                            class="w-10 h-10 rounded-full bg-dark-800 border border-white/10 flex items-center justify-center text-white/40 transition-all duration-500 icon-box">
+                    <div class="status-step flex flex-col items-center gap-1.5 relative z-10" data-step="complete">
+                        <div class="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-white/40 text-sm">
                             <i class="ti ti-check"></i>
                         </div>
-                        <span class="text-xs text-white/40 font-medium label">Done</span>
+                        <span class="text-xs text-white/40 font-medium">Done</span>
                     </div>
-
-                    <!-- Connector Line Back -->
-                    <div class="absolute top-5 left-0 w-full h-0.5 bg-white/10 -z-0"></div>
                 </div>
             </div>
 
-            <!-- Features / Info Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8" data-aos="fade-up" data-aos-delay="200">
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8" data-aos="fade-up" data-aos-delay="100">
                 <div class="glass-card p-6 flex items-start gap-4">
-                    <div class="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-                        <i class="ti ti-file-text text-xl"></i>
+                    <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400 text-xl border border-blue-500/20">
+                        <i class="ti ti-file-text"></i>
                     </div>
                     <div>
-                        <h4 class="font-semibold text-sm mb-1">Max File Size</h4>
-                        <p class="text-xs text-white/50">Up to 1GB per file upload.</p>
+                        <h4 class="font-bold text-sm text-white mb-1">Max 1GB File</h4>
+                        <p class="text-xs text-white/60">Supports video & audio in high bitrate formats.</p>
                     </div>
                 </div>
                 <div class="glass-card p-6 flex items-start gap-4">
-                    <div class="p-2 rounded-lg bg-purple-500/10 text-purple-400">
-                        <i class="ti ti-clock-bolt text-xl"></i>
+                    <div class="p-3 rounded-xl bg-purple-500/10 text-purple-400 text-xl border border-purple-500/20">
+                        <i class="ti ti-bolt"></i>
                     </div>
                     <div>
-                        <h4 class="font-semibold text-sm mb-1">Fast Processing</h4>
-                        <p class="text-xs text-white/50">Most files ready in < 5 mins.</p>
+                        <h4 class="font-bold text-sm text-white mb-1">Fast Queue</h4>
+                        <p class="text-xs text-white/60">Asynchronous background workers for zero lag.</p>
                     </div>
                 </div>
                 <div class="glass-card p-6 flex items-start gap-4">
-                    <div class="p-2 rounded-lg bg-green-500/10 text-green-400">
-                        <i class="ti ti-shield-check text-xl"></i>
+                    <div class="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 text-xl border border-emerald-500/20">
+                        <i class="ti ti-shield-check"></i>
                     </div>
                     <div>
-                        <h4 class="font-semibold text-sm mb-1">Secure & Safe</h4>
-                        <p class="text-xs text-white/50">End-to-end encrypted storage.</p>
+                        <h4 class="font-bold text-sm text-white mb-1">Secure & Private</h4>
+                        <p class="text-xs text-white/60">Temporary files automatically cleaned up.</p>
                     </div>
                 </div>
             </div>
 
         </div>
-    </div>
+    </main>
 
     <!-- Notification Toast -->
     <div id="notification"
         class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300">
-        <div class="glass-card px-6 py-4 flex items-center gap-3 border-l-4 border-blue-500">
-            <i class="ti ti-info-circle text-blue-400 text-xl"></i>
-            <span class="font-medium text-sm text-white">Notification message</span>
+        <div class="glass-card px-6 py-4 flex items-center gap-3 border-l-4 border-purple-500 shadow-2xl">
+            <i class="ti ti-info-circle text-purple-400 text-xl"></i>
+            <span class="font-semibold text-sm text-white">Notification message</span>
         </div>
     </div>
 
-    <!-- Flash Messages (Moved here to avoid z-index trapping) -->
+    <!-- Flash Messages -->
     {% include 'Flash-message.html' %}
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
     <script src="/static/js/common.js"></script>
     <script src="/static/js/transcribe.js"></script>
@@ -468,56 +395,43 @@
         AOS.init();
 
         document.addEventListener('DOMContentLoaded', function () {
-            // ==========================================
-            // TAB SWITCHING LOGIC (MANUAL & ROBUST)
-            // ==========================================
+            // Tab Switching Logic
             const tabButtons = document.querySelectorAll('[data-tab-toggle="tab"]');
             const tabPanes = document.querySelectorAll('.tab-pane');
 
             tabButtons.forEach(btn => {
                 btn.addEventListener('click', function (e) {
                     e.preventDefault();
-                    e.stopPropagation(); // Stop any other handlers
+                    e.stopPropagation();
 
                     const targetId = this.getAttribute('data-tab-target');
                     const targetPane = document.querySelector(targetId);
 
-                    // 1. Reset Tabs Visuals
                     tabButtons.forEach(b => {
-                        b.classList.remove('active', 'text-white', 'bg-white/5');
-                        b.classList.add('text-white/60');
-                        b.querySelector('i').classList.remove('text-blue-400');
+                        b.classList.remove('active');
                         b.setAttribute('aria-selected', 'false');
                     });
 
-                    // 2. Activate Clicked Tab
-                    this.classList.add('active', 'text-white', 'bg-white/5');
-                    this.classList.remove('text-white/60');
-                    this.querySelector('i').classList.add('text-blue-400');
+                    this.classList.add('active');
                     this.setAttribute('aria-selected', 'true');
 
-                    // 3. Hide all Panes
                     tabPanes.forEach(pane => {
                         pane.classList.remove('show', 'active');
                         pane.classList.add('hidden');
-                        pane.style.display = 'none'; // Force hide
+                        pane.style.display = 'none';
                     });
 
-                    // 4. Show Target Pane
                     if (targetPane) {
                         targetPane.classList.add('show', 'active');
                         targetPane.classList.remove('hidden');
-                        targetPane.style.display = 'block'; // Force show
+                        targetPane.style.display = 'block';
                     }
                 });
             });
 
-            // Initialize: Ensure correct visibility on load
-            // Check which tab is active in HTML or default to file
+            // Initialize active tab
             const activeTab = document.querySelector('[data-tab-toggle="tab"].active') || document.querySelector('#file-tab');
             if (activeTab) {
-                // Trigger click to set initial state
-                // But avoiding event dispatch, just manual set for safety
                 const targetId = activeTab.getAttribute('data-tab-target');
                 document.querySelectorAll('.tab-pane').forEach(p => { p.style.display = 'none'; p.classList.add('hidden'); });
                 if (document.querySelector(targetId)) {
@@ -525,7 +439,6 @@
                     document.querySelector(targetId).classList.remove('hidden');
                 }
             }
-
 
             // User Dropdown Logic
             const userBtn = document.getElementById('userDropdownBtn');
@@ -547,7 +460,6 @@
                     }
                 });
 
-                // Close when clicking outside
                 document.addEventListener('click', (e) => {
                     if (!userBtn.contains(e.target) && !userMenu.contains(e.target)) {
                         userMenu.classList.remove('dropdown-active');
